@@ -1,124 +1,124 @@
-# Node Graph Execution Qt - 架构规划
+# Node Graph Execution Qt - Architecture Design
 
-## 项目概述
+## Project Overview
 
-基于 PySide6/PyQt6 实现的 Houdini 风格节点式编程框架，支持可视化编程和代码复用。
+Houdini-style node-based programming framework built with PySide6/PyQt6, supporting visual programming and code reuse.
 
-### 核心目标
-- 提供节点式的 Qt Designer 替代方案
-- Junior 开发者：通过节点工具快速理解和修改
-- Senior 开发者：专注底层代码优化
-- 最大化代码（节点）重复使用
+### Core Objectives
+- Provide a node-based alternative to Qt Designer
+- Junior developers: Quickly understand and modify through node tools
+- Senior developers: Focus on optimizing underlying code
+- Maximize code (node) reusability
 
-### 技术栈
-- **UI框架**: PySide6/PyQt6 (QtPy兼容层)
+### Technology Stack
+- **UI Framework**: PySide6/PyQt6 (QtPy compatibility layer)
 - **Python**: 3.8+
-- **序列化**: JSON
-- **未来分离**: node-graph-core (业务逻辑核心)
+- **Serialization**: JSON
+- **Future Separation**: node-graph-core (business logic core)
 
 ---
 
-## 核心架构设计
+## Core Architecture Design
 
-### 三层架构（参考 QtNodes）
+### Three-Layer Architecture (Inspired by QtNodes)
 
 ```
 ┌─────────────────────────────────────────────────┐
 │         Application Layer (UI)                  │
-│  - NetworkEditor (主编辑器)                      │
-│  - ParametersPane (属性面板)                     │
-│  - NodePalette (节点选板)                        │
+│  - NetworkEditor (Main editor)                  │
+│  - ParametersPane (Property panel)              │
+│  - NodePalette (Node palette)                   │
 └─────────────────────────────────────────────────┘
                       ↓↑
 ┌─────────────────────────────────────────────────┐
 │         View Layer (Qt Graphics)                │
 │  - NetworkView (QGraphicsView)                  │
-│  - NodeGraphicsItem (节点图形项)                 │
-│  - ConnectorGraphicsItem (连接线)                │
+│  - NodeGraphicsItem (Node graphics item)        │
+│  - ConnectorGraphicsItem (Connection line)      │
 └─────────────────────────────────────────────────┘
                       ↓↑
 ┌─────────────────────────────────────────────────┐
 │         Model Layer (Core Logic)                │
-│  - NetworkModel (图数据模型)                     │
-│  - NodeModel (节点数据)                          │
-│  - ParameterModel (参数数据)                     │
-│  - ConnectorModel (连接数据)                     │
+│  - NetworkModel (Graph data model)              │
+│  - NodeModel (Node data)                        │
+│  - ParameterModel (Parameter data)              │
+│  - ConnectorModel (Connection data)             │
 └─────────────────────────────────────────────────┘
                       ↓↑
 ┌─────────────────────────────────────────────────┐
-│    Future: node-graph-core (业务逻辑分离)        │
-│  - 执行引擎                                      │
-│  - 数据流评估                                    │
-│  - Python代码生成                                │
+│    Future: node-graph-core (Logic separation)   │
+│  - Execution engine                             │
+│  - Data flow evaluation                         │
+│  - Python code generation                       │
 └─────────────────────────────────────────────────┘
 ```
 
-### 解耦策略
+### Decoupling Strategy
 
-**Model-View 完全分离**
-- Model 层不依赖任何 Qt Widgets
-- Model 可以 headless 运行（CLI、测试）
-- View 层仅负责可视化表现
+**Complete Model-View Separation**
+- Model layer has no dependencies on Qt Widgets
+- Model can run headless (CLI, testing)
+- View layer only handles visualization
 
-**插件化接口**
-- 节点注册系统：`NodeRegistry`
-- 参数类型系统：`ParameterTypeRegistry`
-- 执行引擎接口：`ExecutionEngine` (未来分离到 core)
+**Plugin Interface**
+- Node registry system: `NodeRegistry`
+- Parameter type system: `ParameterTypeRegistry`
+- Execution engine interface: `ExecutionEngine` (future separation to core)
 
 ---
 
-## 目录结构
+## Directory Structure
 
 ```
 node-graph-execution-qt/
-├── nodegraph/                    # 主包
+├── nodegraph/                    # Main package
 │   ├── __init__.py
-│   ├── core/                     # 核心模型层（未来迁移到 node-graph-core）
+│   ├── core/                     # Core model layer (future migration to node-graph-core)
 │   │   ├── __init__.py
-│   │   ├── models/               # 数据模型
+│   │   ├── models/               # Data models
 │   │   │   ├── network_model.py
 │   │   │   ├── node_model.py
 │   │   │   ├── parameter_model.py
 │   │   │   └── connector_model.py
-│   │   ├── registry/             # 注册系统
+│   │   ├── registry/             # Registry system
 │   │   │   ├── node_registry.py
 │   │   │   └── parameter_registry.py
-│   │   ├── serialization/        # 序列化
+│   │   ├── serialization/        # Serialization
 │   │   │   ├── json_serializer.py
 │   │   │   └── python_exporter.py
-│   │   └── execution/            # 执行引擎（占位，未来分离）
+│   │   └── execution/            # Execution engine (placeholder, future separation)
 │   │       ├── executor.py
 │   │       └── evaluator.py
 │   │
-│   ├── views/                    # 视图层
+│   ├── views/                    # View layer
 │   │   ├── __init__.py
-│   │   ├── network/              # 网络视图
+│   │   ├── network/              # Network view
 │   │   │   ├── network_view.py
 │   │   │   ├── network_scene.py
 │   │   │   └── layout_manager.py
-│   │   ├── nodes/                # 节点图形项
+│   │   ├── nodes/                # Node graphics items
 │   │   │   ├── base_node_item.py
 │   │   │   ├── python_node_item.py
 │   │   │   └── subnet_node_item.py
-│   │   ├── connectors/           # 连接线
+│   │   ├── connectors/           # Connection lines
 │   │   │   ├── connector_item.py
 │   │   │   └── connector_painter.py
-│   │   └── widgets/              # UI 小部件
+│   │   └── widgets/              # UI widgets
 │   │       ├── parameters_pane.py
 │   │       ├── node_palette.py
 │   │       └── code_editor.py
 │   │
-│   ├── nodes/                    # 内置节点库
+│   ├── nodes/                    # Built-in node library
 │   │   ├── __init__.py
-│   │   ├── base/                 # 基础节点
+│   │   ├── base/                 # Base nodes
 │   │   │   ├── base_node.py
 │   │   │   ├── python_node.py
 │   │   │   └── subnet_node.py
-│   │   ├── operators/            # 运算符节点
-│   │   ├── logic/                # 逻辑节点
-│   │   └── utils/                # 工具节点
+│   │   ├── operators/            # Operator nodes
+│   │   ├── logic/                # Logic nodes
+│   │   └── utils/                # Utility nodes
 │   │
-│   ├── parameters/               # 参数类型系统
+│   ├── parameters/               # Parameter type system
 │   │   ├── __init__.py
 │   │   ├── base_parameter.py
 │   │   ├── int_parameter.py
@@ -126,22 +126,22 @@ node-graph-execution-qt/
 │   │   ├── string_parameter.py
 │   │   └── color_parameter.py
 │   │
-│   └── utils/                    # 工具模块
+│   └── utils/                    # Utility modules
 │       ├── undo_stack.py
 │       ├── logger.py
 │       └── houdini_colors.py
 │
-├── examples/                     # 示例
+├── examples/                     # Examples
 │   ├── basic_network.py
 │   ├── custom_node.py
 │   └── subnet_example.py
 │
-├── tests/                        # 测试
+├── tests/                        # Tests
 │   ├── test_models/
 │   ├── test_serialization/
 │   └── test_nodes/
 │
-├── docs/                         # 文档
+├── docs/                         # Documentation
 │   ├── getting_started.md
 │   ├── custom_nodes.md
 │   └── api_reference.md
@@ -154,52 +154,52 @@ node-graph-execution-qt/
 
 ---
 
-## 开发优先级
+## Development Priority
 
-### Phase 1: 核心架构 (P0 - 最高优先级)
+### Phase 1: Core Architecture (P0 - Highest Priority)
 
-#### 1.1 数据模型层
-- [x] `NetworkModel` - 图数据结构
-- [x] `NodeModel` - 节点基类
-- [x] `ParameterModel` - 参数系统
-- [x] `ConnectorModel` - 连接模型
+#### 1.1 Data Model Layer
+- [x] `NetworkModel` - Graph data structure
+- [x] `NodeModel` - Node base class
+- [x] `ParameterModel` - Parameter system
+- [x] `ConnectorModel` - Connection model
 
-#### 1.2 节点系统
-- [x] `BaseNode` - 基础节点抽象类
-- [x] `PythonNode` - Python 代码节点
-- [x] `SubnetNode` - 子图节点
-- [x] `NodeRegistry` - 节点注册系统
+#### 1.2 Node System
+- [x] `BaseNode` - Base node abstract class
+- [x] `PythonNode` - Python code node
+- [x] `SubnetNode` - Subnet node
+- [x] `NodeRegistry` - Node registry system
 
-#### 1.3 参数系统
-- [x] `BaseParameter` - 参数基类
-- [x] 基础类型：int, float, string, bool
-- [x] `ParametersPane` - 属性面板 UI
+#### 1.3 Parameter System
+- [x] `BaseParameter` - Parameter base class
+- [x] Basic types: int, float, string, bool
+- [x] `ParametersPane` - Property panel UI
 
-#### 1.4 自定义节点 API
+#### 1.4 Custom Node API
 ```python
 from nodegraph.nodes.base import BaseNode
 from nodegraph.parameters import FloatParameter, StringParameter
 
 class MyCustomNode(BaseNode):
-    """用户自定义节点示例"""
+    """Custom node example"""
 
     category = "Custom"
 
     def __init__(self):
         super().__init__()
 
-        # 定义输入
+        # Define inputs
         self.add_input("input1", data_type="float")
         self.add_input("input2", data_type="float")
 
-        # 定义输出
+        # Define outputs
         self.add_output("result", data_type="float")
 
-        # 定义参数
+        # Define parameters
         self.add_parameter("multiplier", FloatParameter(default=1.0))
 
-    def cook(self, **inputs):
-        """执行节点逻辑"""
+    def compute(self, **inputs):
+        """Execute node logic"""
         val1 = inputs.get("input1", 0.0)
         val2 = inputs.get("input2", 0.0)
         multiplier = self.parameter("multiplier").value()
@@ -208,23 +208,23 @@ class MyCustomNode(BaseNode):
         return {"result": result}
 ```
 
-### Phase 2: 视图层 (P1)
+### Phase 2: View Layer (P1)
 
-#### 2.1 基础渲染
-- [ ] `NetworkView` - QGraphicsView 主视图
+#### 2.1 Basic Rendering
+- [ ] `NetworkView` - QGraphicsView main view
 - [ ] `NetworkScene` - QGraphicsScene
-- [ ] `BaseNodeItem` - 节点图形项（Houdini 风格）
-- [ ] `ConnectorItem` - 连接线渲染
+- [ ] `BaseNodeItem` - Node graphics item (Houdini style)
+- [ ] `ConnectorItem` - Connection line rendering
 
-#### 2.2 交互
-- [ ] 拖拽创建节点
-- [ ] 拖拽连接
-- [ ] 节点选择/多选
-- [ ] 平移/缩放画布
+#### 2.2 Interaction
+- [ ] Drag and drop to create nodes
+- [ ] Drag to connect
+- [ ] Node selection/multi-selection
+- [ ] Pan/zoom canvas
 
-### Phase 3: 序列化与导出 (P1)
+### Phase 3: Serialization and Export (P1)
 
-#### 3.1 JSON 序列化
+#### 3.1 JSON Serialization
 ```json
 {
   "version": "1.0",
@@ -251,9 +251,9 @@ class MyCustomNode(BaseNode):
 }
 ```
 
-#### 3.2 Python 导出
+#### 3.2 Python Export
 ```python
-# 自动生成的 Python 代码
+# Auto-generated Python code
 def generated_network():
     # Node: node_001 (AddNode)
     node_001_result = add_function(input1=10, input2=20)
@@ -267,77 +267,77 @@ def generated_network():
     return node_002_result
 ```
 
-### Phase 4: 高级功能 (P2 - 次要优先级)
+### Phase 4: Advanced Features (P2 - Secondary Priority)
 
-- [ ] 撤销/重做系统
-- [ ] 水平布局优化
-- [ ] 节点搜索/过滤
-- [ ] 快捷键系统
-- [ ] 主题/样式系统
-
----
-
-## Houdini 风格命名规范
-
-### 术语对照表
-
-| 概念 | Houdini 术语 | 本项目命名 |
-|------|-------------|-----------|
-| 节点图 | Network | `Network` |
-| 节点 | Node | `Node` |
-| 输入/输出 | Connector | `Connector` / `Port` |
-| 参数 | Parameter / Parm | `Parameter` |
-| 子网络 | Subnet | `Subnet` |
-| 执行 | Cook | `cook()` / `evaluate()` |
-| 参数面板 | Parameters Pane | `ParametersPane` |
-
-### 类命名约定
-- Model 类: `XxxModel` (如 `NodeModel`)
-- View 类: `XxxView` / `XxxItem` (如 `NetworkView`, `NodeGraphicsItem`)
-- Widget 类: `XxxPane` / `XxxWidget` (如 `ParametersPane`)
-- 节点类: `XxxNode` (如 `PythonNode`)
+- [ ] Undo/Redo system
+- [ ] Horizontal layout optimization
+- [ ] Node search/filtering
+- [ ] Keyboard shortcut system
+- [ ] Theme/styling system
 
 ---
 
-## 与 node-graph-core 的集成接口
+## Houdini-Style Naming Convention
 
-### 接口定义（未来迁移）
+### Terminology Mapping
+
+| Concept | Houdini Term | This Project |
+|---------|-------------|--------------|
+| Node Graph | Network | `Network` |
+| Node | Node | `Node` |
+| Input/Output | Connector | `Connector` / `Port` |
+| Parameter | Parameter / Parm | `Parameter` |
+| Subnetwork | Subnet | `Subnet` |
+| Execution | Cook | `cook()` / `evaluate()` |
+| Parameter Panel | Parameters Pane | `ParametersPane` |
+
+### Class Naming Convention
+- Model classes: `XxxModel` (e.g., `NodeModel`)
+- View classes: `XxxView` / `XxxItem` (e.g., `NetworkView`, `NodeGraphicsItem`)
+- Widget classes: `XxxPane` / `XxxWidget` (e.g., `ParametersPane`)
+- Node classes: `XxxNode` (e.g., `PythonNode`)
+
+---
+
+## Integration Interface with node-graph-core
+
+### Interface Definition (Future Migration)
 
 ```python
-# 在 nodegraph/core/interfaces.py
+# In nodegraph/core/interfaces.py
 
 class IExecutionEngine(ABC):
-    """执行引擎接口 - 未来由 node-graph-core 实现"""
+    """Execution engine interface - to be implemented by node-graph-core"""
 
     @abstractmethod
     def evaluate_network(self, network_model: 'NetworkModel') -> dict:
-        """评估整个网络"""
+        """Evaluate entire network"""
         pass
 
     @abstractmethod
     def cook_node(self, node_model: 'NodeModel') -> Any:
-        """执行单个节点"""
+        """Execute single node"""
         pass
 
 class IPythonExporter(ABC):
-    """Python 导出接口"""
+    """Python export interface"""
 
     @abstractmethod
     def export_to_python(self, network_model: 'NetworkModel') -> str:
-        """导出为 Python 代码"""
+        """Export to Python code"""
         pass
 ```
 
-### 插件化加载
+### Plugin Loading
 
 ```python
-# 未来加载 node-graph-core
+# Future loading of node-graph-core
 from nodegraph.core.interfaces import IExecutionEngine
 
-# 默认使用内置实现
+# Use built-in implementation by default
 engine = DefaultExecutionEngine()
 
-# 或加载外部核心
+# Or load external core
 try:
     from node_graph_core import AdvancedExecutionEngine
     engine = AdvancedExecutionEngine()
@@ -347,104 +347,104 @@ except ImportError:
 
 ---
 
-## 技术细节
+## Technical Details
 
-### 数据流模型
+### Data Flow Model
 
-- **Pull-based evaluation** (懒惰求值，类似 Houdini)
-- 节点只在需要时 cook
-- 支持缓存和 dirty 标记
+- **Pull-based evaluation** (lazy evaluation, like Houdini)
+- Nodes only cook when needed
+- Supports caching and dirty marking
 
-### 参数变化传播
+### Parameter Change Propagation
 
 ```python
-# 参数变化 -> 标记节点 dirty -> 触发重新 cook
+# Parameter change -> mark node dirty -> trigger re-cook
 parameter.value_changed.connect(node.mark_dirty)
 node.dirty_changed.connect(network.propagate_dirty)
 ```
 
-### 撤销/重做系统
+### Undo/Redo System
 
-- 使用 Qt 的 `QUndoStack`
-- 所有操作封装为 `QUndoCommand`
-- 支持宏命令（批量操作）
+- Uses Qt's `QUndoStack`
+- All operations wrapped as `QUndoCommand`
+- Supports macro commands (batch operations)
 
 ---
 
-## 示例用例
+## Example Use Cases
 
-### 用例 1: 节点式 Qt Designer
+### Use Case 1: Node-based Qt Designer
 
 ```python
-# 创建 UI 布局节点
+# Create UI layout nodes
 layout = VBoxLayoutNode()
 button1 = PushButtonNode(text="Click Me")
 label1 = LabelNode(text="Result")
 
-# 连接信号
+# Connect signals
 button1.output("clicked") >> label1.input("setText")
 ```
 
-### 用例 2: 数据处理管道
+### Use Case 2: Data Processing Pipeline
 
 ```python
-# 读取数据
+# Read data
 data_source = CSVReaderNode(file_path="data.csv")
 
-# 数据处理
+# Process data
 filtered = FilterNode(condition="value > 100")
 transformed = MapNode(function=lambda x: x * 2)
 
-# 输出结果
+# Output results
 output = CSVWriterNode(file_path="output.csv")
 
-# 构建管道
+# Build pipeline
 data_source >> filtered >> transformed >> output
 ```
 
 ---
 
-## 下一步行动
+## Next Steps
 
-1. **创建项目基础结构**
-   - 初始化 Python 包
-   - 配置 requirements.txt
-   - 设置 pytest
+1. **Create Project Base Structure**
+   - Initialize Python package
+   - Configure requirements.txt
+   - Setup pytest
 
-2. **实现核心 Model 层**
+2. **Implement Core Model Layer**
    - `NetworkModel`
    - `NodeModel`
    - `ParameterModel`
 
-3. **实现基础节点**
+3. **Implement Base Nodes**
    - `BaseNode`
    - `PythonNode`
-   - 节点注册系统
+   - Node registry system
 
-4. **实现属性面板**
+4. **Implement Property Panel**
    - `ParametersPane` UI
-   - 参数类型系统
+   - Parameter type system
 
-5. **单元测试**
-   - Model 层测试
-   - 序列化测试
-
----
-
-## 性能考虑
-
-- 大规模网络（1000+ 节点）的渲染优化
-- 延迟加载子图
-- 连接线使用 QPainterPath 缓存
-- 视口剔除（Viewport Culling）
+5. **Unit Tests**
+   - Model layer tests
+   - Serialization tests
 
 ---
 
-## 扩展性设计
+## Performance Considerations
 
-### 自定义节点包
+- Rendering optimization for large networks (1000+ nodes)
+- Lazy loading of subnets
+- Connection line QPainterPath caching
+- Viewport culling
 
-用户可以创建独立的节点包：
+---
+
+## Extensibility Design
+
+### Custom Node Packages
+
+Users can create independent node packages:
 
 ```
 my_custom_nodes/
@@ -452,10 +452,10 @@ my_custom_nodes/
 ├── nodes/
 │   ├── my_node.py
 │   └── another_node.py
-└── package.json  # 节点包元数据
+└── package.json  # Node package metadata
 ```
 
-加载自定义包：
+Load custom packages:
 
 ```python
 from nodegraph import NodeRegistry
@@ -466,13 +466,13 @@ registry.load_package("path/to/my_custom_nodes")
 
 ---
 
-## 许可证
+## License
 
-MIT License (建议)
+MIT License (Recommended)
 
 ---
 
-## 参考资料
+## References
 
 - QtNodes: https://github.com/paceholder/nodeeditor
 - NodeGraphQt: https://github.com/jchanvfx/NodeGraphQt
