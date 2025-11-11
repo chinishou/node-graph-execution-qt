@@ -6,9 +6,11 @@ Represents an input or output port on a node (connector in Houdini terminology).
 Connectors allow data to flow between nodes.
 """
 
-from typing import Optional, Any, Dict, TYPE_CHECKING
+from dataclasses import dataclass, field, asdict
+from typing import Optional, Any, Dict, List, TYPE_CHECKING
 from enum import Enum
 from ..signals import Signal
+from ..data_types import DataTypeRegistry
 
 if TYPE_CHECKING:
     from .node_model import NodeModel
@@ -20,6 +22,7 @@ class ConnectorType(Enum):
     OUTPUT = "output"
 
 
+@dataclass
 class ConnectorModel:
     """
     Data model for a node connector (port).
@@ -33,39 +36,39 @@ class ConnectorModel:
         data_type: Type of data this connector accepts/produces
         display_name: Human-readable name
         node: The node this connector belongs to
-        multi_connection: Whether multiple connections are allowed (inputs only)
-        default_value: Default value if no connection
+        multi_connection: Whether multiple connections are allowed
+                          - For INPUT: if True, returns list of values; if False, single value
+                          - For OUTPUT: always allows multiple connections
+        default_value: Default value if no connection (inputs only)
+        description: Connector description
         connected_changed: Signal emitted when connection state changes
     """
 
-    def __init__(
-        self,
-        name: str,
-        connector_type: ConnectorType,
-        data_type: str = "any",
-        display_name: Optional[str] = None,
-        node: Optional["NodeModel"] = None,
-        multi_connection: bool = False,
-        default_value: Any = None,
-        description: str = "",
-    ):
-        self.name = name
-        self.connector_type = connector_type
-        self.data_type = data_type
-        self.display_name = display_name or name
-        self.node = node
-        self.multi_connection = multi_connection
-        self.default_value = default_value
-        self.description = description
+    name: str
+    connector_type: ConnectorType
+    data_type: str = "any"
+    display_name: Optional[str] = None
+    node: Optional["NodeModel"] = None
+    multi_connection: bool = False
+    default_value: Any = None
+    description: str = ""
 
-        # Store connections (for outputs: list of connectors, for inputs: single/multiple connectors)
-        self._connections: list["ConnectorModel"] = []
+    # Non-serializable fields
+    _connections: List["ConnectorModel"] = field(init=False, repr=False, compare=False, default_factory=list)
+    _cached_value: Any = field(init=False, repr=False, compare=False, default=None)
+    _is_dirty: bool = field(init=False, repr=False, compare=False, default=True)
+    connected_changed: Signal = field(init=False, repr=False, compare=False)
 
-        # Cached value (for data flow)
-        self._cached_value: Any = None
-        self._is_dirty: bool = True
+    def __post_init__(self):
+        """Initialize non-dataclass fields after construction."""
+        # Set display name
+        if self.display_name is None:
+            self.display_name = self.name
 
-        # Signals
+        # Initialize lists and signals
+        self._connections = []
+        self._cached_value = None
+        self._is_dirty = True
         self.connected_changed = Signal()
 
     def is_input(self) -> bool:
@@ -90,9 +93,8 @@ class ConnectorModel:
         if not self._can_connect_to(other):
             return False
 
-        # For inputs, check if multi-connection is allowed
+        # For inputs without multi_connection, disconnect existing connections first
         if self.is_input() and not self.multi_connection and len(self._connections) > 0:
-            # Disconnect existing connection first
             self.disconnect_all()
 
         # Add connection
@@ -150,12 +152,20 @@ class ConnectorModel:
         """Check if this connector has any connections."""
         return len(self._connections) > 0
 
-    def connections(self) -> list["ConnectorModel"]:
+    def connections(self) -> List["ConnectorModel"]:
         """Get list of connected connectors."""
         return self._connections.copy()
 
     def _can_connect_to(self, other: "ConnectorModel") -> bool:
-        """Check if connection to another connector is valid."""
+        """
+        Check if connection to another connector is valid.
+
+        Args:
+            other: The connector to check
+
+        Returns:
+            True if connection is valid
+        """
         # Can't connect to self
         if other is self:
             return False
@@ -168,10 +178,19 @@ class ConnectorModel:
         if self.connector_type == other.connector_type:
             return False
 
-        # Check data type compatibility (simplified - "any" matches everything)
+        # Check data type compatibility using DataTypeRegistry
         if self.data_type != "any" and other.data_type != "any":
+            # For strict compatibility, types must match or be convertible
             if self.data_type != other.data_type:
-                return False
+                # Check if conversion is possible
+                if self.is_input():
+                    # Check if output type can convert to input type
+                    if not DataTypeRegistry.can_convert(other.data_type, self.data_type):
+                        return False
+                else:
+                    # Check if input type can convert to output type
+                    if not DataTypeRegistry.can_convert(self.data_type, other.data_type):
+                        return False
 
         return True
 
@@ -191,7 +210,12 @@ class ConnectorModel:
         Get the value from this connector.
 
         For outputs: returns the node's computed output value
-        For inputs: returns the connected output's value or default value
+        For inputs:
+            - If multi_connection=False: returns single value or default
+            - If multi_connection=True: returns list of values (empty list if no connections)
+
+        Returns:
+            Value or list of values (depending on multi_connection setting)
         """
         if self.is_output():
             # Output value comes from the node's cook result
@@ -199,15 +223,33 @@ class ConnectorModel:
                 return self.node.get_output_value(self.name)
             return None
         else:
-            # Input value comes from connected output or default
-            if self.is_connected():
-                # Get value from first connected output
+            # Input value handling
+            if not self.is_connected():
+                # No connections
+                if self.multi_connection:
+                    return []  # Return empty list for multi-connection inputs
+                else:
+                    return self.default_value  # Return default for single-connection inputs
+
+            # Has connections
+            if self.multi_connection:
+                # Multi-connection: return list of all connected values
+                values = []
+                for source in self._connections:
+                    value = source.get_value()
+                    values.append(value)
+                return values
+            else:
+                # Single connection: return the first (only) value
                 source = self._connections[0]
                 return source.get_value()
-            return self.default_value
 
     def serialize(self) -> Dict[str, Any]:
-        """Serialize connector to dictionary."""
+        """
+        Serialize connector to dictionary.
+
+        Manually creates dictionary to avoid serializing Signal objects.
+        """
         return {
             "name": self.name,
             "connector_type": self.connector_type.value,
@@ -220,19 +262,27 @@ class ConnectorModel:
 
     @classmethod
     def deserialize(cls, data: Dict[str, Any], node: Optional["NodeModel"] = None) -> "ConnectorModel":
-        """Deserialize connector from dictionary."""
+        """
+        Deserialize connector from dictionary.
+
+        Args:
+            data: Dictionary containing connector data
+            node: The node this connector belongs to
+
+        Returns:
+            ConnectorModel instance
+        """
+        # Convert connector_type string to enum
         connector_type = ConnectorType(data.get("connector_type", "input"))
-        return cls(
-            name=data["name"],
-            connector_type=connector_type,
-            data_type=data.get("data_type", "any"),
-            display_name=data.get("display_name"),
-            node=node,
-            multi_connection=data.get("multi_connection", False),
-            default_value=data.get("default_value"),
-            description=data.get("description", ""),
-        )
+
+        # Create connector (filtering to only dataclass fields)
+        connector_data = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+        connector_data["connector_type"] = connector_type
+        connector_data["node"] = node
+
+        return cls(**connector_data)
 
     def __repr__(self) -> str:
         conn_type = "INPUT" if self.is_input() else "OUTPUT"
-        return f"ConnectorModel(name='{self.name}', type={conn_type}, data_type='{self.data_type}')"
+        multi_indicator = "[]" if self.multi_connection and self.is_input() else ""
+        return f"ConnectorModel(name='{self.name}', type={conn_type}, data_type='{self.data_type}{multi_indicator}')"
