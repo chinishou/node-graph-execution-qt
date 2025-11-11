@@ -36,9 +36,6 @@ class ConnectorModel:
         data_type: Type of data this connector accepts/produces
         display_name: Human-readable name
         node: The node this connector belongs to
-        multi_connection: Whether multiple connections are allowed
-                          - For INPUT: if True, returns list of values; if False, single value
-                          - For OUTPUT: always allows multiple connections
         default_value: Default value if no connection (inputs only)
         description: Connector description
         connected_changed: Signal emitted when connection state changes
@@ -49,7 +46,6 @@ class ConnectorModel:
     data_type: str = "any"
     display_name: Optional[str] = None
     node: Optional["NodeModel"] = None
-    multi_connection: bool = False
     default_value: Any = None
     description: str = ""
 
@@ -93,8 +89,8 @@ class ConnectorModel:
         if not self._can_connect_to(other):
             return False
 
-        # For inputs without multi_connection, disconnect existing connections first
-        if self.is_input() and not self.multi_connection and len(self._connections) > 0:
+        # For inputs, disconnect existing connection first (single connection only)
+        if self.is_input() and len(self._connections) > 0:
             self.disconnect_all()
 
         # Add connection
@@ -210,12 +206,10 @@ class ConnectorModel:
         Get the value from this connector.
 
         For outputs: returns the node's computed output value
-        For inputs:
-            - If multi_connection=False: returns single value or default
-            - If multi_connection=True: returns list of values (empty list if no connections)
+        For inputs: returns connected output value or default value
 
         Returns:
-            Value or list of values (depending on multi_connection setting)
+            Value from connected output or default value
         """
         if self.is_output():
             # Output value comes from the node's cook result
@@ -223,26 +217,14 @@ class ConnectorModel:
                 return self.node.get_output_value(self.name)
             return None
         else:
-            # Input value handling
-            if not self.is_connected():
-                # No connections
-                if self.multi_connection:
-                    return []  # Return empty list for multi-connection inputs
-                else:
-                    return self.default_value  # Return default for single-connection inputs
-
-            # Has connections
-            if self.multi_connection:
-                # Multi-connection: return list of all connected values
-                values = []
-                for source in self._connections:
-                    value = source.get_value()
-                    values.append(value)
-                return values
-            else:
-                # Single connection: return the first (only) value
+            # Input value: return connected value or default
+            if self.is_connected():
+                # Get value from connected output
                 source = self._connections[0]
                 return source.get_value()
+            else:
+                # No connection: return default value
+                return self.default_value
 
     def serialize(self) -> Dict[str, Any]:
         """
@@ -255,7 +237,6 @@ class ConnectorModel:
             "connector_type": self.connector_type.value,
             "data_type": self.data_type,
             "display_name": self.display_name,
-            "multi_connection": self.multi_connection,
             "default_value": self.default_value,
             "description": self.description,
         }
@@ -284,5 +265,4 @@ class ConnectorModel:
 
     def __repr__(self) -> str:
         conn_type = "INPUT" if self.is_input() else "OUTPUT"
-        multi_indicator = "[]" if self.multi_connection and self.is_input() else ""
-        return f"ConnectorModel(name='{self.name}', type={conn_type}, data_type='{self.data_type}{multi_indicator}')"
+        return f"ConnectorModel(name='{self.name}', type={conn_type}, data_type='{self.data_type}')"

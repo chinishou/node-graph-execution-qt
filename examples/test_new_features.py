@@ -5,9 +5,8 @@ Test New Features
 This example demonstrates all the newly implemented features:
 1. DataTypeRegistry with ordered menu and custom types
 2. VariableNode for direct value declaration
-3. Multi-connection inputs with MergeNode
-4. Dataclass-based models (simpler serialization)
-5. Type conversion support
+3. Dataclass-based models (simpler serialization)
+4. Type conversion support
 """
 
 import sys
@@ -19,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from nodegraph.core import DataTypeRegistry
 from nodegraph.nodes.base import FloatVariable, IntVariable, StringVariable, BoolVariable, VariableNode
 from nodegraph.nodes.operators import AddNode, MultiplyNode
-from nodegraph.nodes.utils import MergeNode, TypedMergeNode
 
 
 def test_data_type_registry():
@@ -123,95 +121,6 @@ def test_variable_with_math():
     print()
 
 
-def test_multi_connection():
-    """Test multi-connection input with MergeNode."""
-    print("=" * 60)
-    print("Testing Multi-Connection Input (MergeNode)")
-    print("=" * 60)
-
-    # Create multiple variables
-    var1 = FloatVariable(default_value=1.0, name="Var1")
-    var2 = FloatVariable(default_value=2.0, name="Var2")
-    var3 = FloatVariable(default_value=3.0, name="Var3")
-    var4 = FloatVariable(default_value=4.0, name="Var4")
-
-    # Create merge node
-    merge = MergeNode()
-
-    # Connect all variables to merge (multi-connection!)
-    var1.output("out").connect_to(merge.input("items"))
-    var2.output("out").connect_to(merge.input("items"))
-    var3.output("out").connect_to(merge.input("items"))
-    var4.output("out").connect_to(merge.input("items"))
-
-    # Check connections
-    items_input = merge.input("items")
-    print(f"Number of connections: {len(items_input.connections())}")
-    print(f"Multi-connection enabled: {items_input.multi_connection}")
-
-    # Cook and get result
-    result = merge.get_output_value("list")
-    print(f"\nMerged list: {result}")
-
-    # Verify it's a list
-    print(f"Type: {type(result)}")
-    print(f"Length: {len(result)}")
-
-    print()
-
-
-def test_multi_connection_with_math():
-    """Test multi-connection with mathematical operations."""
-    print("=" * 60)
-    print("Testing Multi-Connection with Math")
-    print("=" * 60)
-
-    # Create variables and compute their sum
-    values = [1.0, 2.0, 3.0, 4.0, 5.0]
-    variables = []
-
-    for i, val in enumerate(values):
-        var = FloatVariable(default_value=val, name=f"V{i+1}")
-        variables.append(var)
-
-    # Merge all variables
-    merge = MergeNode()
-    for var in variables:
-        var.output("out").connect_to(merge.input("items"))
-
-    # Get merged list
-    merged_list = merge.get_output_value("list")
-    print(f"Values: {merged_list}")
-    print(f"Sum: {sum(merged_list)}")
-    print(f"Average: {sum(merged_list) / len(merged_list)}")
-
-    print()
-
-
-def test_typed_merge():
-    """Test TypedMergeNode."""
-    print("=" * 60)
-    print("Testing TypedMergeNode")
-    print("=" * 60)
-
-    # Create float variables
-    var1 = FloatVariable(default_value=1.5, name="F1")
-    var2 = FloatVariable(default_value=2.5, name="F2")
-
-    # Create typed merge (only accepts floats)
-    typed_merge = TypedMergeNode(data_type="float")
-
-    # Connect
-    var1.output("out").connect_to(typed_merge.input("items"))
-    var2.output("out").connect_to(typed_merge.input("items"))
-
-    # Get result
-    result = typed_merge.get_output_value("list")
-    print(f"Float merge result: {result}")
-
-    print()
-
-
 def test_serialization():
     """Test dataclass-based serialization."""
     print("=" * 60)
@@ -265,9 +174,6 @@ def main():
     test_data_type_registry()
     test_variable_nodes()
     test_variable_with_math()
-    test_multi_connection()
-    test_multi_connection_with_math()
-    test_typed_merge()
     test_serialization()
     test_custom_data_type()
 

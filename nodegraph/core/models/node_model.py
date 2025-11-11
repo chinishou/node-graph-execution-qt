@@ -134,7 +134,6 @@ class NodeModel:
         self,
         name: str,
         data_type: str = "any",
-        multi_connection: bool = False,
         default_value: Any = None,
         **kwargs
     ) -> ConnectorModel:
@@ -144,7 +143,6 @@ class NodeModel:
             connector_type=ConnectorType.INPUT,
             data_type=data_type,
             node=self,
-            multi_connection=multi_connection,
             default_value=default_value,
             **kwargs
         )
