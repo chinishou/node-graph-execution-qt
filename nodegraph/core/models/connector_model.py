@@ -90,8 +90,11 @@ class ConnectorModel:
             return False
 
         # For inputs, disconnect existing connection first (single connection only)
+        # Check both self and other for input connectors
         if self.is_input() and len(self._connections) > 0:
             self.disconnect_all()
+        if other.is_input() and len(other._connections) > 0:
+            other.disconnect_all()
 
         # Add connection
         if other not in self._connections:
