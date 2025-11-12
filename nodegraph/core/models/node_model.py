@@ -6,7 +6,8 @@ Represents a node in the network graph.
 Nodes are the fundamental building blocks that process data.
 """
 
-from typing import Dict, List, Any, Optional, TYPE_CHECKING
+from dataclasses import dataclass, field, asdict
+from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple
 from uuid import uuid4
 from .parameter_model import ParameterModel
 from .connector_model import ConnectorModel, ConnectorType
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
     from .network_model import NetworkModel
 
 
+@dataclass
 class NodeModel:
     """
     Data model for a node.
@@ -24,12 +26,12 @@ class NodeModel:
     and parameters that control their behavior. Similar to Houdini's nodes.
 
     Attributes:
-        id: Unique node identifier (UUID)
         name: Node display name
         node_type: Type of node (e.g., "AddNode", "SubnetNode")
         category: Category for organization (e.g., "Math", "Logic")
-        position: (x, y) position in the network view
+        id: Unique node identifier (UUID)
         network: The network this node belongs to
+        color: Optional custom color
         parameters: Dictionary of parameters
         inputs: Dictionary of input connectors
         outputs: Dictionary of output connectors
@@ -37,40 +39,48 @@ class NodeModel:
         position_changed: Signal emitted when position changes
     """
 
-    def __init__(
-        self,
-        name: str = "Node",
-        node_type: str = "BaseNode",
-        category: str = "General",
-        network: Optional["NetworkModel"] = None,
-    ):
-        self.id = str(uuid4())
-        self.name = name
-        self.node_type = node_type
-        self.category = category
-        self.network = network
+    name: str = "Node"
+    node_type: str = "BaseNode"
+    category: str = "General"
+    network: Optional["NetworkModel"] = None
+    id: str = field(default_factory=lambda: str(uuid4()))
+    color: Optional[str] = None
 
-        # Visual attributes
-        self._position = (0.0, 0.0)
-        self.color = None  # Optional custom color
+    # Position (stored as tuple for easy serialization)
+    _position: Tuple[float, float] = field(default=(0.0, 0.0), repr=False)
 
-        # Node components
-        self._parameters: Dict[str, ParameterModel] = {}
-        self._inputs: Dict[str, ConnectorModel] = {}
-        self._outputs: Dict[str, ConnectorModel] = {}
+    # Node components (non-serializable, will be handled separately)
+    _parameters: Dict[str, ParameterModel] = field(init=False, repr=False, default_factory=dict)
+    _inputs: Dict[str, ConnectorModel] = field(init=False, repr=False, default_factory=dict)
+    _outputs: Dict[str, ConnectorModel] = field(init=False, repr=False, default_factory=dict)
 
-        # Execution state
+    # Execution state
+    _is_dirty: bool = field(init=False, repr=False, default=True)
+    _is_cooking: bool = field(init=False, repr=False, default=False)
+    _cached_outputs: Dict[str, Any] = field(init=False, repr=False, default_factory=dict)
+    _cook_error: Optional[str] = field(init=False, repr=False, default=None)
+
+    # Signals
+    dirty_changed: Signal = field(init=False, repr=False, compare=False)
+    position_changed: Signal = field(init=False, repr=False, compare=False)
+    parameter_changed: Signal = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        """Initialize non-dataclass fields after construction."""
+        self._parameters = {}
+        self._inputs = {}
+        self._outputs = {}
         self._is_dirty = True
         self._is_cooking = False
-        self._cached_outputs: Dict[str, Any] = {}
-        self._cook_error: Optional[str] = None
+        self._cached_outputs = {}
+        self._cook_error = None
 
-        # Signals
+        # Initialize signals
         self.dirty_changed = Signal()
         self.position_changed = Signal()
         self.parameter_changed = Signal()
 
-    def position(self) -> tuple:
+    def position(self) -> Tuple[float, float]:
         """Get node position."""
         return self._position
 
@@ -124,7 +134,6 @@ class NodeModel:
         self,
         name: str,
         data_type: str = "any",
-        multi_connection: bool = False,
         default_value: Any = None,
         **kwargs
     ) -> ConnectorModel:
@@ -134,7 +143,6 @@ class NodeModel:
             connector_type=ConnectorType.INPUT,
             data_type=data_type,
             node=self,
-            multi_connection=multi_connection,
             default_value=default_value,
             **kwargs
         )
@@ -272,40 +280,50 @@ class NodeModel:
 
     def serialize(self) -> Dict[str, Any]:
         """Serialize node to dictionary."""
-        return {
+        # Use dataclass asdict for basic fields
+        data = {
             "id": self.id,
             "name": self.name,
             "node_type": self.node_type,
             "category": self.category,
             "position": self._position,
             "color": self.color,
-            "parameters": {
-                name: param.serialize()
-                for name, param in self._parameters.items()
-            },
-            "inputs": {
-                name: conn.serialize()
-                for name, conn in self._inputs.items()
-            },
-            "outputs": {
-                name: conn.serialize()
-                for name, conn in self._outputs.items()
-            },
         }
+
+        # Serialize parameters
+        data["parameters"] = {
+            name: param.serialize()
+            for name, param in self._parameters.items()
+        }
+
+        # Serialize connectors
+        data["inputs"] = {
+            name: conn.serialize()
+            for name, conn in self._inputs.items()
+        }
+
+        data["outputs"] = {
+            name: conn.serialize()
+            for name, conn in self._outputs.items()
+        }
+
+        return data
 
     @classmethod
     def deserialize(cls, data: Dict[str, Any], network: Optional["NetworkModel"] = None) -> "NodeModel":
         """Deserialize node from dictionary."""
+        # Create node with basic fields
         node = cls(
             name=data.get("name", "Node"),
             node_type=data.get("node_type", "BaseNode"),
             category=data.get("category", "General"),
             network=network,
+            id=data.get("id", str(uuid4())),
+            color=data.get("color"),
         )
 
-        node.id = data.get("id", str(uuid4()))
+        # Set position
         node.set_position(*data.get("position", (0, 0)), emit_signal=False)
-        node.color = data.get("color")
 
         # Deserialize parameters
         for name, param_data in data.get("parameters", {}).items():

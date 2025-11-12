@@ -7,10 +7,12 @@ These models can be used in headless mode (CLI, testing, etc.).
 """
 
 from .models import NetworkModel, NodeModel, ParameterModel, ConnectorModel
+from .data_types import DataTypeRegistry
 
 __all__ = [
     "NetworkModel",
     "NodeModel",
     "ParameterModel",
     "ConnectorModel",
+    "DataTypeRegistry",
 ]
