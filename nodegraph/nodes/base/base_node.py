@@ -44,9 +44,9 @@ class BaseNode(NodeModel, ABC):
                 return {"result": result}
     """
 
-    # Class attributes that can be overridden
-    category = "General"
-    description = ""
+    # Class attributes that can be overridden (must have type annotations for Pydantic)
+    category: str = "General"
+    description: str = ""
 
     def __init__(
         self,
@@ -55,9 +55,20 @@ class BaseNode(NodeModel, ABC):
         category: Optional[str] = None,
         **kwargs
     ):
-        # Use class category if not provided
+        # Use class category default if not provided
         if category is None:
-            category = self.__class__.category
+            # For Pydantic models, get the default from model_fields
+            category_field = self.__class__.model_fields.get('category')
+            if category_field and category_field.default is not None:
+                category = category_field.default
+            else:
+                category = "General"
+
+        # Extract setup parameters from kwargs (used by VariableNode)
+        setup_params = {}
+        for key in list(kwargs.keys()):
+            if key.startswith('_setup_'):
+                setup_params[key] = kwargs.pop(key)
 
         super().__init__(
             name=name,
@@ -65,6 +76,10 @@ class BaseNode(NodeModel, ABC):
             category=category,
             **kwargs
         )
+
+        # Store setup parameters as instance attributes
+        for key, value in setup_params.items():
+            object.__setattr__(self, key, value)
 
         # Call setup method for subclasses to define their interface
         self.setup()

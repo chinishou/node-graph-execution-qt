@@ -25,8 +25,8 @@ class PythonNode(BaseNode):
             return {'result': a + b}
     """
 
-    category = "Scripting"
-    description = "Execute custom Python code"
+    category: str = "Scripting"
+    description: str = "Execute custom Python code"
 
     def __init__(self, name: str = "Python", **kwargs):
         super().__init__(name=name, node_type="PythonNode", **kwargs)

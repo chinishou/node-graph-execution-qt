@@ -6,11 +6,10 @@ Represents an input or output port on a node (connector in Houdini terminology).
 Connectors allow data to flow between nodes.
 """
 
-from dataclasses import dataclass, field, asdict
-from typing import Optional, Any, Dict, List, TYPE_CHECKING
+from typing import Optional, Any, List, TYPE_CHECKING
 from enum import Enum
+from pydantic import BaseModel, Field, PrivateAttr
 from ..signals import Signal
-from ..data_types import DataTypeRegistry
 
 if TYPE_CHECKING:
     from .node_model import NodeModel
@@ -22,8 +21,7 @@ class ConnectorType(Enum):
     OUTPUT = "output"
 
 
-@dataclass
-class ConnectorModel:
+class ConnectorModel(BaseModel):
     """
     Data model for a node connector (port).
 
@@ -45,27 +43,33 @@ class ConnectorModel:
     connector_type: ConnectorType
     data_type: str = "any"
     display_name: Optional[str] = None
-    node: Optional["NodeModel"] = None
+    node: Optional["NodeModel"] = Field(default=None, exclude=True)  # Exclude from serialization
     default_value: Any = None
     description: str = ""
 
-    # Non-serializable fields
-    _connections: List["ConnectorModel"] = field(init=False, repr=False, compare=False, default_factory=list)
-    _cached_value: Any = field(init=False, repr=False, compare=False, default=None)
-    _is_dirty: bool = field(init=False, repr=False, compare=False, default=True)
-    connected_changed: Signal = field(init=False, repr=False, compare=False)
+    # Private attributes (using PrivateAttr for Pydantic V2)
+    _connections: List["ConnectorModel"] = PrivateAttr(default_factory=list)
+    _cached_value: Any = PrivateAttr(default=None)
+    _is_dirty: bool = PrivateAttr(default=True)
+    _connected_changed: Signal = PrivateAttr(default=None)
 
-    def __post_init__(self):
-        """Initialize non-dataclass fields after construction."""
+    model_config = {
+        "arbitrary_types_allowed": True,  # Allow Signal and NodeModel types
+    }
+
+    def model_post_init(self, __context) -> None:
+        """Initialize fields after Pydantic validation."""
         # Set display name
         if self.display_name is None:
             self.display_name = self.name
 
-        # Initialize lists and signals
-        self._connections = []
-        self._cached_value = None
-        self._is_dirty = True
-        self.connected_changed = Signal()
+        # Initialize signal
+        self._connected_changed = Signal()
+
+    @property
+    def connected_changed(self) -> Signal:
+        """Get connected_changed signal (compatibility property)."""
+        return self._connected_changed
 
     def is_input(self) -> bool:
         """Check if this is an input connector."""
@@ -107,8 +111,8 @@ class ConnectorModel:
             self.mark_dirty()
 
             # Emit signal
-            self.connected_changed.emit()
-            other.connected_changed.emit()
+            self._connected_changed.emit()
+            other._connected_changed.emit()
 
             return True
 
@@ -135,8 +139,8 @@ class ConnectorModel:
             self.mark_dirty()
 
             # Emit signal
-            self.connected_changed.emit()
-            other.connected_changed.emit()
+            self._connected_changed.emit()
+            other._connected_changed.emit()
 
             return True
 
@@ -177,21 +181,13 @@ class ConnectorModel:
         if self.connector_type == other.connector_type:
             return False
 
-        # Check data type compatibility using DataTypeRegistry
-        if self.data_type != "any" and other.data_type != "any":
-            # For strict compatibility, types must match or be convertible
-            if self.data_type != other.data_type:
-                # Check if conversion is possible
-                if self.is_input():
-                    # Check if output type can convert to input type
-                    if not DataTypeRegistry.can_convert(other.data_type, self.data_type):
-                        return False
-                else:
-                    # Check if input type can convert to output type
-                    if not DataTypeRegistry.can_convert(self.data_type, other.data_type):
-                        return False
+        # Check data type compatibility (strict)
+        # "any" type is compatible with everything
+        if self.data_type == "any" or other.data_type == "any":
+            return True
 
-        return True
+        # Other types must match exactly
+        return self.data_type == other.data_type
 
     def mark_dirty(self) -> None:
         """Mark this connector (and downstream) as dirty."""
@@ -229,23 +225,19 @@ class ConnectorModel:
                 # No connection: return default value
                 return self.default_value
 
-    def serialize(self) -> Dict[str, Any]:
+    def serialize(self) -> dict:
         """
         Serialize connector to dictionary.
 
-        Manually creates dictionary to avoid serializing Signal objects.
+        Uses Pydantic's model_dump() which automatically excludes non-serializable fields.
         """
-        return {
-            "name": self.name,
-            "connector_type": self.connector_type.value,
-            "data_type": self.data_type,
-            "display_name": self.display_name,
-            "default_value": self.default_value,
-            "description": self.description,
-        }
+        data = self.model_dump(mode="json")
+        # Convert ConnectorType enum to string
+        data["connector_type"] = self.connector_type.value
+        return data
 
     @classmethod
-    def deserialize(cls, data: Dict[str, Any], node: Optional["NodeModel"] = None) -> "ConnectorModel":
+    def deserialize(cls, data: dict, node: Optional["NodeModel"] = None) -> "ConnectorModel":
         """
         Deserialize connector from dictionary.
 
@@ -256,15 +248,15 @@ class ConnectorModel:
         Returns:
             ConnectorModel instance
         """
-        # Convert connector_type string to enum
-        connector_type = ConnectorType(data.get("connector_type", "input"))
+        # Convert connector_type string to enum if needed
+        if "connector_type" in data and isinstance(data["connector_type"], str):
+            data["connector_type"] = ConnectorType(data["connector_type"])
 
-        # Create connector (filtering to only dataclass fields)
-        connector_data = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
-        connector_data["connector_type"] = connector_type
-        connector_data["node"] = node
+        # Create connector using Pydantic's model_validate
+        connector = cls.model_validate(data)
+        connector.node = node
 
-        return cls(**connector_data)
+        return connector
 
     def __repr__(self) -> str:
         conn_type = "INPUT" if self.is_input() else "OUTPUT"
