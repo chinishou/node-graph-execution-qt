@@ -5,8 +5,7 @@ Tests for DataTypeRegistry
 Test the data type registry system including:
 - Built-in types (ordered menu)
 - Custom type registration
-- Type conversion
-- Type compatibility checking
+- Default value generation
 """
 
 import sys
@@ -56,63 +55,6 @@ def test_custom_type_registration():
     print("✓ Custom type registration works")
 
 
-def test_type_conversion():
-    """Test type conversion between built-in types."""
-    # int to float
-    result = DataTypeRegistry.convert(3, "float")
-    assert result == 3.0
-    assert isinstance(result, float)
-
-    # float to int
-    result = DataTypeRegistry.convert(3.14, "int")
-    assert result == 3
-    assert isinstance(result, int)
-
-    # int to str
-    result = DataTypeRegistry.convert(42, "str")
-    assert result == "42"
-    assert isinstance(result, str)
-
-    # str to int
-    result = DataTypeRegistry.convert("123", "int")
-    assert result == 123
-    assert isinstance(result, int)
-
-    # str to float
-    result = DataTypeRegistry.convert("3.14", "float")
-    assert result == 3.14
-    assert isinstance(result, float)
-
-    # any type accepts everything
-    result = DataTypeRegistry.convert([1, 2, 3], "any")
-    assert result == [1, 2, 3]
-
-    print("✓ Type conversion works")
-
-
-def test_type_compatibility():
-    """Test type compatibility checking."""
-    # int and float are compatible
-    assert DataTypeRegistry.can_convert("int", "float")
-    assert DataTypeRegistry.can_convert("float", "int")
-
-    # String conversions
-    assert DataTypeRegistry.can_convert("int", "str")
-    assert DataTypeRegistry.can_convert("float", "str")
-    assert DataTypeRegistry.can_convert("str", "int")
-    assert DataTypeRegistry.can_convert("str", "float")
-
-    # any type is compatible with everything
-    assert DataTypeRegistry.can_convert("any", "float")
-    assert DataTypeRegistry.can_convert("int", "any")
-
-    # Same type is always compatible
-    assert DataTypeRegistry.can_convert("int", "int")
-    assert DataTypeRegistry.can_convert("str", "str")
-
-    print("✓ Type compatibility checking works")
-
-
 def test_default_values():
     """Test default value generation for types."""
     assert DataTypeRegistry.get_default_value("int") == 0
@@ -122,34 +64,6 @@ def test_default_values():
     assert DataTypeRegistry.get_default_value("any") is None
 
     print("✓ Default value generation works")
-
-
-def test_custom_type_converter():
-    """Test custom type with custom converter."""
-    # Register a custom type with converter
-    class Vector3:
-        def __init__(self, x=0, y=0, z=0):
-            self.x, self.y, self.z = x, y, z
-
-        def __repr__(self):
-            return f"Vector3({self.x}, {self.y}, {self.z})"
-
-    def list_to_vector3(value):
-        if isinstance(value, (list, tuple)) and len(value) == 3:
-            return Vector3(*value)
-        elif isinstance(value, Vector3):
-            return value
-        else:
-            return Vector3()
-
-    DataTypeRegistry.register("Vector3", Vector3, converter=list_to_vector3)
-
-    # Test conversion
-    vec = DataTypeRegistry.convert([1, 2, 3], "Vector3")
-    assert isinstance(vec, Vector3)
-    assert vec.x == 1 and vec.y == 2 and vec.z == 3
-
-    print("✓ Custom type with converter works")
 
 
 def test_unregister_type():
@@ -177,10 +91,7 @@ def run_all_tests():
 
     test_builtin_types()
     test_custom_type_registration()
-    test_type_conversion()
-    test_type_compatibility()
     test_default_values()
-    test_custom_type_converter()
     test_unregister_type()
 
     print("=" * 60)

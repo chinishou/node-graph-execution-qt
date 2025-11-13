@@ -10,7 +10,6 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional, Any, Dict, List, TYPE_CHECKING
 from enum import Enum
 from ..signals import Signal
-from ..data_types import DataTypeRegistry
 
 if TYPE_CHECKING:
     from .node_model import NodeModel
@@ -177,21 +176,13 @@ class ConnectorModel:
         if self.connector_type == other.connector_type:
             return False
 
-        # Check data type compatibility using DataTypeRegistry
-        if self.data_type != "any" and other.data_type != "any":
-            # For strict compatibility, types must match or be convertible
-            if self.data_type != other.data_type:
-                # Check if conversion is possible
-                if self.is_input():
-                    # Check if output type can convert to input type
-                    if not DataTypeRegistry.can_convert(other.data_type, self.data_type):
-                        return False
-                else:
-                    # Check if input type can convert to output type
-                    if not DataTypeRegistry.can_convert(self.data_type, other.data_type):
-                        return False
+        # Check data type compatibility (strict)
+        # "any" type is compatible with everything
+        if self.data_type == "any" or other.data_type == "any":
+            return True
 
-        return True
+        # Other types must match exactly
+        return self.data_type == other.data_type
 
     def mark_dirty(self) -> None:
         """Mark this connector (and downstream) as dirty."""

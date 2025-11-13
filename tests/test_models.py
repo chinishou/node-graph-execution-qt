@@ -142,40 +142,34 @@ def test_connector_connections():
 
 
 def test_connector_type_checking():
-    """Test connector type compatibility checking."""
+    """Test connector type compatibility checking (strict)."""
     node1 = NodeModel(name="Node1")
     node2 = NodeModel(name="Node2")
 
-    # Compatible types
+    # Same types are compatible
     float_out = node1.add_output("float_out", data_type="float")
     float_in = node2.add_input("float_in", data_type="float")
 
     success = float_out.connect_to(float_in)
     assert success == True
 
-    # Incompatible types (if conversion not available)
+    # Different types are incompatible (strict type checking)
     node3 = NodeModel(name="Node3")
     node4 = NodeModel(name="Node4")
 
-    # Register a custom type with no conversion
-    class CustomType:
-        pass
+    int_out = node3.add_output("int_out", data_type="int")
+    float_in2 = node4.add_input("float_in", data_type="float")
 
-    DataTypeRegistry.register("CustomType", CustomType)
-
-    custom_out = node3.add_output("custom_out", data_type="CustomType")
-    int_in = node4.add_input("int_in", data_type="int")
-
-    # This should fail (no conversion rule)
-    success = custom_out.connect_to(int_in)
+    # This should fail (int != float)
+    success = int_out.connect_to(float_in2)
     assert success == False
 
-    # Any type should be compatible with everything
+    # "any" type is compatible with everything
     any_out = node1.add_output("any_out", data_type="any")
-    success = any_out.connect_to(int_in)
+    success = any_out.connect_to(float_in2)
     assert success == True
 
-    print("✓ Connector type checking works")
+    print("✓ Connector type checking works (strict)")
 
 
 def test_connector_single_input_connection():

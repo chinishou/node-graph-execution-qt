@@ -73,12 +73,22 @@ class ParameterModel:
             value: New value
             emit_signal: Whether to emit value_changed signal
         """
-        # Type conversion using DataTypeRegistry
-        try:
-            converted_value = DataTypeRegistry.convert(value, self.data_type)
-        except (ValueError, KeyError):
-            # If conversion fails, use value as-is
-            converted_value = value
+        # Simple type conversion for built-in types
+        converted_value = value
+        if self.data_type == "int" and not isinstance(value, int):
+            try:
+                converted_value = int(value)
+            except (ValueError, TypeError):
+                converted_value = value
+        elif self.data_type == "float" and not isinstance(value, float):
+            try:
+                converted_value = float(value)
+            except (ValueError, TypeError):
+                converted_value = value
+        elif self.data_type == "str" and not isinstance(value, str):
+            converted_value = str(value)
+        elif self.data_type == "bool" and not isinstance(value, bool):
+            converted_value = bool(value)
 
         # Clamp to min/max if applicable
         if self.min_value is not None and isinstance(converted_value, (int, float)):
