@@ -38,8 +38,8 @@ class VariableNode(BaseNode):
         var.output("out").connect_to(add.input("a"))
     """
 
-    category = "Variables"
-    description = "Output a constant value"
+    category: str = "Variables"
+    description: str = "Output a constant value"
 
     def __init__(
         self,
@@ -57,8 +57,9 @@ class VariableNode(BaseNode):
             name: Node name
             **kwargs: Additional arguments passed to BaseNode
         """
-        self._data_type = data_type
-        self._default_value = default_value
+        # Pass data_type and default_value through kwargs
+        kwargs['_setup_data_type'] = data_type
+        kwargs['_setup_default_value'] = default_value
 
         super().__init__(
             name=name,
@@ -68,23 +69,27 @@ class VariableNode(BaseNode):
 
     def setup(self) -> None:
         """Setup variable node interface."""
+        # Get values from instance attributes (set by BaseNode.__init__)
+        data_type = getattr(self, '_setup_data_type', 'float')
+        default_value = getattr(self, '_setup_default_value', None)
+
         # Get default value from DataTypeRegistry if not provided
-        if self._default_value is None:
-            self._default_value = DataTypeRegistry.get_default_value(self._data_type)
+        if default_value is None:
+            default_value = DataTypeRegistry.get_default_value(data_type)
 
         # Add parameter for the value
         self.add_parameter(
             "value",
-            data_type=self._data_type,
-            default_value=self._default_value,
+            data_type=data_type,
+            default_value=default_value,
             display_name="Value",
-            description=f"The {self._data_type} value to output"
+            description=f"The {data_type} value to output"
         )
 
         # Add output (same type as parameter)
         self.add_output(
             "out",
-            data_type=self._data_type,
+            data_type=data_type,
             display_name="Output",
             description="Outputs the parameter value"
         )

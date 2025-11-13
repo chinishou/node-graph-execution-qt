@@ -12,8 +12,8 @@ from ..base import BaseNode
 class AddNode(BaseNode):
     """Node that adds two numbers."""
 
-    category = "Math"
-    description = "Add two numbers"
+    category: str = "Math"
+    description: str = "Add two numbers"
 
     def __init__(self, **kwargs):
         super().__init__(name="Add", node_type="AddNode", **kwargs)
@@ -34,8 +34,8 @@ class AddNode(BaseNode):
 class SubtractNode(BaseNode):
     """Node that subtracts two numbers."""
 
-    category = "Math"
-    description = "Subtract two numbers"
+    category: str = "Math"
+    description: str = "Subtract two numbers"
 
     def __init__(self, **kwargs):
         super().__init__(name="Subtract", node_type="SubtractNode", **kwargs)
@@ -56,8 +56,8 @@ class SubtractNode(BaseNode):
 class MultiplyNode(BaseNode):
     """Node that multiplies two numbers."""
 
-    category = "Math"
-    description = "Multiply two numbers"
+    category: str = "Math"
+    description: str = "Multiply two numbers"
 
     def __init__(self, **kwargs):
         super().__init__(name="Multiply", node_type="MultiplyNode", **kwargs)
@@ -78,8 +78,8 @@ class MultiplyNode(BaseNode):
 class DivideNode(BaseNode):
     """Node that divides two numbers."""
 
-    category = "Math"
-    description = "Divide two numbers"
+    category: str = "Math"
+    description: str = "Divide two numbers"
 
     def __init__(self, **kwargs):
         super().__init__(name="Divide", node_type="DivideNode", **kwargs)
