@@ -25,8 +25,8 @@ class SubnetNode(BaseNode):
     that connect to the subnet node's external interface.
     """
 
-    category = "Network"
-    description = "Container for a sub-network of nodes"
+    category: str = "Network"
+    description: str = "Container for a sub-network of nodes"
 
     def __init__(self, name: str = "Subnet", **kwargs):
         # Create internal network

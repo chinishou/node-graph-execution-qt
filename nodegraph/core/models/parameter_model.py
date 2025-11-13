@@ -6,14 +6,13 @@ Represents a parameter (parm in Houdini terminology) on a node.
 Parameters are editable properties that control node behavior.
 """
 
-from dataclasses import dataclass, field, asdict
-from typing import Any, Optional, Dict, List
+from typing import Any, Optional, List
+from pydantic import BaseModel, Field, PrivateAttr
 from ..signals import Signal
 from ..data_types import DataTypeRegistry
 
 
-@dataclass
-class ParameterModel:
+class ParameterModel(BaseModel):
     """
     Data model for a node parameter.
 
@@ -38,15 +37,19 @@ class ParameterModel:
     display_name: Optional[str] = None
     min_value: Optional[float] = None
     max_value: Optional[float] = None
-    options: List[Any] = field(default_factory=list)
+    options: List[Any] = Field(default_factory=list)
     description: str = ""
 
-    # Non-serializable fields (excluded from dataclass operations)
-    _value: Any = field(init=False, repr=False, compare=False)
-    value_changed: Signal = field(init=False, repr=False, compare=False)
+    # Private attributes (using PrivateAttr for Pydantic V2)
+    _value: Any = PrivateAttr(default=None)
+    _value_changed: Signal = PrivateAttr(default=None)
 
-    def __post_init__(self):
-        """Initialize non-dataclass fields after construction."""
+    model_config = {
+        "arbitrary_types_allowed": True,  # Allow Signal type
+    }
+
+    def model_post_init(self, __context) -> None:
+        """Initialize fields after Pydantic validation."""
         # Set display name
         if self.display_name is None:
             self.display_name = self.name
@@ -59,7 +62,12 @@ class ParameterModel:
             self._value = DataTypeRegistry.get_default_value(self.data_type)
 
         # Initialize signal
-        self.value_changed = Signal()
+        self._value_changed = Signal()
+
+    @property
+    def value_changed(self) -> Signal:
+        """Get value_changed signal (compatibility property)."""
+        return self._value_changed
 
     def value(self) -> Any:
         """Get current parameter value."""
@@ -73,12 +81,22 @@ class ParameterModel:
             value: New value
             emit_signal: Whether to emit value_changed signal
         """
-        # Type conversion using DataTypeRegistry
-        try:
-            converted_value = DataTypeRegistry.convert(value, self.data_type)
-        except (ValueError, KeyError):
-            # If conversion fails, use value as-is
-            converted_value = value
+        # Simple type conversion for built-in types
+        converted_value = value
+        if self.data_type == "int" and not isinstance(value, int):
+            try:
+                converted_value = int(value)
+            except (ValueError, TypeError):
+                converted_value = value
+        elif self.data_type == "float" and not isinstance(value, float):
+            try:
+                converted_value = float(value)
+            except (ValueError, TypeError):
+                converted_value = value
+        elif self.data_type == "str" and not isinstance(value, str):
+            converted_value = str(value)
+        elif self.data_type == "bool" and not isinstance(value, bool):
+            converted_value = bool(value)
 
         # Clamp to min/max if applicable
         if self.min_value is not None and isinstance(converted_value, (int, float)):
@@ -92,7 +110,7 @@ class ParameterModel:
 
         # Emit signal if value actually changed
         if emit_signal and old_value != self._value:
-            self.value_changed.emit(self._value)
+            self._value_changed.emit(self._value)
 
     def reset_to_default(self) -> None:
         """Reset parameter to its default value."""
@@ -101,26 +119,18 @@ class ParameterModel:
         else:
             self.set_value(DataTypeRegistry.get_default_value(self.data_type))
 
-    def serialize(self) -> Dict[str, Any]:
+    def serialize(self) -> dict:
         """
         Serialize parameter to dictionary.
 
-        Manually creates dictionary to avoid serializing Signal objects.
+        Uses Pydantic's model_dump() with custom handling for _value.
         """
-        return {
-            "name": self.name,
-            "data_type": self.data_type,
-            "default_value": self.default_value,
-            "display_name": self.display_name,
-            "min_value": self.min_value,
-            "max_value": self.max_value,
-            "options": self.options,
-            "description": self.description,
-            "value": self._value,
-        }
+        data = self.model_dump(exclude={"value_changed"})
+        data["value"] = self._value
+        return data
 
     @classmethod
-    def deserialize(cls, data: Dict[str, Any]) -> "ParameterModel":
+    def deserialize(cls, data: dict) -> "ParameterModel":
         """
         Deserialize parameter from dictionary.
 
@@ -130,11 +140,11 @@ class ParameterModel:
         Returns:
             ParameterModel instance
         """
-        # Extract value separately (not a constructor parameter)
+        # Extract value separately (not a model field)
         value = data.pop("value", None)
 
-        # Create parameter (dataclass will handle most fields)
-        param = cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+        # Create parameter using Pydantic's model_validate
+        param = cls.model_validate(data)
 
         # Set value without emitting signal
         if value is not None:

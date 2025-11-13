@@ -6,9 +6,9 @@ Represents a node in the network graph.
 Nodes are the fundamental building blocks that process data.
 """
 
-from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple
+from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple
 from uuid import uuid4
+from pydantic import BaseModel, Field, PrivateAttr
 from .parameter_model import ParameterModel
 from .connector_model import ConnectorModel, ConnectorType
 from ..signals import Signal
@@ -17,8 +17,7 @@ if TYPE_CHECKING:
     from .network_model import NetworkModel
 
 
-@dataclass
-class NodeModel:
+class NodeModel(BaseModel):
     """
     Data model for a node.
 
@@ -42,43 +41,49 @@ class NodeModel:
     name: str = "Node"
     node_type: str = "BaseNode"
     category: str = "General"
-    network: Optional["NetworkModel"] = None
-    id: str = field(default_factory=lambda: str(uuid4()))
+    network: Optional["NetworkModel"] = Field(default=None, exclude=True)
+    id: str = Field(default_factory=lambda: str(uuid4()))
     color: Optional[str] = None
+    enable_caching: bool = False  # Enable dirty state tracking and output caching
 
-    # Position (stored as tuple for easy serialization)
-    _position: Tuple[float, float] = field(default=(0.0, 0.0), repr=False)
+    # Private attributes (using PrivateAttr for Pydantic V2)
+    _position: Tuple[float, float] = PrivateAttr(default=(0.0, 0.0))
+    _parameters: Dict[str, ParameterModel] = PrivateAttr(default_factory=dict)
+    _inputs: Dict[str, ConnectorModel] = PrivateAttr(default_factory=dict)
+    _outputs: Dict[str, ConnectorModel] = PrivateAttr(default_factory=dict)
+    _is_dirty: bool = PrivateAttr(default=True)
+    _is_cooking: bool = PrivateAttr(default=False)
+    _cached_outputs: Dict[str, Any] = PrivateAttr(default_factory=dict)
+    _cook_error: Optional[str] = PrivateAttr(default=None)
+    _dirty_changed: Signal = PrivateAttr(default=None)
+    _position_changed: Signal = PrivateAttr(default=None)
+    _parameter_changed: Signal = PrivateAttr(default=None)
 
-    # Node components (non-serializable, will be handled separately)
-    _parameters: Dict[str, ParameterModel] = field(init=False, repr=False, default_factory=dict)
-    _inputs: Dict[str, ConnectorModel] = field(init=False, repr=False, default_factory=dict)
-    _outputs: Dict[str, ConnectorModel] = field(init=False, repr=False, default_factory=dict)
+    model_config = {
+        "arbitrary_types_allowed": True,  # Allow Signal and custom types
+    }
 
-    # Execution state
-    _is_dirty: bool = field(init=False, repr=False, default=True)
-    _is_cooking: bool = field(init=False, repr=False, default=False)
-    _cached_outputs: Dict[str, Any] = field(init=False, repr=False, default_factory=dict)
-    _cook_error: Optional[str] = field(init=False, repr=False, default=None)
-
-    # Signals
-    dirty_changed: Signal = field(init=False, repr=False, compare=False)
-    position_changed: Signal = field(init=False, repr=False, compare=False)
-    parameter_changed: Signal = field(init=False, repr=False, compare=False)
-
-    def __post_init__(self):
-        """Initialize non-dataclass fields after construction."""
-        self._parameters = {}
-        self._inputs = {}
-        self._outputs = {}
-        self._is_dirty = True
-        self._is_cooking = False
-        self._cached_outputs = {}
-        self._cook_error = None
-
+    def model_post_init(self, __context) -> None:
+        """Initialize fields after Pydantic validation."""
         # Initialize signals
-        self.dirty_changed = Signal()
-        self.position_changed = Signal()
-        self.parameter_changed = Signal()
+        self._dirty_changed = Signal()
+        self._position_changed = Signal()
+        self._parameter_changed = Signal()
+
+    @property
+    def dirty_changed(self) -> Signal:
+        """Get dirty_changed signal (compatibility property)."""
+        return self._dirty_changed
+
+    @property
+    def position_changed(self) -> Signal:
+        """Get position_changed signal (compatibility property)."""
+        return self._position_changed
+
+    @property
+    def parameter_changed(self) -> Signal:
+        """Get parameter_changed signal (compatibility property)."""
+        return self._parameter_changed
 
     def position(self) -> Tuple[float, float]:
         """Get node position."""
@@ -90,7 +95,7 @@ class NodeModel:
         self._position = (x, y)
 
         if emit_signal and old_pos != self._position:
-            self.position_changed.emit(x, y)
+            self._position_changed.emit(x, y)
 
     # Parameter management
 
@@ -126,7 +131,7 @@ class NodeModel:
     def _on_parameter_changed(self, value: Any) -> None:
         """Handle parameter value changes."""
         self.mark_dirty()
-        self.parameter_changed.emit()
+        self._parameter_changed.emit()
 
     # Connector management
 
@@ -191,6 +196,9 @@ class NodeModel:
 
     def mark_dirty(self) -> None:
         """Mark this node as dirty (needs recomputation)."""
+        if not self.enable_caching:
+            return  # Skip dirty state tracking when caching is disabled
+
         if not self._is_dirty:
             self._is_dirty = True
             self._cached_outputs.clear()
@@ -200,10 +208,12 @@ class NodeModel:
             for output in self._outputs.values():
                 output.mark_dirty()
 
-            self.dirty_changed.emit(True)
+            self._dirty_changed.emit(True)
 
     def is_dirty(self) -> bool:
         """Check if node needs recomputation."""
+        if not self.enable_caching:
+            return True  # Always dirty when caching is disabled
         return self._is_dirty
 
     def cook(self) -> bool:
@@ -213,8 +223,10 @@ class NodeModel:
         Returns:
             True if cooking was successful, False if error occurred
         """
-        if not self._is_dirty and self._cached_outputs:
-            return True  # Already up-to-date
+        # Skip cache check if caching is disabled (always recompute)
+        if self.enable_caching:
+            if not self._is_dirty and self._cached_outputs:
+                return True  # Already up-to-date
 
         if self._is_cooking:
             return False  # Prevent recursion
@@ -237,9 +249,10 @@ class NodeModel:
             else:
                 self._cached_outputs = {}
 
-            # Mark as clean
-            self._is_dirty = False
-            self.dirty_changed.emit(False)
+            # Mark as clean (only if caching is enabled)
+            if self.enable_caching:
+                self._is_dirty = False
+                self._dirty_changed.emit(False)
 
             return True
 
@@ -278,17 +291,13 @@ class NodeModel:
 
     # Serialization
 
-    def serialize(self) -> Dict[str, Any]:
-        """Serialize node to dictionary."""
-        # Use dataclass asdict for basic fields
-        data = {
-            "id": self.id,
-            "name": self.name,
-            "node_type": self.node_type,
-            "category": self.category,
-            "position": self._position,
-            "color": self.color,
-        }
+    def serialize(self) -> dict:
+        """Serialize node to dictionary using Pydantic."""
+        # Use Pydantic's model_dump for basic fields (private attrs are auto-excluded)
+        data = self.model_dump()
+
+        # Add position
+        data["position"] = self._position
 
         # Serialize parameters
         data["parameters"] = {
@@ -310,20 +319,22 @@ class NodeModel:
         return data
 
     @classmethod
-    def deserialize(cls, data: Dict[str, Any], network: Optional["NetworkModel"] = None) -> "NodeModel":
-        """Deserialize node from dictionary."""
-        # Create node with basic fields
-        node = cls(
-            name=data.get("name", "Node"),
-            node_type=data.get("node_type", "BaseNode"),
-            category=data.get("category", "General"),
-            network=network,
-            id=data.get("id", str(uuid4())),
-            color=data.get("color"),
-        )
+    def deserialize(cls, data: dict, network: Optional["NetworkModel"] = None) -> "NodeModel":
+        """Deserialize node from dictionary using Pydantic."""
+        # Create node with basic fields using Pydantic
+        node_data = {
+            "name": data.get("name", "Node"),
+            "node_type": data.get("node_type", "BaseNode"),
+            "category": data.get("category", "General"),
+            "id": data.get("id", str(uuid4())),
+            "color": data.get("color"),
+        }
 
-        # Set position
-        node.set_position(*data.get("position", (0, 0)), emit_signal=False)
+        node = cls.model_validate(node_data)
+        node.network = network
+
+        # Set position (private attribute)
+        node._position = data.get("position", (0.0, 0.0))
 
         # Deserialize parameters
         for name, param_data in data.get("parameters", {}).items():
