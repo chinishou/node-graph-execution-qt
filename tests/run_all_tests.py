@@ -19,6 +19,9 @@ import test_serialization
 import test_network
 import test_operators
 import test_signals
+import test_node_registry
+import test_json_serializer
+import test_python_exporter
 
 
 def main():
@@ -76,6 +79,27 @@ def main():
         print()
     except AssertionError as e:
         print(f"❌ Signal tests failed: {e}")
+        all_passed = False
+
+    try:
+        test_node_registry.run_all_tests()
+        print()
+    except AssertionError as e:
+        print(f"❌ NodeRegistry tests failed: {e}")
+        all_passed = False
+
+    try:
+        test_json_serializer.run_all_tests()
+        print()
+    except AssertionError as e:
+        print(f"❌ JSONSerializer tests failed: {e}")
+        all_passed = False
+
+    try:
+        test_python_exporter.run_all_tests()
+        print()
+    except AssertionError as e:
+        print(f"❌ PythonExporter tests failed: {e}")
         all_passed = False
 
     print("=" * 70)
