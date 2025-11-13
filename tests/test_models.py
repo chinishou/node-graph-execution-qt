@@ -252,8 +252,8 @@ def test_node_add_connectors():
 
 
 def test_node_dirty_state():
-    """Test node dirty state management."""
-    node = NodeModel(name="TestNode")
+    """Test node dirty state management (with caching enabled)."""
+    node = NodeModel(name="TestNode", enable_caching=True)
     param = node.add_parameter("value", data_type="float", default_value=1.0)
 
     # Initial state is dirty
@@ -271,7 +271,7 @@ def test_node_dirty_state():
     node.mark_dirty()
     assert node.is_dirty()
 
-    print("✓ Node dirty state management works (manual mark_dirty)")
+    print("✓ Node dirty state management works (manual mark_dirty, with caching enabled)")
 
 
 def run_all_tests():

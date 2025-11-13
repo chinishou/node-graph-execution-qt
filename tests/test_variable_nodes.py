@@ -174,9 +174,13 @@ def test_variable_node_no_inputs():
 
 
 def test_variable_node_dirty_state():
-    """Test dirty state propagation from variable nodes."""
+    """Test dirty state propagation from variable nodes (with caching enabled)."""
     var = FloatVariable(default_value=5.0)
     add = AddNode()
+
+    # Enable caching to test dirty state behavior
+    var.enable_caching = True
+    add.enable_caching = True
 
     # Connect
     var.output("out").connect_to(add.input("a"))
@@ -196,7 +200,7 @@ def test_variable_node_dirty_state():
     # Add node should also be dirty (downstream propagation works)
     assert add.is_dirty()
 
-    print("✓ Dirty state propagation from variable nodes works")
+    print("✓ Dirty state propagation from variable nodes works (with caching enabled)")
 
 
 def run_all_tests():

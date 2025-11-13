@@ -44,6 +44,7 @@ class NodeModel(BaseModel):
     network: Optional["NetworkModel"] = Field(default=None, exclude=True)
     id: str = Field(default_factory=lambda: str(uuid4()))
     color: Optional[str] = None
+    enable_caching: bool = False  # Enable dirty state tracking and output caching
 
     # Private attributes (using PrivateAttr for Pydantic V2)
     _position: Tuple[float, float] = PrivateAttr(default=(0.0, 0.0))
@@ -195,6 +196,9 @@ class NodeModel(BaseModel):
 
     def mark_dirty(self) -> None:
         """Mark this node as dirty (needs recomputation)."""
+        if not self.enable_caching:
+            return  # Skip dirty state tracking when caching is disabled
+
         if not self._is_dirty:
             self._is_dirty = True
             self._cached_outputs.clear()
@@ -208,6 +212,8 @@ class NodeModel(BaseModel):
 
     def is_dirty(self) -> bool:
         """Check if node needs recomputation."""
+        if not self.enable_caching:
+            return True  # Always dirty when caching is disabled
         return self._is_dirty
 
     def cook(self) -> bool:
@@ -217,8 +223,10 @@ class NodeModel(BaseModel):
         Returns:
             True if cooking was successful, False if error occurred
         """
-        if not self._is_dirty and self._cached_outputs:
-            return True  # Already up-to-date
+        # Skip cache check if caching is disabled (always recompute)
+        if self.enable_caching:
+            if not self._is_dirty and self._cached_outputs:
+                return True  # Already up-to-date
 
         if self._is_cooking:
             return False  # Prevent recursion
@@ -241,9 +249,10 @@ class NodeModel(BaseModel):
             else:
                 self._cached_outputs = {}
 
-            # Mark as clean
-            self._is_dirty = False
-            self._dirty_changed.emit(False)
+            # Mark as clean (only if caching is enabled)
+            if self.enable_caching:
+                self._is_dirty = False
+                self._dirty_changed.emit(False)
 
             return True
 
