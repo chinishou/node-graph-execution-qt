@@ -7,6 +7,7 @@ A network contains nodes and connections between them.
 """
 
 from typing import Dict, List, Optional, Tuple, Any
+from collections import defaultdict, deque
 from uuid import uuid4
 from .node_model import NodeModel
 from .connector_model import ConnectorModel
@@ -235,8 +236,14 @@ class NetworkModel:
         node_map = {node.id: node for node in nodes}
 
         # Build adjacency list and in-degree count using node IDs
-        in_degree = {node.id: 0 for node in nodes}
-        adjacency = {node.id: [] for node in nodes}
+        # Use defaultdict for cleaner initialization
+        in_degree = defaultdict(int)
+        adjacency = defaultdict(list)
+
+        # Initialize all node IDs (defaultdict won't create entries automatically for nodes with no edges)
+        for node in nodes:
+            in_degree[node.id]  # Touch to create entry
+            adjacency[node.id]  # Touch to create entry
 
         for node in nodes:
             for output_conn in node.outputs().values():
@@ -247,11 +254,12 @@ class NetworkModel:
                         in_degree[target_node.id] += 1
 
         # Queue of node IDs with no dependencies
-        queue = [node.id for node in nodes if in_degree[node.id] == 0]
+        # Use deque for O(1) popleft instead of O(n) pop(0)
+        queue = deque([node.id for node in nodes if in_degree[node.id] == 0])
         sorted_nodes = []
 
         while queue:
-            node_id = queue.pop(0)
+            node_id = queue.popleft()  # O(1) instead of pop(0) which is O(n)
             sorted_nodes.append(node_map[node_id])
 
             # Reduce in-degree for downstream nodes
