@@ -210,10 +210,66 @@ class NetworkModel:
     # Execution
 
     def cook_all(self) -> None:
-        """Cook all dirty nodes in the network."""
-        for node in self._nodes.values():
+        """
+        Cook all dirty nodes in the network in topological order.
+
+        This ensures that nodes are cooked in the correct dependency order,
+        avoiding redundant computation.
+        """
+        sorted_nodes = self.get_execution_order()
+        for node in sorted_nodes:
             if node.is_dirty():
                 node.cook()
+
+    def get_execution_order(self) -> List[NodeModel]:
+        """
+        Get nodes in topological execution order using Kahn's algorithm.
+
+        Returns nodes sorted such that dependencies are cooked before dependents.
+        Nodes with no dependencies come first.
+
+        Returns:
+            List of nodes in execution order
+        """
+        nodes = self.nodes()
+
+        if not nodes:
+            return []
+
+        # Build node ID to node mapping (since nodes are not hashable)
+        node_map = {node.id: node for node in nodes}
+
+        # Build adjacency list and in-degree count using node IDs
+        in_degree = {node.id: 0 for node in nodes}
+        adjacency = {node.id: [] for node in nodes}
+
+        for node in nodes:
+            for output_conn in node.outputs().values():
+                for connected_input in output_conn.connections():
+                    if connected_input.node:
+                        target_node = connected_input.node
+                        adjacency[node.id].append(target_node.id)
+                        in_degree[target_node.id] += 1
+
+        # Queue of node IDs with no dependencies
+        queue = [node.id for node in nodes if in_degree[node.id] == 0]
+        sorted_nodes = []
+
+        while queue:
+            node_id = queue.pop(0)
+            sorted_nodes.append(node_map[node_id])
+
+            # Reduce in-degree for downstream nodes
+            for neighbor_id in adjacency[node_id]:
+                in_degree[neighbor_id] -= 1
+                if in_degree[neighbor_id] == 0:
+                    queue.append(neighbor_id)
+
+        # Check for cycles
+        if len(sorted_nodes) != len(nodes):
+            print("Warning: Cyclic graph detected, some nodes may not be included in execution order")
+
+        return sorted_nodes
 
     def mark_all_dirty(self) -> None:
         """Mark all nodes as dirty."""
