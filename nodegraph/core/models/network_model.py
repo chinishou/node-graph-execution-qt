@@ -8,6 +8,7 @@ A network contains nodes and connections between them.
 
 from typing import Dict, List, Optional, Tuple, Any
 from uuid import uuid4
+from collections import defaultdict, deque
 from .node_model import NodeModel
 from .connector_model import ConnectorModel
 from ..signals import Signal
@@ -235,10 +236,15 @@ class NetworkModel:
         node_map = {node.id: node for node in nodes}
 
         # Build adjacency list and in-degree count using node IDs
-        in_degree = {node.id: 0 for node in nodes}
-        adjacency = {node.id: [] for node in nodes}
+        # Use defaultdict to simplify initialization
+        in_degree = defaultdict(int)
+        adjacency = defaultdict(list)
 
         for node in nodes:
+            # Initialize in_degree for all nodes (even if no dependencies)
+            if node.id not in in_degree:
+                in_degree[node.id] = 0
+
             for output_conn in node.outputs().values():
                 for connected_input in output_conn.connections():
                     if connected_input.node:
@@ -246,12 +252,12 @@ class NetworkModel:
                         adjacency[node.id].append(target_node.id)
                         in_degree[target_node.id] += 1
 
-        # Queue of node IDs with no dependencies
-        queue = [node.id for node in nodes if in_degree[node.id] == 0]
+        # Queue of node IDs with no dependencies (use deque for O(1) popleft)
+        queue = deque(node.id for node in nodes if in_degree[node.id] == 0)
         sorted_nodes = []
 
         while queue:
-            node_id = queue.pop(0)
+            node_id = queue.popleft()  # O(1) operation vs pop(0) which is O(n)
             sorted_nodes.append(node_map[node_id])
 
             # Reduce in-degree for downstream nodes
