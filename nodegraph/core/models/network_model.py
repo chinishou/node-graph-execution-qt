@@ -129,7 +129,7 @@ class NetworkModel:
             target_input: Name of the input connector
 
         Returns:
-            True if connection was successful
+            True if connection was successful, False if it would create a cycle
         """
         source_node = self.get_node(source_node_id)
         target_node = self.get_node(target_node_id)
@@ -146,6 +146,13 @@ class NetworkModel:
         success = source_connector.connect_to(target_connector)
 
         if success:
+            # Check if this connection creates a cycle
+            if self.has_cycle():
+                # Undo the connection
+                source_connector.disconnect_from(target_connector)
+                print(f"Warning: Connection from {source_node.name}.{source_output} to {target_node.name}.{target_input} would create a cycle")
+                return False
+
             self.connection_added.emit(source_connector, target_connector)
             self.network_changed.emit()
 
@@ -208,18 +215,6 @@ class NetworkModel:
         return conns
 
     # Execution
-
-    def cook_all(self) -> None:
-        """
-        Cook all dirty nodes in the network in topological order.
-
-        This ensures that nodes are cooked in the correct dependency order,
-        avoiding redundant computation.
-        """
-        sorted_nodes = self.get_execution_order()
-        for node in sorted_nodes:
-            if node.is_dirty():
-                node.cook()
 
     def get_execution_order(self) -> List[NodeModel]:
         """
@@ -293,27 +288,27 @@ class NetworkModel:
         for node_id in node_ids:
             self.remove_node(node_id)
 
-    def find_upstream_nodes(self, node: NodeModel) -> List[NodeModel]:
-        """Find all nodes upstream (feeding into) a given node."""
-        upstream = []
+    def find_parent_nodes(self, node: NodeModel) -> List[NodeModel]:
+        """Find all parent nodes (nodes feeding into this node)."""
+        parents = []
 
         for input_conn in node.inputs().values():
             for connected_output in input_conn.connections():
-                if connected_output.node and connected_output.node not in upstream:
-                    upstream.append(connected_output.node)
+                if connected_output.node and connected_output.node not in parents:
+                    parents.append(connected_output.node)
 
-        return upstream
+        return parents
 
-    def find_downstream_nodes(self, node: NodeModel) -> List[NodeModel]:
-        """Find all nodes downstream (fed by) a given node."""
-        downstream = []
+    def find_child_nodes(self, node: NodeModel) -> List[NodeModel]:
+        """Find all child nodes (nodes fed by this node)."""
+        children = []
 
         for output_conn in node.outputs().values():
             for connected_input in output_conn.connections():
-                if connected_input.node and connected_input.node not in downstream:
-                    downstream.append(connected_input.node)
+                if connected_input.node and connected_input.node not in children:
+                    children.append(connected_input.node)
 
-        return downstream
+        return children
 
     def has_cycle(self) -> bool:
         """Check if the network contains any cycles."""
@@ -325,11 +320,11 @@ class NetworkModel:
             rec_stack.add(node_id)
 
             node = self._nodes[node_id]
-            for downstream in self.find_downstream_nodes(node):
-                if downstream.id not in visited:
-                    if visit(downstream.id):
+            for child in self.find_child_nodes(node):
+                if child.id not in visited:
+                    if visit(child.id):
                         return True
-                elif downstream.id in rec_stack:
+                elif child.id in rec_stack:
                     return True
 
             rec_stack.remove(node_id)

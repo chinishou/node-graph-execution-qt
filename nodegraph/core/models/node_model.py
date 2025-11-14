@@ -192,6 +192,18 @@ class NodeModel(BaseModel):
         """Get all output connectors."""
         return self._outputs.copy()
 
+    def get_parent_nodes(self) -> list:
+        """Get all parent nodes (nodes feeding into this node)."""
+        if self.network is None:
+            return []
+        return self.network.find_parent_nodes(self)
+
+    def get_child_nodes(self) -> list:
+        """Get all child nodes (nodes fed by this node)."""
+        if self.network is None:
+            return []
+        return self.network.find_child_nodes(self)
+
     # Execution (cooking)
 
     def mark_dirty(self) -> None:
@@ -276,6 +288,70 @@ class NodeModel(BaseModel):
         """
         # Base implementation does nothing
         return {}
+
+    def execute(self) -> bool:
+        """
+        Execute this node by cooking all parent nodes first, then cooking this node.
+
+        This ensures all dependencies are up-to-date before cooking this node.
+        Uses topological sorting to determine the correct execution order.
+
+        Returns:
+            True if execution was successful, False if error occurred
+        """
+        if self.network is None:
+            # No network, just cook this node
+            return self.cook()
+
+        # Get all ancestor node IDs (all nodes this node depends on)
+        ancestor_ids = self._get_all_ancestors()
+
+        # Get execution order for the entire network
+        try:
+            all_nodes = self.network.get_execution_order()
+        except ValueError:
+            # Cycle detected
+            print(f"Error: Cannot execute node {self.name} due to cyclic dependencies")
+            return False
+
+        # Filter to only include ancestors and self, maintaining topological order
+        nodes_to_cook = [node for node in all_nodes if node.id in ancestor_ids or node.id == self.id]
+
+        # Cook nodes in order
+        # If caching is enabled, only cook dirty nodes
+        # If caching is disabled, cook all nodes
+        for node in nodes_to_cook:
+            if not self.enable_caching or node.is_dirty():
+                success = node.cook()
+                if not success:
+                    return False
+
+        return True
+
+    def _get_all_ancestors(self) -> set:
+        """
+        Get all ancestor node IDs (recursive parent traversal).
+
+        Returns:
+            Set of all ancestor node IDs
+        """
+        ancestor_ids = set()
+        to_visit = [self]
+        visited = set()
+
+        while to_visit:
+            current = to_visit.pop()
+            if current.id in visited:
+                continue
+            visited.add(current.id)
+
+            parents = current.get_parent_nodes()
+            for parent in parents:
+                if parent.id not in ancestor_ids:
+                    ancestor_ids.add(parent.id)
+                    to_visit.append(parent)
+
+        return ancestor_ids
 
     def get_output_value(self, output_name: str) -> Any:
         """Get the value of an output connector."""

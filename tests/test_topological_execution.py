@@ -91,8 +91,8 @@ def test_execution_order_diamond():
     print("✓ Diamond execution order correct")
 
 
-def test_cook_all_no_redundant_computation():
-    """Test that cook_all doesn't cause redundant computation with caching enabled."""
+def test_execute_no_redundant_computation():
+    """Test that execute doesn't cause redundant computation with caching enabled."""
     network = NetworkModel(name="RedundantTest")
 
     # Track compute calls
@@ -133,9 +133,9 @@ def test_cook_all_no_redundant_computation():
     for node in network.nodes():
         node.enable_caching = True
 
-    # Execute
+    # Execute the final node (Add3)
     compute_calls.clear()
-    network.cook_all()
+    add3.execute()
 
     # Each node should be computed exactly once
     assert compute_calls.get("Add1", 0) == 1, f"Add1 computed {compute_calls.get('Add1', 0)} times"
@@ -145,11 +145,11 @@ def test_cook_all_no_redundant_computation():
     total = sum(compute_calls.values())
     assert total == 3, f"Total computes: {total}, expected 3"
 
-    print("✓ No redundant computation in cook_all (with caching)")
+    print("✓ No redundant computation in execute (with caching)")
 
 
-def test_cook_all_result_correctness():
-    """Test that cook_all produces correct results."""
+def test_execute_result_correctness():
+    """Test that execute produces correct results."""
     network = NetworkModel(name="CorrectnessTest")
 
     # (A + B) * C
@@ -173,14 +173,14 @@ def test_cook_all_result_correctness():
     network.connect(add.id, "result", mul.id, "a")
     network.connect(var_c.id, "out", mul.id, "b")
 
-    # Cook all
-    network.cook_all()
+    # Execute the final node
+    mul.execute()
 
     # Verify result: (2 + 3) * 4 = 20
     result = mul.get_output_value("result")
     assert result == 20.0
 
-    print("✓ cook_all produces correct results")
+    print("✓ execute produces correct results")
 
 
 def test_execution_order_independent_nodes():
@@ -231,8 +231,8 @@ def test_execution_order_empty_network():
     print("✓ Empty network execution order correct")
 
 
-def test_cook_all_with_caching():
-    """Test cook_all with caching enabled."""
+def test_execute_with_caching():
+    """Test execute with caching enabled."""
     network = NetworkModel(name="CachingTest")
 
     var = FloatVariable(default_value=5.0, name="Var")
@@ -248,25 +248,25 @@ def test_cook_all_with_caching():
     for node in network.nodes():
         node.enable_caching = True
 
-    # First cook
-    network.cook_all()
+    # First execute
+    add.execute()
     result1 = add.get_output_value("result")
 
     # All nodes should be clean now
     assert not var.is_dirty()
     assert not add.is_dirty()
 
-    # Second cook (should use cache)
-    network.cook_all()
+    # Second execute (should use cache)
+    add.execute()
     result2 = add.get_output_value("result")
 
     assert result1 == result2
 
-    print("✓ cook_all with caching works")
+    print("✓ execute with caching works")
 
 
 def test_cycle_detection_simple():
-    """Test that simple cycles are detected."""
+    """Test that simple cycles are prevented during connect."""
     network = NetworkModel(name="CycleTest")
 
     add1 = AddNode()
@@ -277,23 +277,22 @@ def test_cycle_detection_simple():
     network.add_node(add1)
     network.add_node(add2)
 
-    # Create cycle: Add1 -> Add2 -> Add1
-    network.connect(add1.id, "result", add2.id, "a")
-    network.connect(add2.id, "result", add1.id, "a")
+    # Create first connection: Add1 -> Add2
+    success1 = network.connect(add1.id, "result", add2.id, "a")
+    assert success1, "First connection should succeed"
 
-    # Should raise ValueError
-    try:
-        network.get_execution_order()
-        assert False, "Should have raised ValueError for cycle"
-    except ValueError as e:
-        assert "Cyclic dependency" in str(e)
-        assert "Add1" in str(e) or "Add2" in str(e)
+    # Try to create cycle: Add2 -> Add1 (should fail)
+    success2 = network.connect(add2.id, "result", add1.id, "a")
+    assert not success2, "Second connection should fail (would create cycle)"
+
+    # Verify cycle was prevented
+    assert not add1.input("a").is_connected()
 
     print("✓ Simple cycle detection works")
 
 
-def test_cycle_detection_in_cook_all():
-    """Test that cook_all raises error on cyclic graph."""
+def test_cycle_detection_in_connect():
+    """Test that connect prevents cyclic connections."""
     network = NetworkModel(name="CycleTest")
 
     add1 = AddNode()
@@ -304,22 +303,22 @@ def test_cycle_detection_in_cook_all():
     network.add_node(add1)
     network.add_node(add2)
 
-    # Create cycle
-    network.connect(add1.id, "result", add2.id, "a")
-    network.connect(add2.id, "result", add1.id, "a")
+    # Create first connection
+    success1 = network.connect(add1.id, "result", add2.id, "a")
+    assert success1, "First connection should succeed"
 
-    # cook_all should raise error
-    try:
-        network.cook_all()
-        assert False, "Should have raised ValueError"
-    except ValueError as e:
-        assert "Cyclic dependency" in str(e)
+    # Try to create cycle (should fail)
+    success2 = network.connect(add2.id, "result", add1.id, "a")
+    assert not success2, "Second connection should fail (would create cycle)"
 
-    print("✓ cook_all cycle detection works")
+    # Verify the cycle-creating connection was not made
+    assert not add1.input("a").is_connected()
+
+    print("✓ connect cycle detection works")
 
 
 def test_cycle_detection_partial():
-    """Test cycle detection in partially cyclic graph."""
+    """Test that connect prevents cycles in partially connected graphs."""
     network = NetworkModel(name="PartialCycleTest")
 
     var = FloatVariable(default_value=1.0, name="Var")
@@ -335,21 +334,20 @@ def test_cycle_detection_partial():
     network.add_node(add2)
     network.add_node(add3)
 
-    # Var -> Add1 <-> Add2 (cycle)
-    #     -> Add3 (no cycle)
-    network.connect(var.id, "out", add1.id, "a")
-    network.connect(add1.id, "result", add2.id, "a")
-    network.connect(add2.id, "result", add1.id, "b")  # Cycle!
-    network.connect(var.id, "out", add3.id, "a")
+    # Var -> Add1 -> Add2
+    #     -> Add3
+    success1 = network.connect(var.id, "out", add1.id, "a")
+    success2 = network.connect(add1.id, "result", add2.id, "a")
+    success3 = network.connect(var.id, "out", add3.id, "a")
 
-    # Should detect cycle even though some nodes are fine
-    try:
-        network.get_execution_order()
-        assert False, "Should have raised ValueError"
-    except ValueError as e:
-        assert "Cyclic dependency" in str(e)
-        # Cycle should mention Add1 and Add2
-        assert "Add1" in str(e) or "Add2" in str(e)
+    assert success1 and success2 and success3, "Initial connections should succeed"
+
+    # Try to create cycle: Add2 -> Add1 (should fail)
+    success4 = network.connect(add2.id, "result", add1.id, "b")
+    assert not success4, "Cycle-creating connection should be prevented"
+
+    # Verify Add3 is still connected (not affected by cycle prevention)
+    assert add3.input("a").is_connected()
 
     print("✓ Partial cycle detection works")
 
@@ -366,14 +364,16 @@ def test_has_cycle_method():
 
     assert not network1.has_cycle()
 
-    # Test with cycle
+    # Test with cycle (need to bypass connect() cycle detection)
     network2 = NetworkModel(name="WithCycle")
     add1 = AddNode()
     add2 = AddNode()
     network2.add_node(add1)
     network2.add_node(add2)
-    network2.connect(add1.id, "result", add2.id, "a")
-    network2.connect(add2.id, "result", add1.id, "a")
+
+    # Create connections directly at connector level to bypass cycle detection
+    add1.output("result").connect_to(add2.input("a"))
+    add2.output("result").connect_to(add1.input("a"))
 
     assert network2.has_cycle()
 
@@ -388,13 +388,13 @@ def run_all_tests():
 
     test_execution_order_simple()
     test_execution_order_diamond()
-    test_cook_all_no_redundant_computation()
-    test_cook_all_result_correctness()
+    test_execute_no_redundant_computation()
+    test_execute_result_correctness()
     test_execution_order_independent_nodes()
     test_execution_order_empty_network()
-    test_cook_all_with_caching()
+    test_execute_with_caching()
     test_cycle_detection_simple()
-    test_cycle_detection_in_cook_all()
+    test_cycle_detection_in_connect()
     test_cycle_detection_partial()
     test_has_cycle_method()
 
