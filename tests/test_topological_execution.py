@@ -265,6 +265,121 @@ def test_cook_all_with_caching():
     print("✓ cook_all with caching works")
 
 
+def test_cycle_detection_simple():
+    """Test that simple cycles are detected."""
+    network = NetworkModel(name="CycleTest")
+
+    add1 = AddNode()
+    add1.name = "Add1"
+    add2 = AddNode()
+    add2.name = "Add2"
+
+    network.add_node(add1)
+    network.add_node(add2)
+
+    # Create cycle: Add1 -> Add2 -> Add1
+    network.connect(add1.id, "result", add2.id, "a")
+    network.connect(add2.id, "result", add1.id, "a")
+
+    # Should raise ValueError
+    try:
+        network.get_execution_order()
+        assert False, "Should have raised ValueError for cycle"
+    except ValueError as e:
+        assert "Cyclic dependency" in str(e)
+        assert "Add1" in str(e) or "Add2" in str(e)
+
+    print("✓ Simple cycle detection works")
+
+
+def test_cycle_detection_in_cook_all():
+    """Test that cook_all raises error on cyclic graph."""
+    network = NetworkModel(name="CycleTest")
+
+    add1 = AddNode()
+    add1.name = "Add1"
+    add2 = AddNode()
+    add2.name = "Add2"
+
+    network.add_node(add1)
+    network.add_node(add2)
+
+    # Create cycle
+    network.connect(add1.id, "result", add2.id, "a")
+    network.connect(add2.id, "result", add1.id, "a")
+
+    # cook_all should raise error
+    try:
+        network.cook_all()
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "Cyclic dependency" in str(e)
+
+    print("✓ cook_all cycle detection works")
+
+
+def test_cycle_detection_partial():
+    """Test cycle detection in partially cyclic graph."""
+    network = NetworkModel(name="PartialCycleTest")
+
+    var = FloatVariable(default_value=1.0, name="Var")
+    add1 = AddNode()
+    add1.name = "Add1"
+    add2 = AddNode()
+    add2.name = "Add2"
+    add3 = AddNode()
+    add3.name = "Add3"
+
+    network.add_node(var)
+    network.add_node(add1)
+    network.add_node(add2)
+    network.add_node(add3)
+
+    # Var -> Add1 <-> Add2 (cycle)
+    #     -> Add3 (no cycle)
+    network.connect(var.id, "out", add1.id, "a")
+    network.connect(add1.id, "result", add2.id, "a")
+    network.connect(add2.id, "result", add1.id, "b")  # Cycle!
+    network.connect(var.id, "out", add3.id, "a")
+
+    # Should detect cycle even though some nodes are fine
+    try:
+        network.get_execution_order()
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "Cyclic dependency" in str(e)
+        # Cycle should mention Add1 and Add2
+        assert "Add1" in str(e) or "Add2" in str(e)
+
+    print("✓ Partial cycle detection works")
+
+
+def test_has_cycle_method():
+    """Test the has_cycle() utility method."""
+    # Test without cycle
+    network1 = NetworkModel(name="NoCycle")
+    var = FloatVariable(default_value=1.0, name="Var")
+    add = AddNode()
+    network1.add_node(var)
+    network1.add_node(add)
+    network1.connect(var.id, "out", add.id, "a")
+
+    assert not network1.has_cycle()
+
+    # Test with cycle
+    network2 = NetworkModel(name="WithCycle")
+    add1 = AddNode()
+    add2 = AddNode()
+    network2.add_node(add1)
+    network2.add_node(add2)
+    network2.connect(add1.id, "result", add2.id, "a")
+    network2.connect(add2.id, "result", add1.id, "a")
+
+    assert network2.has_cycle()
+
+    print("✓ has_cycle() method works")
+
+
 def run_all_tests():
     """Run all topological execution tests."""
     print("=" * 60)
@@ -278,6 +393,10 @@ def run_all_tests():
     test_execution_order_independent_nodes()
     test_execution_order_empty_network()
     test_cook_all_with_caching()
+    test_cycle_detection_simple()
+    test_cycle_detection_in_cook_all()
+    test_cycle_detection_partial()
+    test_has_cycle_method()
 
     print("=" * 60)
     print("All topological execution tests passed!")

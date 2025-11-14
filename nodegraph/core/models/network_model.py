@@ -267,7 +267,16 @@ class NetworkModel:
 
         # Check for cycles
         if len(sorted_nodes) != len(nodes):
-            print("Warning: Cyclic graph detected, some nodes may not be included in execution order")
+            # Find nodes that are in the cycle
+            cyclic_nodes = [node for node in nodes if node not in sorted_nodes]
+            cyclic_names = [node.name for node in cyclic_nodes]
+
+            error_msg = (
+                f"Cyclic dependency detected in network '{self.name}'. "
+                f"Nodes in cycle: {', '.join(cyclic_names)}. "
+                f"Cannot determine execution order."
+            )
+            raise ValueError(error_msg)
 
         return sorted_nodes
 

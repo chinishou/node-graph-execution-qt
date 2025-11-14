@@ -65,10 +65,17 @@ class PythonExporter:
         lines.append('')
 
         # Get execution order from network (uses topological sort)
-        sorted_nodes = network.get_execution_order()
+        try:
+            sorted_nodes = network.get_execution_order()
+        except ValueError as e:
+            # Cyclic dependency detected
+            lines.append(f'    # Error: {str(e)}')
+            lines.append('    raise ValueError("Cannot export network with cyclic dependencies")')
+            lines.append('    return {}')
+            sorted_nodes = []
 
         if not sorted_nodes:
-            lines.append('    # Empty network or cyclic graph')
+            lines.append('    # Empty network')
             lines.append('    return {}')
         else:
             # Generate code for each node
