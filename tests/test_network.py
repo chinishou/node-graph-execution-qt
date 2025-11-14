@@ -112,8 +112,8 @@ def test_network_execution():
     network.connect(add.id, "result", mul.id, "a")
     network.connect(var_c.id, "out", mul.id, "b")
 
-    # Execute network (cook all nodes)
-    network.cook_all()
+    # Execute the final node (this will cook all parent nodes)
+    mul.execute()
 
     # Check result: (2 + 3) * 4 = 20
     result = mul.get_output_value("result")
@@ -122,8 +122,8 @@ def test_network_execution():
     print("✓ Network execution works")
 
 
-def test_upstream_downstream_nodes():
-    """Test finding upstream and downstream nodes."""
+def test_parent_child_nodes():
+    """Test finding parent and child nodes."""
     network = NetworkModel(name="TestNetwork")
 
     # Build linear network: A -> B -> C
@@ -138,25 +138,25 @@ def test_upstream_downstream_nodes():
     network.connect(var_a.id, "out", add.id, "a")
     network.connect(add.id, "result", mul.id, "a")
 
-    # Test upstream nodes
-    upstream_mul = network.find_upstream_nodes(mul)
-    assert len(upstream_mul) == 1
-    assert add in upstream_mul
+    # Test parent nodes
+    parents_mul = network.find_parent_nodes(mul)
+    assert len(parents_mul) == 1
+    assert add in parents_mul
 
-    upstream_add = network.find_upstream_nodes(add)
-    assert len(upstream_add) == 1
-    assert var_a in upstream_add
+    parents_add = network.find_parent_nodes(add)
+    assert len(parents_add) == 1
+    assert var_a in parents_add
 
-    # Test downstream nodes
-    downstream_var = network.find_downstream_nodes(var_a)
-    assert len(downstream_var) == 1
-    assert add in downstream_var
+    # Test child nodes
+    children_var = network.find_child_nodes(var_a)
+    assert len(children_var) == 1
+    assert add in children_var
 
-    downstream_add = network.find_downstream_nodes(add)
-    assert len(downstream_add) == 1
-    assert mul in downstream_add
+    children_add = network.find_child_nodes(add)
+    assert len(children_add) == 1
+    assert mul in children_add
 
-    print("✓ Upstream/downstream nodes work")
+    print("✓ Parent/child nodes work")
 
 
 def test_get_node():
@@ -274,7 +274,7 @@ def run_all_tests():
     test_add_remove_nodes()
     test_connect_disconnect()
     test_network_execution()
-    test_upstream_downstream_nodes()
+    test_parent_child_nodes()
     test_get_node()
     test_clear_network()
     test_network_serialization()

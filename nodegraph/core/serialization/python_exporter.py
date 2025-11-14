@@ -64,11 +64,18 @@ class PythonExporter:
         lines.append('    inputs = inputs or {}')
         lines.append('')
 
-        # Topological sort to get execution order
-        sorted_nodes = cls._topological_sort(network)
+        # Get execution order from network (uses topological sort)
+        try:
+            sorted_nodes = network.get_execution_order()
+        except ValueError as e:
+            # Cyclic dependency detected
+            lines.append(f'    # Error: {str(e)}')
+            lines.append('    raise ValueError("Cannot export network with cyclic dependencies")')
+            lines.append('    return {}')
+            sorted_nodes = []
 
         if not sorted_nodes:
-            lines.append('    # Empty network or cyclic graph')
+            lines.append('    # Empty network')
             lines.append('    return {}')
         else:
             # Generate code for each node
@@ -98,49 +105,16 @@ class PythonExporter:
         """
         Sort nodes in topological order (for execution).
 
+        Deprecated: Use network.get_execution_order() instead.
+
         Args:
             network: The network
 
         Returns:
             List of nodes in execution order
         """
-        # Simple topological sort using Kahn's algorithm
-        nodes = network.nodes()
-
-        # Build node ID to node mapping (since nodes are not hashable)
-        node_map = {node.id: node for node in nodes}
-
-        # Build adjacency list and in-degree count using node IDs
-        in_degree = {node.id: 0 for node in nodes}
-        adjacency = {node.id: [] for node in nodes}
-
-        for node in nodes:
-            for output_conn in node.outputs().values():
-                for connected_input in output_conn.connections():
-                    if connected_input.node:
-                        target_node = connected_input.node
-                        adjacency[node.id].append(target_node.id)
-                        in_degree[target_node.id] += 1
-
-        # Queue of node IDs with no dependencies
-        queue = [node.id for node in nodes if in_degree[node.id] == 0]
-        sorted_nodes = []
-
-        while queue:
-            node_id = queue.pop(0)
-            sorted_nodes.append(node_map[node_id])
-
-            # Reduce in-degree for downstream nodes
-            for neighbor_id in adjacency[node_id]:
-                in_degree[neighbor_id] -= 1
-                if in_degree[neighbor_id] == 0:
-                    queue.append(neighbor_id)
-
-        # Check for cycles
-        if len(sorted_nodes) != len(nodes):
-            print("Warning: Cyclic graph detected, some nodes may not be included")
-
-        return sorted_nodes
+        # Delegate to NetworkModel's implementation
+        return network.get_execution_order()
 
     @classmethod
     def _generate_node_code(cls, node: NodeModel, indent: str = '') -> List[str]:
