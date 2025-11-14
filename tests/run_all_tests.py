@@ -22,6 +22,7 @@ import test_signals
 import test_node_registry
 import test_json_serializer
 import test_python_exporter
+import test_topological_execution
 
 
 def main():
@@ -100,6 +101,13 @@ def main():
         print()
     except AssertionError as e:
         print(f"❌ PythonExporter tests failed: {e}")
+        all_passed = False
+
+    try:
+        test_topological_execution.run_all_tests()
+        print()
+    except AssertionError as e:
+        print(f"❌ Topological execution tests failed: {e}")
         all_passed = False
 
     print("=" * 70)
