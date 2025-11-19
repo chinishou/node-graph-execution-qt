@@ -82,7 +82,7 @@ class VariableNode(BaseNode):
             "value",
             data_type=data_type,
             default_value=default_value,
-            display_name="Value",
+            label="Value",
             description=f"The {data_type} value to output"
         )
 
@@ -90,7 +90,7 @@ class VariableNode(BaseNode):
         self.add_output(
             "out",
             data_type=data_type,
-            display_name="Output",
+            label="Output",
             description="Outputs the parameter value"
         )
 

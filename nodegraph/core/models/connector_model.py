@@ -32,7 +32,7 @@ class ConnectorModel(BaseModel):
         name: Connector identifier
         connector_type: INPUT or OUTPUT
         data_type: Type of data this connector accepts/produces
-        display_name: Human-readable name
+        label: Human-readable name
         node: The node this connector belongs to
         default_value: Default value if no connection (inputs only)
         description: Connector description
@@ -42,8 +42,8 @@ class ConnectorModel(BaseModel):
     name: str
     connector_type: ConnectorType
     data_type: str = "any"
-    display_name: Optional[str] = None
-    node: Optional[NodeModel] = Field(default=None, exclude=True)
+    label: Optional[str] = None
+    node: Optional["NodeModel"] = Field(default=None, exclude=True)
     default_value: Any = None
     description: str = ""
 
@@ -59,8 +59,8 @@ class ConnectorModel(BaseModel):
 
     def model_post_init(self, __context) -> None:
         """Initialize fields after Pydantic validation."""
-        if self.display_name is None:
-            self.display_name = self.name
+        if self.label is None:
+            self.label = self.name
 
         self._connected_changed = Signal()
 

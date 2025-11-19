@@ -17,27 +17,22 @@ class ParameterModel(BaseModel):
     Data model for a node parameter.
 
     Parameters are the editable properties of a node.
-    They can be integers, floats, strings, booleans, or custom types.
 
     Attributes:
         name: Parameter identifier
         data_type: Type of the parameter (int, float, str, bool, or custom)
         default_value: Default value
-        display_name: Human-readable name
-        min_value: Minimum value (for numeric types)
-        max_value: Maximum value (for numeric types)
-        options: List of options (for choice/enum types)
-        description: Parameter description/tooltip
+        label: Human-readable name
+        menu_items: List of menu items (for choice/enum types)
+        description: Parameter description
         value_changed: Signal emitted when value changes
     """
 
     name: str
     data_type: str = "float"
     default_value: Any = None
-    display_name: Optional[str] = None
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
-    options: List[Any] = Field(default_factory=list)
+    label: Optional[str] = None
+    menu_items: List[Any] = Field(default_factory=list)
     description: str = ""
 
     # Private attributes (using PrivateAttr for Pydantic V2)
@@ -50,8 +45,8 @@ class ParameterModel(BaseModel):
 
     def model_post_init(self, __context) -> None:
         """Initialize fields after Pydantic validation."""
-        if self.display_name is None:
-            self.display_name = self.name
+        if self.label is None:
+            self.label = self.name
 
         if self.default_value is not None:
             self._value = self.default_value
@@ -78,31 +73,8 @@ class ParameterModel(BaseModel):
             value: New value
             emit_signal: Whether to emit value_changed signal
         """
-        # Simple type conversion for built-in types
-        converted_value = value
-        if self.data_type == "int" and not isinstance(value, int):
-            try:
-                converted_value = int(value)
-            except (ValueError, TypeError):
-                converted_value = value
-        elif self.data_type == "float" and not isinstance(value, float):
-            try:
-                converted_value = float(value)
-            except (ValueError, TypeError):
-                converted_value = value
-        elif self.data_type == "str" and not isinstance(value, str):
-            converted_value = str(value)
-        elif self.data_type == "bool" and not isinstance(value, bool):
-            converted_value = bool(value)
-
-        # Clamp to min/max if applicable
-        if self.min_value is not None and isinstance(converted_value, (int, float)):
-            converted_value = max(self.min_value, converted_value)
-        if self.max_value is not None and isinstance(converted_value, (int, float)):
-            converted_value = min(self.max_value, converted_value)
-
         old_value = self._value
-        self._value = converted_value
+        self._value = value
 
         if emit_signal and old_value != self._value:
             self._value_changed.emit(self._value)

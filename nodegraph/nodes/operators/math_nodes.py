@@ -20,9 +20,9 @@ class AddNode(BaseNode):
 
     def setup(self) -> None:
         """Setup add node interface."""
-        self.add_input("a", data_type="float", default_value=0.0, display_name="A")
-        self.add_input("b", data_type="float", default_value=0.0, display_name="B")
-        self.add_output("result", data_type="float", display_name="Result")
+        self.add_input("a", data_type="float", default_value=0.0, label="A")
+        self.add_input("b", data_type="float", default_value=0.0, label="B")
+        self.add_output("result", data_type="float", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Add a and b."""
@@ -42,9 +42,9 @@ class SubtractNode(BaseNode):
 
     def setup(self) -> None:
         """Setup subtract node interface."""
-        self.add_input("a", data_type="float", default_value=0.0, display_name="A")
-        self.add_input("b", data_type="float", default_value=0.0, display_name="B")
-        self.add_output("result", data_type="float", display_name="Result")
+        self.add_input("a", data_type="float", default_value=0.0, label="A")
+        self.add_input("b", data_type="float", default_value=0.0, label="B")
+        self.add_output("result", data_type="float", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Subtract b from a."""
@@ -64,9 +64,9 @@ class MultiplyNode(BaseNode):
 
     def setup(self) -> None:
         """Setup multiply node interface."""
-        self.add_input("a", data_type="float", default_value=1.0, display_name="A")
-        self.add_input("b", data_type="float", default_value=1.0, display_name="B")
-        self.add_output("result", data_type="float", display_name="Result")
+        self.add_input("a", data_type="float", default_value=1.0, label="A")
+        self.add_input("b", data_type="float", default_value=1.0, label="B")
+        self.add_output("result", data_type="float", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Multiply a and b."""
@@ -86,9 +86,9 @@ class DivideNode(BaseNode):
 
     def setup(self) -> None:
         """Setup divide node interface."""
-        self.add_input("a", data_type="float", default_value=1.0, display_name="A")
-        self.add_input("b", data_type="float", default_value=1.0, display_name="B")
-        self.add_output("result", data_type="float", display_name="Result")
+        self.add_input("a", data_type="float", default_value=1.0, label="A")
+        self.add_input("b", data_type="float", default_value=1.0, label="B")
+        self.add_output("result", data_type="float", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Divide a by b."""

@@ -31,15 +31,11 @@ def test_parameter_model_creation():
         name="test_param",
         data_type="float",
         default_value=1.5,
-        min_value=0.0,
-        max_value=10.0,
     )
 
     assert param.name == "test_param"
     assert param.data_type == "float"
     assert param.value() == 1.5
-    assert param.min_value == 0.0
-    assert param.max_value == 10.0
 
     print("✓ Parameter creation works")
 
@@ -52,37 +48,11 @@ def test_parameter_value_change():
     param.set_value(20)
     assert param.value() == 20
 
-    # Type conversion
-    param.set_value("30")  # String should convert to int
+    # Set another value
+    param.set_value(30)
     assert param.value() == 30
-    assert isinstance(param.value(), int)
 
     print("✓ Parameter value changes work")
-
-
-def test_parameter_min_max_clamping():
-    """Test parameter min/max clamping."""
-    param = ParameterModel(
-        name="test",
-        data_type="float",
-        default_value=5.0,
-        min_value=0.0,
-        max_value=10.0,
-    )
-
-    # Try to set below min
-    param.set_value(-5.0)
-    assert param.value() == 0.0  # Clamped to min
-
-    # Try to set above max
-    param.set_value(15.0)
-    assert param.value() == 10.0  # Clamped to max
-
-    # Normal value
-    param.set_value(7.5)
-    assert param.value() == 7.5
-
-    print("✓ Parameter min/max clamping works")
 
 
 def test_connector_model_creation():
@@ -282,7 +252,6 @@ def run_all_tests():
 
     test_parameter_model_creation()
     test_parameter_value_change()
-    test_parameter_min_max_clamping()
     test_connector_model_creation()
     test_connector_connections()
     test_connector_type_checking()

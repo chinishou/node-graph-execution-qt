@@ -42,7 +42,7 @@ class NodeModel(BaseModel):
     name: str = "Node"
     node_type: str = "BaseNode"
     category: str = "General"
-    network: Optional[NetworkModel] = Field(default=None, exclude=True)
+    network: Optional["NetworkModel"] = Field(default=None, exclude=True)
     id: UUID = Field(default_factory=uuid4)
     color: Optional[str] = None
     enable_caching: bool = False  # Enable dirty state tracking and output caching
@@ -367,9 +367,7 @@ class NodeModel(BaseModel):
 
         Uses Pydantic's model_dump() which automatically excludes non-serializable fields.
         """
-        data = self.model_dump()
-
-        data["id"] = str(self.id)
+        data = self.model_dump(mode="json")
         data["position"] = self._position
 
         # Serialize parameters

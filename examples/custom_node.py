@@ -54,8 +54,8 @@ class ClampNode(BaseNode):
         self.add_output("result", data_type="float")
 
         # Add parameters
-        self.add_parameter("min", data_type="float", default_value=0.0, display_name="Minimum")
-        self.add_parameter("max", data_type="float", default_value=1.0, display_name="Maximum")
+        self.add_parameter("min", data_type="float", default_value=0.0, label="Minimum")
+        self.add_parameter("max", data_type="float", default_value=1.0, label="Maximum")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Clamp the input value."""
