@@ -1,13 +1,12 @@
-# Qt 兼容层
+# Core dependencies (required)
+pydantic>=2.0.0
+
+# Qt dependencies (optional, for GUI)
 QtPy>=2.4.0
-
-# PySide6 (首选)
 PySide6>=6.6.0
+# PyQt6>=6.6.0  # Alternative to PySide6
 
-# 或者 PyQt6 (备选)
-# PyQt6>=6.6.0
-
-# 开发依赖
+# Development dependencies
 pytest>=7.4.0
 pytest-qt>=4.2.0
 pytest-cov>=4.1.0
@@ -15,6 +14,6 @@ black>=23.0.0
 flake8>=6.0.0
 mypy>=1.5.0
 
-# 文档
+# Documentation
 sphinx>=7.0.0
 sphinx-rtd-theme>=1.3.0
