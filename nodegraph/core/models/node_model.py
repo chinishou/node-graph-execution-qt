@@ -6,11 +6,12 @@ Represents a node in the network graph.
 Nodes are the fundamental building blocks that process data.
 """
 
+from pydantic import BaseModel, Field, PrivateAttr
 from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple
 from uuid import uuid4, UUID
-from pydantic import BaseModel, Field, PrivateAttr
-from .parameter_model import ParameterModel
+
 from .connector_model import ConnectorModel, ConnectorType
+from .parameter_model import ParameterModel
 from ..signals import Signal
 
 if TYPE_CHECKING:
@@ -41,7 +42,7 @@ class NodeModel(BaseModel):
     name: str = "Node"
     node_type: str = "BaseNode"
     category: str = "General"
-    network: Optional["NetworkModel"] = Field(default=None, exclude=True)
+    network: Optional[NetworkModel] = Field(default=None, exclude=True)
     id: UUID = Field(default_factory=uuid4)
     color: Optional[str] = None
     enable_caching: bool = False  # Enable dirty state tracking and output caching
@@ -65,24 +66,23 @@ class NodeModel(BaseModel):
 
     def model_post_init(self, __context) -> None:
         """Initialize fields after Pydantic validation."""
-        # Initialize signals
         self._dirty_changed = Signal()
         self._position_changed = Signal()
         self._parameter_changed = Signal()
 
     @property
     def dirty_changed(self) -> Signal:
-        """Get dirty_changed signal (compatibility property)."""
+        """Get dirty_changed signal."""
         return self._dirty_changed
 
     @property
     def position_changed(self) -> Signal:
-        """Get position_changed signal (compatibility property)."""
+        """Get position_changed signal."""
         return self._position_changed
 
     @property
     def parameter_changed(self) -> Signal:
-        """Get parameter_changed signal (compatibility property)."""
+        """Get parameter_changed signal."""
         return self._parameter_changed
 
     def position(self) -> Tuple[float, float]:
@@ -230,7 +230,7 @@ class NodeModel(BaseModel):
 
     def cook(self) -> bool:
         """
-        Execute this node (Houdini terminology: "cook").
+        Execute this node.
 
         Returns:
             True if cooking was successful, False if error occurred
@@ -252,7 +252,6 @@ class NodeModel(BaseModel):
             for name, connector in self._inputs.items():
                 input_values[name] = connector.get_value()
 
-            # Call the implementation-specific cook method
             output_values = self._cook_internal(**input_values)
 
             # Store outputs (even if empty dict)
@@ -300,7 +299,6 @@ class NodeModel(BaseModel):
             True if execution was successful, False if error occurred
         """
         if self.network is None:
-            # No network, just cook this node
             return self.cook()
 
         # Get all ancestor node IDs (all nodes this node depends on)
@@ -361,21 +359,17 @@ class NodeModel(BaseModel):
 
         return self._cached_outputs.get(output_name)
 
-    def cook_error(self) -> Optional[str]:
-        """Get the last cook error message if any."""
-        return self._cook_error
-
     # Serialization
 
     def serialize(self) -> dict:
-        """Serialize node to dictionary using Pydantic."""
-        # Use Pydantic's model_dump for basic fields (private attrs are auto-excluded)
+        """
+        Serialize node to dictionary.
+
+        Uses Pydantic's model_dump() which automatically excludes non-serializable fields.
+        """
         data = self.model_dump()
 
-        # Convert UUID to string for serialization
         data["id"] = str(self.id)
-
-        # Add position
         data["position"] = self._position
 
         # Serialize parameters
@@ -399,13 +393,11 @@ class NodeModel(BaseModel):
 
     @classmethod
     def deserialize(cls, data: dict, network: Optional["NetworkModel"] = None) -> "NodeModel":
-        """Deserialize node from dictionary using Pydantic."""
-        # Convert string ID to UUID if needed
+        """Deserialize node from dictionary."""
         node_id = data.get("id", uuid4())
         if isinstance(node_id, str):
             node_id = UUID(node_id)
 
-        # Create node with basic fields using Pydantic
         node_data = {
             "name": data.get("name", "Node"),
             "node_type": data.get("node_type", "BaseNode"),
@@ -417,7 +409,6 @@ class NodeModel(BaseModel):
         node = cls.model_validate(node_data)
         node.network = network
 
-        # Set position (private attribute)
         node._position = data.get("position", (0.0, 0.0))
 
         # Deserialize parameters

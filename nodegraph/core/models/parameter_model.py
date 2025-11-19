@@ -2,21 +2,21 @@
 Parameter Model
 ===============
 
-Represents a parameter (parm in Houdini terminology) on a node.
-Parameters are editable properties that control node behavior.
+Represents a parameter, editable properties, on a node.
 """
 
-from typing import Any, Optional, List
 from pydantic import BaseModel, Field, PrivateAttr
-from ..signals import Signal
+from typing import Any, Optional, List
+
 from ..data_types import DataTypeRegistry
+from ..signals import Signal
 
 
 class ParameterModel(BaseModel):
     """
     Data model for a node parameter.
 
-    Parameters are the editable properties of a node, similar to Houdini's parms.
+    Parameters are the editable properties of a node.
     They can be integers, floats, strings, booleans, or custom types.
 
     Attributes:
@@ -50,23 +50,20 @@ class ParameterModel(BaseModel):
 
     def model_post_init(self, __context) -> None:
         """Initialize fields after Pydantic validation."""
-        # Set display name
         if self.display_name is None:
             self.display_name = self.name
 
-        # Initialize value
         if self.default_value is not None:
             self._value = self.default_value
         else:
             # Use DataTypeRegistry to get default value for type
             self._value = DataTypeRegistry.get_default_value(self.data_type)
 
-        # Initialize signal
         self._value_changed = Signal()
 
     @property
     def value_changed(self) -> Signal:
-        """Get value_changed signal (compatibility property)."""
+        """Get value_changed signal."""
         return self._value_changed
 
     def value(self) -> Any:
@@ -104,20 +101,15 @@ class ParameterModel(BaseModel):
         if self.max_value is not None and isinstance(converted_value, (int, float)):
             converted_value = min(self.max_value, converted_value)
 
-        # Update value
         old_value = self._value
         self._value = converted_value
 
-        # Emit signal if value actually changed
         if emit_signal and old_value != self._value:
             self._value_changed.emit(self._value)
 
     def reset_to_default(self) -> None:
         """Reset parameter to its default value."""
-        if self.default_value is not None:
-            self.set_value(self.default_value)
-        else:
-            self.set_value(DataTypeRegistry.get_default_value(self.data_type))
+        self.set_value(self.default_value)
 
     def serialize(self) -> dict:
         """

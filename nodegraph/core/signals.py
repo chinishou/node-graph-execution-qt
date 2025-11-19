@@ -2,12 +2,12 @@
 Simple signal/slot system for Model layer
 ==========================================
 
-A lightweight signal system that doesn't depend on Qt.
+A lightweight signal system that doesn't depend on Qt to be able to run in the CLI mode.
 This allows the Model layer to remain pure Python.
 """
 
 from typing import Callable, List, Any
-from weakref import WeakMethod, ref
+from weakref import WeakMethod, ref, ReferenceType
 
 
 class Signal:
@@ -51,37 +51,39 @@ class Signal:
         # Call all connected slots
         for weak_slot in self._slots[:]:  # Copy to avoid modification during iteration
             slot = self._get_callable(weak_slot)
-            if slot:
+            if not slot:
+                return
+
+            try:
+                slot(*args, **kwargs)
+            except TypeError:
+                # Try calling without arguments if slot doesn't accept them
                 try:
-                    slot(*args, **kwargs)
-                except TypeError as e:
-                    # Try calling without arguments if slot doesn't accept them
-                    try:
-                        slot()
-                    except Exception as e2:
-                        print(f"Error in signal slot: {e2}")
-                except Exception as e:
-                    print(f"Error in signal slot: {e}")
+                    slot()
+                except Exception as e2:
+                    print(f"Error in signal slot: {e2}")
+            except Exception as e:
+                print(f"Error in signal slot: {e}")
 
     def _is_alive(self, slot_ref: Any) -> bool:
         """Check if a slot reference is still alive."""
-        # Check if it's a weak reference (WeakMethod or ref)
         if isinstance(slot_ref, (WeakMethod, ref)):
             return slot_ref() is not None  # Weak reference
         return True  # Strong reference (always alive)
 
     def _get_callable(self, slot_ref: Any) -> Callable:
         """Get the actual callable from a reference."""
-        # Check if it's a weak reference (WeakMethod or ref)
         if isinstance(slot_ref, (WeakMethod, ref)):
             return slot_ref()  # Dereference weak reference
         return slot_ref  # Strong reference
 
-    def _cleanup(self, ref):
-        """Remove dead weak references."""
+    def _cleanup(self, dead_ref: ReferenceType[Any]) -> None:
+        """Callback when a weakly referenced slot is garbage-collected."""
         try:
-            self._slots.remove(ref)
+            # Remove the dead weak reference from the slot list
+            self._slots.remove(dead_ref)
         except ValueError:
+            # Might already be removed by multi-threads or emit(), safe to ignore
             pass
 
     def __len__(self) -> int:

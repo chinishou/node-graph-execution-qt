@@ -6,7 +6,7 @@ Global registry for node types.
 Allows registration and instantiation of custom node classes.
 """
 
-from typing import Dict, Type, List, Optional, Tuple
+from typing import Dict, Type, List, Optional
 import inspect
 
 
@@ -50,7 +50,6 @@ class NodeRegistry:
         if not hasattr(node_class, '__mro__'):
             raise ValueError(f"Invalid node class: {node_class}")
 
-        # Get type name
         if node_type is None:
             node_type = node_class.__name__
 
@@ -58,7 +57,6 @@ class NodeRegistry:
         if node_type in cls._nodes:
             print(f"Warning: Node type '{node_type}' is already registered. Overwriting.")
 
-        # Register
         cls._nodes[node_type] = node_class
 
         print(f"Registered node: {node_type}")
@@ -109,7 +107,6 @@ class NodeRegistry:
         if node_class is None:
             raise ValueError(f"Node type '{node_type}' is not registered")
 
-        # Create instance
         return node_class(**kwargs)
 
     @classmethod
@@ -171,7 +168,6 @@ class NodeRegistry:
             "module": node_class.__module__,
         }
 
-        # Get docstring
         if node_class.__doc__:
             info["docstring"] = inspect.cleandoc(node_class.__doc__)
 
@@ -205,7 +201,7 @@ class NodeRegistry:
 
     @classmethod
     def clear(cls) -> None:
-        """Clear all registered nodes (useful for testing)."""
+        """Clear all registered nodes."""
         cls._nodes.clear()
 
     def __repr__(self) -> str:

@@ -2,13 +2,14 @@
 Connector Model
 ===============
 
-Represents an input or output port on a node (connector in Houdini terminology).
+Represents an input or output connector on a node.
 Connectors allow data to flow between nodes.
 """
 
-from typing import Optional, Any, List, TYPE_CHECKING
 from enum import Enum
 from pydantic import BaseModel, Field, PrivateAttr
+from typing import Optional, Any, List, TYPE_CHECKING
+
 from ..signals import Signal
 
 if TYPE_CHECKING:
@@ -26,7 +27,6 @@ class ConnectorModel(BaseModel):
     Data model for a node connector (port).
 
     Connectors are the input/output ports on nodes that allow connections.
-    Similar to Houdini's connectors.
 
     Attributes:
         name: Connector identifier
@@ -43,11 +43,11 @@ class ConnectorModel(BaseModel):
     connector_type: ConnectorType
     data_type: str = "any"
     display_name: Optional[str] = None
-    node: Optional["NodeModel"] = Field(default=None, exclude=True)  # Exclude from serialization
+    node: Optional[NodeModel] = Field(default=None, exclude=True)
     default_value: Any = None
     description: str = ""
 
-    # Private attributes (using PrivateAttr for Pydantic V2)
+    # Private attributes
     _connections: List["ConnectorModel"] = PrivateAttr(default_factory=list)
     _cached_value: Any = PrivateAttr(default=None)
     _is_dirty: bool = PrivateAttr(default=True)
@@ -59,16 +59,14 @@ class ConnectorModel(BaseModel):
 
     def model_post_init(self, __context) -> None:
         """Initialize fields after Pydantic validation."""
-        # Set display name
         if self.display_name is None:
             self.display_name = self.name
 
-        # Initialize signal
         self._connected_changed = Signal()
 
     @property
     def connected_changed(self) -> Signal:
-        """Get connected_changed signal (compatibility property)."""
+        """Get connected_changed signal."""
         return self._connected_changed
 
     def is_input(self) -> bool:
@@ -89,11 +87,10 @@ class ConnectorModel(BaseModel):
         Returns:
             True if connection was successful, False otherwise
         """
-        # Validate connection
         if not self._can_connect_to(other):
             return False
 
-        # For inputs, disconnect existing connection first (single connection only)
+        # For inputs, disconnect existing connection first
         # Check both self and other for input connectors
         if self.is_input() and len(self._connections) > 0:
             self.disconnect_all()
@@ -107,10 +104,8 @@ class ConnectorModel(BaseModel):
             if self not in other._connections:
                 other._connections.append(self)
 
-            # Mark as dirty
             self.mark_dirty()
 
-            # Emit signal
             self._connected_changed.emit()
             other._connected_changed.emit()
 
@@ -135,10 +130,8 @@ class ConnectorModel(BaseModel):
             if self in other._connections:
                 other._connections.remove(self)
 
-            # Mark as dirty
             self.mark_dirty()
 
-            # Emit signal
             self._connected_changed.emit()
             other._connected_changed.emit()
 
@@ -148,7 +141,7 @@ class ConnectorModel(BaseModel):
 
     def disconnect_all(self) -> None:
         """Disconnect all connections."""
-        for conn in self._connections[:]:  # Copy to avoid modification during iteration
+        for conn in self._connections[:]:
             self.disconnect_from(conn)
 
     def is_connected(self) -> bool:
@@ -181,12 +174,11 @@ class ConnectorModel(BaseModel):
         if self.connector_type == other.connector_type:
             return False
 
-        # Check data type compatibility (strict)
-        # "any" type is compatible with everything
+        # "any" type is compatible with everything,
+        # will be used when a node is created(no connections yet), and Python Script Node.
         if self.data_type == "any" or other.data_type == "any":
             return True
 
-        # Other types must match exactly
         return self.data_type == other.data_type
 
     def mark_dirty(self) -> None:
@@ -218,11 +210,9 @@ class ConnectorModel(BaseModel):
         else:
             # Input value: return connected value or default
             if self.is_connected():
-                # Get value from connected output
                 source = self._connections[0]
                 return source.get_value()
             else:
-                # No connection: return default value
                 return self.default_value
 
     def serialize(self) -> dict:
@@ -232,7 +222,6 @@ class ConnectorModel(BaseModel):
         Uses Pydantic's model_dump() which automatically excludes non-serializable fields.
         """
         data = self.model_dump(mode="json")
-        # Convert ConnectorType enum to string
         data["connector_type"] = self.connector_type.value
         return data
 
@@ -248,11 +237,9 @@ class ConnectorModel(BaseModel):
         Returns:
             ConnectorModel instance
         """
-        # Convert connector_type string to enum if needed
         if "connector_type" in data and isinstance(data["connector_type"], str):
             data["connector_type"] = ConnectorType(data["connector_type"])
 
-        # Create connector using Pydantic's model_validate
         connector = cls.model_validate(data)
         connector.node = node
 

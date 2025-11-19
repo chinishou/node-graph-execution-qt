@@ -6,12 +6,13 @@ Represents a node network (graph).
 A network contains nodes and connections between them.
 """
 
-from typing import Dict, List, Optional, Tuple, Any
-from uuid import uuid4, UUID
-import re
 from collections import defaultdict, deque
-from .node_model import NodeModel
+from typing import Dict, List, Optional, Tuple, Any
+from uuid import UUID
+import re
+
 from .connector_model import ConnectorModel
+from .node_model import NodeModel
 from ..signals import Signal
 
 
@@ -59,7 +60,6 @@ class NetworkModel:
         if node.id in self._nodes:
             return False
 
-        # Ensure unique node name by adding suffix if needed
         node.name = self._get_unique_node_name(node.name)
 
         node.network = self
@@ -80,18 +80,15 @@ class NetworkModel:
         Returns:
             A unique name (original or with suffix like _1, _2, etc.)
         """
-        # Get all existing node names
         existing_names = {node.name for node in self._nodes.values()}
 
         if base_name not in existing_names:
             return base_name
 
-        # Strip existing suffix if present (e.g., "Node_1" -> "Node")
         match = re.match(r'^(.+?)_(\d+)$', base_name)
         if match:
             base_name = match.group(1)
 
-        # Find the next available suffix
         counter = 1
         while f"{base_name}_{counter}" in existing_names:
             counter += 1
@@ -118,7 +115,7 @@ class NetworkModel:
             if src.node is not node and tgt.node is not node
         ]
 
-        # Disconnect all connectors
+        # Disconnect all connectors first
         for connector in list(node.inputs().values()) + list(node.outputs().values()):
             connector.disconnect_all()
 
@@ -193,7 +190,6 @@ class NetworkModel:
                 print(f"Warning: Connection from {source_node.name}.{source_output} to {target_node.name}.{target_input} would create a cycle")
                 return False
 
-            # Add to connector_pairs
             self._connector_pairs.append((source_connector, target_connector))
 
             self.connection_added.emit(source_connector, target_connector)
@@ -272,11 +268,10 @@ class NetworkModel:
         if not nodes:
             return []
 
-        # Build node ID to node mapping (since nodes are not hashable)
+        # Build node ID to node mapping
         node_map = {node.id: node for node in nodes}
 
         # Build adjacency list and in-degree count using node IDs
-        # Use defaultdict to simplify initialization
         in_degree = defaultdict(int)
         adjacency = defaultdict(list)
 
@@ -292,12 +287,12 @@ class NetworkModel:
                         adjacency[node.id].append(target_node.id)
                         in_degree[target_node.id] += 1
 
-        # Queue of node IDs with no dependencies (use deque for O(1) popleft)
+        # Queue of node IDs with no dependencies
         queue = deque(node.id for node in nodes if in_degree[node.id] == 0)
         sorted_nodes = []
 
         while queue:
-            node_id = queue.popleft()  # O(1) operation vs pop(0) which is O(n)
+            node_id = queue.popleft()
             sorted_nodes.append(node_map[node_id])
 
             # Reduce in-degree for downstream nodes
