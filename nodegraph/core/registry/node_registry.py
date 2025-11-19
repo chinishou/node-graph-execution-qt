@@ -128,7 +128,8 @@ class NodeRegistry:
         result = {}
 
         for node_type, node_class in cls._nodes.items():
-            if hasattr(node_class, 'category') and node_class.category == category:
+            node_category = cls._get_node_category(node_class)
+            if node_category == category:
                 result[node_type] = node_class
 
         return result
@@ -139,10 +140,38 @@ class NodeRegistry:
         categories = set()
 
         for node_class in cls._nodes.values():
-            if hasattr(node_class, 'category'):
-                categories.add(node_class.category)
+            category = cls._get_node_category(node_class)
+            if category:
+                categories.add(category)
 
         return sorted(categories)
+
+    @classmethod
+    def _get_node_category(cls, node_class: Type) -> Optional[str]:
+        """
+        Get category from a node class, handling both regular and Pydantic classes.
+
+        Args:
+            node_class: The node class
+
+        Returns:
+            Category string or None
+        """
+        # Try direct attribute first (non-Pydantic or instance attribute)
+        try:
+            cat = getattr(node_class, 'category', None)
+            if cat and isinstance(cat, str):
+                return cat
+        except Exception:
+            pass
+
+        # Try Pydantic model_fields
+        if hasattr(node_class, 'model_fields') and 'category' in node_class.model_fields:
+            field = node_class.model_fields['category']
+            if hasattr(field, 'default') and field.default:
+                return field.default
+
+        return "General"
 
     @classmethod
     def get_node_info(cls, node_type: str) -> Optional[Dict[str, any]]:
