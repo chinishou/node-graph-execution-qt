@@ -27,10 +27,10 @@ class NodeModel(BaseModel):
     and parameters that control their behavior. Similar to Houdini's nodes.
 
     Attributes:
+        id: Unique node identifier (UUID)
         name: Node display name
         node_type: Type of node (e.g., "AddNode", "SubnetNode")
         category: Category for organization (e.g., "Math", "Logic")
-        id: Unique node identifier (UUID)
         network: The network this node belongs to
         color: Optional custom color
         parameters: Dictionary of parameters
@@ -40,15 +40,15 @@ class NodeModel(BaseModel):
         position_changed: Signal emitted when position changes
     """
 
+    id: UUID = Field(default_factory=uuid4)
     name: str = "Node"
     node_type: str = "BaseNode"
     category: str = "General"
     network: Optional["NetworkModel"] = Field(default=None, exclude=True)
-    id: UUID = Field(default_factory=uuid4)
     color: Optional[str] = None
-    enable_caching: bool = False  # Enable dirty state tracking and output caching
+    enable_caching: bool = False
 
-    # Private attributes (using PrivateAttr for Pydantic V2)
+    # Private attributes
     _position: Tuple[float, float] = PrivateAttr(default=(0.0, 0.0))
     _parameters: Dict[str, ParameterModel] = PrivateAttr(default_factory=dict)
     _inputs: Dict[str, ConnectorModel] = PrivateAttr(default_factory=dict)
@@ -373,7 +373,7 @@ class NodeModel(BaseModel):
                         adjacency[node.id].append(target_id)
                         in_degree[target_id] += 1
 
-        # Kahn's algorithm
+        # Kahn's algorithm (topological sort)
         node_map = {node.id: node for node in nodes}
         queue = deque(node.id for node in nodes if in_degree[node.id] == 0)
         sorted_nodes = []
@@ -396,7 +396,6 @@ class NodeModel(BaseModel):
 
     def get_output_value(self, output_name: str) -> Any:
         """Get the value of an output connector."""
-        # Cook if dirty
         if self._is_dirty:
             self.cook()
 

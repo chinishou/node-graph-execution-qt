@@ -295,7 +295,6 @@ class NetworkModel:
 
         # Check if all nodes are processed
         if len(result) != len(nodes):
-            # Some nodes are not reachable (possible disconnected cycle)
             unprocessed = [node.name for node in nodes if node.id not in processed]
             error_msg = (
                 f"Cyclic dependency detected in network '{self.name}'. "
