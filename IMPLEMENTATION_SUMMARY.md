@@ -5,7 +5,7 @@
 **node-graph-execution-qt** is a Houdini-style node-based programming framework built with PySide6/PyQt6.
 
 ### Version: 0.1.0-alpha
-### Commit: 95a2814
+### Commit: ab42340
 
 ---
 
@@ -43,10 +43,17 @@
 #### NetworkModel
 - Network (graph) data model
 - Node management (add/remove/query)
-- Connection management
+- **Automatic node name suffix** (`_1`, `_2`) for duplicates
+- Connection management with `_connector_pairs` storage
+- `connector_pairs()` method for retrieving all connections
 - Topological sorting
 - Cycle detection
 - Upstream/downstream node queries
+
+#### NodeModel Enhancements
+- **UUID-based node IDs** for type safety
+- `id: UUID = Field(default_factory=uuid4)`
+- Serialization converts UUID to string for JSON compatibility
 
 ### 3. Signal System
 
@@ -271,14 +278,22 @@ network = NetworkModel()
 add = AddNode()
 multiply = MultiplyNode()
 
-# 2. Set parameters/inputs
+# 2. Add nodes to network (auto-renames duplicates)
+network.add_node(add)
+network.add_node(multiply)
+
+# 3. Set parameters/inputs
 add.input("a").default_value = 10.0
 add.input("b").default_value = 20.0
 
-# 3. Connect nodes
+# 4. Connect nodes (using UUID-based IDs)
 network.connect(add.id, "result", multiply.id, "a")
 
-# 4. Execute (automatic propagation)
+# 5. Query connections
+pairs = network.connector_pairs()  # List of (output, input) tuples
+print(f"Total connections: {len(pairs)}")
+
+# 6. Execute (automatic propagation)
 add.cook()          # Computes 10 + 20 = 30
 multiply.cook()     # Computes 30 * 2 = 60
 result = multiply.get_output_value("result")  # 60.0
@@ -327,12 +342,15 @@ node = NodeRegistry.create_node("AddNode")
 node.input("a").default_value = 5.0
 node.input("b").default_value = 3.0
 
-# Add to network
+# Add to network (auto-renames if duplicate name exists)
 network.add_node(node)
 
 # Execute
 node.cook()
 print(node.get_output_value("result"))  # 8.0
+
+# Query connections
+print(f"Connections: {len(network.connector_pairs())}")  # 0
 ```
 
 ### Creating Custom Nodes
@@ -411,6 +429,9 @@ class MyNode(BaseNode):
 3. **Plugin Design**: NodeRegistry supports runtime dynamic loading
 4. **Houdini Style**: Familiar terminology and workflow
 5. **Complete Serialization**: Bidirectional export to JSON and Python code
+6. **UUID-based Node IDs**: Type-safe node identification
+7. **Automatic Node Naming**: Duplicate names get automatic suffix (_1, _2, etc.)
+8. **Efficient Connection Storage**: `_connector_pairs` stores connections directly for O(1) access
 
 ---
 
@@ -432,6 +453,6 @@ class MyNode(BaseNode):
 
 ---
 
-**Last Updated**: 2025-11-09
+**Last Updated**: 2025-11-19
 **Author**: Claude
 **License**: MIT

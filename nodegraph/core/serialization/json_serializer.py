@@ -8,6 +8,7 @@ Save and load node networks to/from JSON files.
 import json
 from typing import Dict, Any
 from pathlib import Path
+from uuid import UUID
 from ..models import NetworkModel
 from ..registry import NodeRegistry
 
@@ -148,7 +149,11 @@ class JSONSerializer:
                     node = NodeRegistry.create_node(node_type)
 
                     # Update node properties from serialized data
-                    node.id = node_data.get("id")
+                    # Convert string ID to UUID
+                    node_id = node_data.get("id")
+                    if isinstance(node_id, str):
+                        node_id = UUID(node_id)
+                    node.id = node_id
                     node.name = node_data.get("name", "Node")
                     node.set_position(*node_data.get("position", (0, 0)), emit_signal=False)
 
@@ -169,10 +174,18 @@ class JSONSerializer:
         # Deserialize connections
         for conn_data in network_data.get("connections", []):
             try:
+                # Convert string IDs to UUIDs
+                source_id = conn_data["source_node"]
+                target_id = conn_data["target_node"]
+                if isinstance(source_id, str):
+                    source_id = UUID(source_id)
+                if isinstance(target_id, str):
+                    target_id = UUID(target_id)
+
                 network.connect(
-                    source_node_id=conn_data["source_node"],
+                    source_node_id=source_id,
                     source_output=conn_data["source_output"],
-                    target_node_id=conn_data["target_node"],
+                    target_node_id=target_id,
                     target_input=conn_data["target_input"],
                 )
             except Exception as e:

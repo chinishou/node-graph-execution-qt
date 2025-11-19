@@ -27,7 +27,7 @@ def test_network_creation():
 
     assert network.name == "TestNetwork"
     assert len(network.nodes()) == 0
-    assert len(network.connections()) == 0
+    assert len(network.connector_pairs()) == 0
 
     print("✓ Network creation works")
 
@@ -74,7 +74,7 @@ def test_connect_disconnect():
     network.connect(var1.id, "out", add.id, "a")
     network.connect(var2.id, "out", add.id, "b")
 
-    assert len(network.connections()) == 2
+    assert len(network.connector_pairs()) == 2
     assert var1.output("out").is_connected()
     assert var2.output("out").is_connected()
     assert add.input("a").is_connected()
@@ -83,7 +83,7 @@ def test_connect_disconnect():
     # Disconnect
     network.disconnect(var1.id, "out", add.id, "a")
 
-    assert len(network.connections()) == 1
+    assert len(network.connector_pairs()) == 1
     assert not var1.output("out").is_connected()
     assert not add.input("a").is_connected()
 
@@ -192,13 +192,13 @@ def test_clear_network():
     network.connect(var1.id, "out", add.id, "a")
 
     assert len(network.nodes()) == 3
-    assert len(network.connections()) == 1
+    assert len(network.connector_pairs()) == 1
 
     # Clear network
     network.clear()
 
     assert len(network.nodes()) == 0
-    assert len(network.connections()) == 0
+    assert len(network.connector_pairs()) == 0
 
     print("✓ Clear network works")
 
@@ -231,7 +231,7 @@ def test_network_serialization():
 
     assert network2.name == "TestNetwork"
     assert len(network2.nodes()) == 3
-    assert len(network2.connections()) == 2
+    assert len(network2.connector_pairs()) == 2
 
     # Verify node IDs are preserved
     assert network2.get_node(var_a.id) is not None
@@ -253,12 +253,12 @@ def test_remove_node_with_connections():
 
     network.connect(var1.id, "out", add.id, "a")
 
-    assert len(network.connections()) == 1
+    assert len(network.connector_pairs()) == 1
 
     # Remove var1 should also remove the connection
     network.remove_node(var1.id)
 
-    assert len(network.connections()) == 0
+    assert len(network.connector_pairs()) == 0
     assert not add.input("a").is_connected()
 
     print("✓ Remove node with connections works")

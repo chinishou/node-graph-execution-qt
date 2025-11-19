@@ -7,7 +7,8 @@ A network contains nodes and connections between them.
 """
 
 from typing import Dict, List, Optional, Tuple, Any
-from uuid import uuid4
+from uuid import uuid4, UUID
+import re
 from collections import defaultdict, deque
 from .node_model import NodeModel
 from .connector_model import ConnectorModel
@@ -24,7 +25,7 @@ class NetworkModel:
     Attributes:
         name: Network name
         nodes: Dictionary of nodes (id -> NodeModel)
-        connections: List of connections (tuples of connector pairs)
+        connector_pairs: List of connections (tuples of connector pairs)
         node_added: Signal emitted when a node is added
         node_removed: Signal emitted when a node is removed
         connection_added: Signal emitted when a connection is added
@@ -33,7 +34,8 @@ class NetworkModel:
 
     def __init__(self, name: str = "Network"):
         self.name = name
-        self._nodes: Dict[str, NodeModel] = {}
+        self._nodes: Dict[UUID, NodeModel] = {}
+        self._connector_pairs: List[Tuple[ConnectorModel, ConnectorModel]] = []
 
         # Signals
         self.node_added = Signal()
@@ -57,6 +59,9 @@ class NetworkModel:
         if node.id in self._nodes:
             return False
 
+        # Ensure unique node name by adding suffix if needed
+        node.name = self._get_unique_node_name(node.name)
+
         node.network = self
         self._nodes[node.id] = node
 
@@ -65,7 +70,35 @@ class NetworkModel:
 
         return True
 
-    def remove_node(self, node_id: str) -> bool:
+    def _get_unique_node_name(self, base_name: str) -> str:
+        """
+        Generate a unique node name by adding suffix if needed.
+
+        Args:
+            base_name: The desired name for the node
+
+        Returns:
+            A unique name (original or with suffix like _1, _2, etc.)
+        """
+        # Get all existing node names
+        existing_names = {node.name for node in self._nodes.values()}
+
+        if base_name not in existing_names:
+            return base_name
+
+        # Strip existing suffix if present (e.g., "Node_1" -> "Node")
+        match = re.match(r'^(.+?)_(\d+)$', base_name)
+        if match:
+            base_name = match.group(1)
+
+        # Find the next available suffix
+        counter = 1
+        while f"{base_name}_{counter}" in existing_names:
+            counter += 1
+
+        return f"{base_name}_{counter}"
+
+    def remove_node(self, node_id: UUID) -> bool:
         """
         Remove a node from the network.
 
@@ -79,7 +112,13 @@ class NetworkModel:
         if not node:
             return False
 
-        # Disconnect all connectors first
+        # Remove connections from _connector_pairs that involve this node
+        self._connector_pairs = [
+            (src, tgt) for src, tgt in self._connector_pairs
+            if src.node is not node and tgt.node is not node
+        ]
+
+        # Disconnect all connectors
         for connector in list(node.inputs().values()) + list(node.outputs().values()):
             connector.disconnect_all()
 
@@ -92,7 +131,7 @@ class NetworkModel:
 
         return True
 
-    def get_node(self, node_id: str) -> Optional[NodeModel]:
+    def get_node(self, node_id: UUID) -> Optional[NodeModel]:
         """Get node by ID."""
         return self._nodes.get(node_id)
 
@@ -115,9 +154,9 @@ class NetworkModel:
 
     def connect(
         self,
-        source_node_id: str,
+        source_node_id: UUID,
         source_output: str,
-        target_node_id: str,
+        target_node_id: UUID,
         target_input: str
     ) -> bool:
         """
@@ -154,6 +193,9 @@ class NetworkModel:
                 print(f"Warning: Connection from {source_node.name}.{source_output} to {target_node.name}.{target_input} would create a cycle")
                 return False
 
+            # Add to connector_pairs
+            self._connector_pairs.append((source_connector, target_connector))
+
             self.connection_added.emit(source_connector, target_connector)
             self.network_changed.emit()
 
@@ -161,9 +203,9 @@ class NetworkModel:
 
     def disconnect(
         self,
-        source_node_id: str,
+        source_node_id: UUID,
         source_output: str,
-        target_node_id: str,
+        target_node_id: UUID,
         target_input: str
     ) -> bool:
         """
@@ -193,27 +235,25 @@ class NetworkModel:
         success = source_connector.disconnect_from(target_connector)
 
         if success:
+            # Remove from connector_pairs
+            self._connector_pairs = [
+                (src, tgt) for src, tgt in self._connector_pairs
+                if not (src is source_connector and tgt is target_connector)
+            ]
+
             self.connection_removed.emit(source_connector, target_connector)
             self.network_changed.emit()
 
         return success
 
-    def connections(self) -> List[Tuple[ConnectorModel, ConnectorModel]]:
+    def connector_pairs(self) -> List[Tuple[ConnectorModel, ConnectorModel]]:
         """
         Get all connections in the network.
 
         Returns:
             List of (output_connector, input_connector) tuples
         """
-        conns = []
-
-        for node in self._nodes.values():
-            for output in node.outputs().values():
-                for connected_input in output.connections():
-                    if connected_input.is_input():
-                        conns.append((output, connected_input))
-
-        return conns
+        return self._connector_pairs.copy()
 
     # Execution
 
@@ -290,6 +330,7 @@ class NetworkModel:
 
     def clear(self) -> None:
         """Remove all nodes and connections."""
+        self._connector_pairs.clear()
         node_ids = list(self._nodes.keys())
         for node_id in node_ids:
             self.remove_node(node_id)
@@ -354,12 +395,12 @@ class NetworkModel:
             ],
             "connections": [
                 {
-                    "source_node": src.node.id if src.node else None,
+                    "source_node": str(src.node.id) if src.node else None,
                     "source_output": src.name,
-                    "target_node": tgt.node.id if tgt.node else None,
+                    "target_node": str(tgt.node.id) if tgt.node else None,
                     "target_input": tgt.name,
                 }
-                for src, tgt in self.connections()
+                for src, tgt in self.connector_pairs()
             ],
         }
 
@@ -377,10 +418,18 @@ class NetworkModel:
 
         # Then, recreate connections
         for conn_data in data.get("connections", []):
+            # Convert string IDs back to UUID
+            source_id = conn_data["source_node"]
+            target_id = conn_data["target_node"]
+            if isinstance(source_id, str):
+                source_id = UUID(source_id)
+            if isinstance(target_id, str):
+                target_id = UUID(target_id)
+
             network.connect(
-                source_node_id=conn_data["source_node"],
+                source_node_id=source_id,
                 source_output=conn_data["source_output"],
-                target_node_id=conn_data["target_node"],
+                target_node_id=target_id,
                 target_input=conn_data["target_input"],
             )
 
