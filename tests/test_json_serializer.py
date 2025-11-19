@@ -87,7 +87,7 @@ def test_serializer_save_load_file():
         assert loaded_network is not None
         assert loaded_network.name == "SaveLoadTest"
         assert len(loaded_network.nodes()) == 3
-        assert len(loaded_network.connections()) == 2
+        assert len(loaded_network.connector_pairs()) == 2
 
         print("✓ Save/load file works")
 
@@ -200,7 +200,7 @@ def test_serializer_from_json_string():
     assert loaded is not None
     assert loaded.name == "FromString"
     assert len(loaded.nodes()) == 2
-    assert len(loaded.connections()) == 1
+    assert len(loaded.connector_pairs()) == 1
 
     print("✓ From JSON string works")
 
@@ -297,7 +297,7 @@ def test_serializer_roundtrip():
     # Verify structure
     assert loaded.name == "RoundtripTest"
     assert len(loaded.nodes()) == 4
-    assert len(loaded.connections()) == 3
+    assert len(loaded.connector_pairs()) == 3
 
     # Verify node IDs preserved
     assert loaded.get_node(var_a.id) is not None

@@ -22,11 +22,53 @@ Houdini-style node-based programming framework built with PySide6/PyQt6.
 
 ## Installation
 
+### From source (local development)
+
 ```bash
-pip install -r requirements.txt
+# Clone the repository
+git clone https://github.com/yourusername/node-graph-execution-qt.git
+cd node-graph-execution-qt
+
+# Install in editable mode (core only)
+pip install -e .
+
+# Install with Qt GUI support
+pip install -e ".[qt]"
+
+# Install with all dependencies (dev + docs)
+pip install -e ".[all]"
+```
+
+### From PyPI (coming soon)
+
+```bash
+pip install node-graph-execution-qt
 ```
 
 ## Quick Start
+
+### Core Usage (without Qt)
+
+```python
+from nodegraph import NetworkModel, NodeRegistry
+from nodegraph.nodes.operators import AddNode
+
+# Register and create nodes
+NodeRegistry.register(AddNode)
+network = NetworkModel("My Network")
+
+# Create and configure node
+node = NodeRegistry.create_node("AddNode")
+node.input("a").default_value = 10.0
+node.input("b").default_value = 20.0
+network.add_node(node)
+
+# Execute
+node.cook()
+print(node.get_output_value("result"))  # 30.0
+```
+
+### With Qt GUI (requires `[qt]` extra)
 
 ```python
 from nodegraph import NetworkEditor

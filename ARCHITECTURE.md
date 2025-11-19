@@ -231,7 +231,7 @@ class MyCustomNode(BaseNode):
   "network": {
     "nodes": [
       {
-        "id": "node_001",
+        "id": "550e8400-e29b-41d4-a716-446655440000",
         "type": "AddNode",
         "position": [100, 200],
         "parameters": {
@@ -239,17 +239,19 @@ class MyCustomNode(BaseNode):
         }
       }
     ],
-    "connectors": [
+    "connections": [
       {
-        "from_node": "node_001",
-        "from_output": "result",
-        "to_node": "node_002",
-        "to_input": "input1"
+        "source_node": "550e8400-e29b-41d4-a716-446655440000",
+        "source_output": "result",
+        "target_node": "550e8400-e29b-41d4-a716-446655440001",
+        "target_input": "input1"
       }
     ]
   }
 }
 ```
+
+**Note**: Node IDs use UUID format for uniqueness and type safety.
 
 #### 3.2 Python Export
 ```python

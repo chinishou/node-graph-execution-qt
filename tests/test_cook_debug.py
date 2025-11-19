@@ -74,7 +74,7 @@ def test_node_connection():
 
     print("\n--- Testing Node Connection ---")
     print(f"Network: {network}")
-    print(f"Connections: {len(network.connections())}")
+    print(f"Connections: {len(network.connector_pairs())}")
 
     # Cook
     add_node.cook()

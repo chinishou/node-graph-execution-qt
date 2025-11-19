@@ -78,7 +78,7 @@ def main():
         target_input="a"
     )
     print(f"   Connection created: {success}")
-    print(f"   Total connections: {len(network.connections())}")
+    print(f"   Total connections: {len(network.connector_pairs())}")
     print()
 
     # Execute network
@@ -106,7 +106,7 @@ def main():
     loaded_network = JSONSerializer.load(json_file)
     print(f"   Loaded network: {loaded_network.name}")
     print(f"   Nodes: {loaded_network.node_count()}")
-    print(f"   Connections: {len(loaded_network.connections())}")
+    print(f"   Connections: {len(loaded_network.connector_pairs())}")
     print()
 
     # Export to Python
