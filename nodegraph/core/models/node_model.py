@@ -7,8 +7,9 @@ Nodes are the fundamental building blocks that process data.
 """
 
 from pydantic import BaseModel, Field, PrivateAttr
-from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple
+from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple, List
 from uuid import uuid4, UUID
+from collections import defaultdict, deque
 
 from .connector_model import ConnectorModel, ConnectorType
 from .parameter_model import ParameterModel
@@ -42,7 +43,7 @@ class NodeModel(BaseModel):
     name: str = "Node"
     node_type: str = "BaseNode"
     category: str = "General"
-    network: Optional[NetworkModel] = Field(default=None, exclude=True)
+    network: Optional["NetworkModel"] = Field(default=None, exclude=True)
     id: UUID = Field(default_factory=uuid4)
     color: Optional[str] = None
     enable_caching: bool = False  # Enable dirty state tracking and output caching
@@ -293,7 +294,7 @@ class NodeModel(BaseModel):
         Execute this node by cooking all parent nodes first, then cooking this node.
 
         This ensures all dependencies are up-to-date before cooking this node.
-        Uses topological sorting to determine the correct execution order.
+        Uses local topological sorting on ancestors only.
 
         Returns:
             True if execution was successful, False if error occurred
@@ -301,55 +302,97 @@ class NodeModel(BaseModel):
         if self.network is None:
             return self.cook()
 
-        # Get all ancestor node IDs (all nodes this node depends on)
-        ancestor_ids = self._get_all_ancestors()
-
-        # Get execution order for the entire network
+        # Get local execution order (ancestors + self)
         try:
-            all_nodes = self.network.get_execution_order()
-        except ValueError:
-            # Cycle detected
-            print(f"Error: Cannot execute node {self.name} due to cyclic dependencies")
+            nodes_to_cook = self._get_local_execution_order()
+        except ValueError as e:
+            print(f"Error: Cannot execute node {self.name}: {e}")
             return False
 
-        # Filter to only include ancestors and self, maintaining topological order
-        nodes_to_cook = [node for node in all_nodes if node.id in ancestor_ids or node.id == self.id]
-
         # Cook nodes in order
-        # If caching is enabled, only cook dirty nodes
-        # If caching is disabled, cook all nodes
         for node in nodes_to_cook:
             if not self.enable_caching or node.is_dirty():
-                success = node.cook()
-                if not success:
+                if not node.cook():
                     return False
 
         return True
 
-    def _get_all_ancestors(self) -> set:
+    def _get_all_ancestors(self) -> List["NodeModel"]:
         """
-        Get all ancestor node IDs (recursive parent traversal).
+        Get all ancestor nodes (recursive parent traversal).
 
         Returns:
-            Set of all ancestor node IDs
+            List of all ancestor nodes
         """
-        ancestor_ids = set()
-        to_visit = [self]
+        ancestors = []
         visited = set()
+        to_visit = list(self.get_parent_nodes())
 
         while to_visit:
             current = to_visit.pop()
             if current.id in visited:
                 continue
             visited.add(current.id)
+            ancestors.append(current)
 
-            parents = current.get_parent_nodes()
-            for parent in parents:
-                if parent.id not in ancestor_ids:
-                    ancestor_ids.add(parent.id)
+            for parent in current.get_parent_nodes():
+                if parent.id not in visited:
                     to_visit.append(parent)
 
-        return ancestor_ids
+        return ancestors
+
+    def _get_local_execution_order(self) -> List["NodeModel"]:
+        """
+        Get execution order for this node and its ancestors using local topological sort.
+
+        Uses Kahn's algorithm on the subset of nodes (ancestors + self).
+
+        Returns:
+            List of nodes in execution order
+
+        Raises:
+            ValueError: If cyclic dependency is detected
+        """
+        # Get all ancestors + self
+        ancestors = self._get_all_ancestors()
+        nodes = ancestors + [self]
+        node_ids = {node.id for node in nodes}
+
+        # Build adjacency list and in-degree count (only within subset)
+        in_degree = defaultdict(int)
+        adjacency = defaultdict(list)
+
+        for node in nodes:
+            if node.id not in in_degree:
+                in_degree[node.id] = 0
+
+            for output_conn in node.outputs().values():
+                for connected_input in output_conn.connections():
+                    if connected_input.node and connected_input.node.id in node_ids:
+                        target_id = connected_input.node.id
+                        adjacency[node.id].append(target_id)
+                        in_degree[target_id] += 1
+
+        # Kahn's algorithm
+        node_map = {node.id: node for node in nodes}
+        queue = deque(node.id for node in nodes if in_degree[node.id] == 0)
+        sorted_nodes = []
+
+        while queue:
+            node_id = queue.popleft()
+            sorted_nodes.append(node_map[node_id])
+
+            for neighbor_id in adjacency[node_id]:
+                in_degree[neighbor_id] -= 1
+                if in_degree[neighbor_id] == 0:
+                    queue.append(neighbor_id)
+
+        # Check for cycles
+        if len(sorted_nodes) != len(nodes):
+            cyclic_nodes = [node.name for node in nodes if node not in sorted_nodes]
+            raise ValueError(f"Cyclic dependency detected in nodes: {', '.join(cyclic_nodes)}")
+
+        return sorted_nodes
 
     def get_output_value(self, output_name: str) -> Any:
         """Get the value of an output connector."""
@@ -367,9 +410,7 @@ class NodeModel(BaseModel):
 
         Uses Pydantic's model_dump() which automatically excludes non-serializable fields.
         """
-        data = self.model_dump()
-
-        data["id"] = str(self.id)
+        data = self.model_dump(mode="json")
         data["position"] = self._position
 
         # Serialize parameters

@@ -33,9 +33,7 @@ def test_parameter_serialization():
         name="test_param",
         data_type="float",
         default_value=1.5,
-        display_name="Test Parameter",
-        min_value=0.0,
-        max_value=10.0,
+        label="Test Parameter",
         description="A test parameter",
     )
 
@@ -50,8 +48,6 @@ def test_parameter_serialization():
     assert data["data_type"] == "float"
     assert data["value"] == 3.7
     assert data["default_value"] == 1.5
-    assert data["min_value"] == 0.0
-    assert data["max_value"] == 10.0
 
     # Deserialize
     param2 = ParameterModel.deserialize(data)
@@ -72,7 +68,7 @@ def test_connector_serialization():
         name="test_input",
         connector_type=ConnectorType.INPUT,
         data_type="float",
-        display_name="Test Input",
+        label="Test Input",
         default_value=0.0,
         description="A test input",
     )
@@ -220,8 +216,6 @@ def test_roundtrip_serialization():
         name="test",
         data_type="float",
         default_value=1.0,
-        min_value=0.0,
-        max_value=10.0,
     )
     original_param.set_value(5.5)
 
@@ -236,8 +230,6 @@ def test_roundtrip_serialization():
     assert restored_param.data_type == original_param.data_type
     assert restored_param.value() == original_param.value()
     assert restored_param.default_value == original_param.default_value
-    assert restored_param.min_value == original_param.min_value
-    assert restored_param.max_value == original_param.max_value
 
     print("✓ Roundtrip serialization works")
 

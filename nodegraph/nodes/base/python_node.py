@@ -48,7 +48,7 @@ class PythonNode(BaseNode):
             "code",
             data_type="string",
             default_value=default_code,
-            display_name="Python Code",
+            label="Python Code",
             description="Python code to execute"
         )
 

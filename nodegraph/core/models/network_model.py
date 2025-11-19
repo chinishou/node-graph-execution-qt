@@ -6,7 +6,6 @@ Represents a node network (graph).
 A network contains nodes and connections between them.
 """
 
-from collections import defaultdict, deque
 from typing import Dict, List, Optional, Tuple, Any
 from uuid import UUID
 import re
@@ -255,10 +254,10 @@ class NetworkModel:
 
     def get_execution_order(self) -> List[NodeModel]:
         """
-        Get nodes in topological execution order using Kahn's algorithm.
+        Get nodes in topological execution order.
 
         Returns nodes sorted such that dependencies are cooked before dependents.
-        Nodes with no dependencies come first.
+        Uses local topological sorting on terminal nodes and combines results.
 
         Returns:
             List of nodes in execution order
@@ -268,53 +267,44 @@ class NetworkModel:
         if not nodes:
             return []
 
-        # Build node ID to node mapping
-        node_map = {node.id: node for node in nodes}
-
-        # Build adjacency list and in-degree count using node IDs
-        in_degree = defaultdict(int)
-        adjacency = defaultdict(list)
-
+        # Find terminal nodes (nodes with no downstream connections)
+        terminal_nodes = []
         for node in nodes:
-            # Initialize in_degree for all nodes (even if no dependencies)
-            if node.id not in in_degree:
-                in_degree[node.id] = 0
+            has_downstream = any(
+                output_conn.is_connected()
+                for output_conn in node.outputs().values()
+            )
+            if not has_downstream:
+                terminal_nodes.append(node)
 
-            for output_conn in node.outputs().values():
-                for connected_input in output_conn.connections():
-                    if connected_input.node:
-                        target_node = connected_input.node
-                        adjacency[node.id].append(target_node.id)
-                        in_degree[target_node.id] += 1
+        # If no terminal nodes found, use all nodes as potential terminals
+        # (this handles isolated nodes or cycles)
+        if not terminal_nodes:
+            terminal_nodes = nodes
 
-        # Queue of node IDs with no dependencies
-        queue = deque(node.id for node in nodes if in_degree[node.id] == 0)
-        sorted_nodes = []
+        # Process each terminal node using local topological sort
+        processed = set()
+        result = []
 
-        while queue:
-            node_id = queue.popleft()
-            sorted_nodes.append(node_map[node_id])
+        for terminal in terminal_nodes:
+            local_order = terminal._get_local_execution_order()
+            for node in local_order:
+                if node.id not in processed:
+                    result.append(node)
+                    processed.add(node.id)
 
-            # Reduce in-degree for downstream nodes
-            for neighbor_id in adjacency[node_id]:
-                in_degree[neighbor_id] -= 1
-                if in_degree[neighbor_id] == 0:
-                    queue.append(neighbor_id)
-
-        # Check for cycles
-        if len(sorted_nodes) != len(nodes):
-            # Find nodes that are in the cycle
-            cyclic_nodes = [node for node in nodes if node not in sorted_nodes]
-            cyclic_names = [node.name for node in cyclic_nodes]
-
+        # Check if all nodes are processed
+        if len(result) != len(nodes):
+            # Some nodes are not reachable (possible disconnected cycle)
+            unprocessed = [node.name for node in nodes if node.id not in processed]
             error_msg = (
                 f"Cyclic dependency detected in network '{self.name}'. "
-                f"Nodes in cycle: {', '.join(cyclic_names)}. "
+                f"Nodes in cycle: {', '.join(unprocessed)}. "
                 f"Cannot determine execution order."
             )
             raise ValueError(error_msg)
 
-        return sorted_nodes
+        return result
 
     def mark_all_dirty(self) -> None:
         """Mark all nodes as dirty."""
