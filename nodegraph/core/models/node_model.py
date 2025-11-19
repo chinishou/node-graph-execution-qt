@@ -7,7 +7,7 @@ Nodes are the fundamental building blocks that process data.
 """
 
 from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple
-from uuid import uuid4
+from uuid import uuid4, UUID
 from pydantic import BaseModel, Field, PrivateAttr
 from .parameter_model import ParameterModel
 from .connector_model import ConnectorModel, ConnectorType
@@ -42,7 +42,7 @@ class NodeModel(BaseModel):
     node_type: str = "BaseNode"
     category: str = "General"
     network: Optional["NetworkModel"] = Field(default=None, exclude=True)
-    id: str = Field(default_factory=lambda: str(uuid4()))
+    id: UUID = Field(default_factory=uuid4)
     color: Optional[str] = None
     enable_caching: bool = False  # Enable dirty state tracking and output caching
 
@@ -372,6 +372,9 @@ class NodeModel(BaseModel):
         # Use Pydantic's model_dump for basic fields (private attrs are auto-excluded)
         data = self.model_dump()
 
+        # Convert UUID to string for serialization
+        data["id"] = str(self.id)
+
         # Add position
         data["position"] = self._position
 
@@ -397,12 +400,17 @@ class NodeModel(BaseModel):
     @classmethod
     def deserialize(cls, data: dict, network: Optional["NetworkModel"] = None) -> "NodeModel":
         """Deserialize node from dictionary using Pydantic."""
+        # Convert string ID to UUID if needed
+        node_id = data.get("id", uuid4())
+        if isinstance(node_id, str):
+            node_id = UUID(node_id)
+
         # Create node with basic fields using Pydantic
         node_data = {
             "name": data.get("name", "Node"),
             "node_type": data.get("node_type", "BaseNode"),
             "category": data.get("category", "General"),
-            "id": data.get("id", str(uuid4())),
+            "id": node_id,
             "color": data.get("color"),
         }
 
@@ -431,4 +439,4 @@ class NodeModel(BaseModel):
         return node
 
     def __repr__(self) -> str:
-        return f"NodeModel(id='{self.id[:8]}...', name='{self.name}', type='{self.node_type}')"
+        return f"NodeModel(id='{str(self.id)[:8]}...', name='{self.name}', type='{self.node_type}')"

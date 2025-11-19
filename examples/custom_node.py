@@ -165,7 +165,7 @@ def main():
     network.connect(square.id, "result", clamp.id, "value")
     network.connect(clamp.id, "result", minmax.id, "a")
 
-    print(f"   Network has {network.node_count()} nodes and {len(network.connections())} connections")
+    print(f"   Network has {network.node_count()} nodes and {len(network.connector_pairs())} connections")
     print()
 
     print("=" * 60)
