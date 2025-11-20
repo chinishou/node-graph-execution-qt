@@ -82,6 +82,7 @@ class NodePaletteDialog(QWidget):
         self.category_list.itemEntered.connect(self._on_category_hovered)
         self.category_list.itemClicked.connect(self._on_category_clicked)
         self.category_list.installEventFilter(self)
+        self.category_list.viewport().installEventFilter(self)  # Also track viewport events
         self.content_layout.addWidget(self.category_list)
 
         # Results list (right side - only visible when searching)
@@ -226,6 +227,9 @@ class NodePaletteDialog(QWidget):
         self.category_menu.setFocusPolicy(Qt.NoFocus)
         self.category_menu.setAttribute(Qt.WA_ShowWithoutActivating)
 
+        # Don't make menu modal - allow interaction with parent widget
+        self.category_menu.setWindowModality(Qt.NonModal)
+
         for node_type, node_class in self.categories[category]:
             action = QAction(node_type, self.category_menu)
             action.setData((node_type, category))
@@ -237,6 +241,9 @@ class NodePaletteDialog(QWidget):
         global_pos = self.category_list.mapToGlobal(item_rect.topRight())
 
         self.category_menu.popup(global_pos)
+
+        # Force focus back to search box after menu popup
+        self.search_box.setFocus(Qt.OtherFocusReason)
 
     def _on_category_clicked(self, item: QListWidgetItem):
         """Handle category click - same as hover."""
@@ -346,7 +353,18 @@ class NodePaletteDialog(QWidget):
         self.close()
 
     def eventFilter(self, obj, event):
-        """Filter events for keyboard navigation."""
+        """Filter events for keyboard navigation and mouse tracking."""
+        # Handle mouse move events for category switching when submenu is open
+        if event.type() == QEvent.MouseMove:
+            if obj == self.category_list.viewport() and self.category_menu and not self.results_list.isVisible():
+                # Get item under mouse cursor
+                pos = event.position().toPoint()
+                item = self.category_list.itemAt(pos)
+                if item:
+                    # Trigger hover to switch submenu
+                    self._on_category_hovered(item)
+                return False  # Don't consume event
+
         if event.type() == QEvent.KeyPress:
             key = event.key()
 
