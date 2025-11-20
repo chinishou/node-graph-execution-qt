@@ -104,11 +104,15 @@ class NetworkScene(QGraphicsScene):
             item = self._node_items.pop(node.id)
             self.removeItem(item)
 
-            # Remove associated connections
-            self._connection_items = [
+            # Remove associated connections from scene
+            connections_to_remove = [
                 conn for conn in self._connection_items
-                if not self._connection_involves_node(conn, node)
+                if self._connection_involves_node(conn, node)
             ]
+
+            for conn in connections_to_remove:
+                self.removeItem(conn)
+                self._connection_items.remove(conn)
 
     def _connection_involves_node(self, connection: "ConnectionItem", node: "NodeModel") -> bool:
         """Check if a connection involves a node."""
@@ -195,6 +199,32 @@ class NetworkScene(QGraphicsScene):
         """Update the temporary connection during drag."""
         if self._temp_connection:
             self._temp_connection.set_temp_end_pos(pos)
+
+    def create_connection(self, output_port: "PortGraphicsItem", input_port: "PortGraphicsItem") -> bool:
+        """Create a connection between two ports."""
+        if not output_port or not input_port:
+            return False
+
+        # Validate connection
+        if output_port == input_port:
+            return False
+
+        if output_port.connector.node == input_port.connector.node:
+            return False
+
+        if not output_port.is_output or input_port.is_output:
+            return False
+
+        # Create connection in model
+        output_conn = output_port.connector
+        input_conn = input_port.connector
+
+        success = self.network_model.connect(
+            output_conn.node.id, output_conn.name,
+            input_conn.node.id, input_conn.name
+        )
+
+        return success
 
     def finish_connection_drag(self, end_pos: QPointF) -> bool:
         """Finish the connection drag and create connection if valid."""

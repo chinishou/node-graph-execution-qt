@@ -47,6 +47,7 @@ class NetworkView(QGraphicsView):
         self._last_pan_pos = QPointF()
         self._connecting = False
         self._zoom_level = 1.0
+        self._click_to_connect_port: Optional["PortGraphicsItem"] = None  # For click-click connection
 
         # Setup view
         self.setRenderHint(QPainter.Antialiasing)
@@ -57,6 +58,9 @@ class NetworkView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
         self.setDragMode(QGraphicsView.RubberBandDrag)
+
+        # Set large scene rect for unlimited panning
+        self.setSceneRect(-10000, -10000, 20000, 20000)
 
         # Enable focus for key events
         self.setFocusPolicy(Qt.StrongFocus)
@@ -115,11 +119,23 @@ class NetworkView(QGraphicsView):
             port = self._scene.get_port_at_pos(scene_pos) if self._scene else None
 
             if port:
-                # Start connection drag
-                self._connecting = True
-                self._scene.start_connection_drag(port)
-                event.accept()
-                return
+                # Check if we're in click-to-connect mode
+                if self._click_to_connect_port is not None:
+                    # Second click: complete the connection
+                    self._complete_click_connection(port)
+                    event.accept()
+                    return
+                else:
+                    # First click: start click-to-connect mode
+                    # But also prepare for potential drag
+                    self._click_to_connect_port = port
+                    self._scene.start_connection_drag(port)
+                    event.accept()
+                    return
+            else:
+                # Clicked on empty space: cancel click-to-connect mode
+                if self._click_to_connect_port is not None:
+                    self._cancel_click_connection()
 
         super().mousePressEvent(event)
 
@@ -167,6 +183,18 @@ class NetworkView(QGraphicsView):
 
         super().mouseReleaseEvent(event)
 
+    def event(self, event):
+        """Override event to catch Tab key before focus system."""
+        if event.type() == event.Type.KeyPress:
+            key_event = event
+            if key_event.key() == Qt.Key_Tab:
+                # Show node palette at cursor position
+                cursor_pos = self.mapFromGlobal(self.cursor().pos())
+                scene_pos = self.mapToScene(cursor_pos)
+                self._show_node_menu(self.mapToGlobal(cursor_pos), scene_pos)
+                return True
+        return super().event(event)
+
     def keyPressEvent(self, event: QKeyEvent):
         """Handle key press."""
         if event.key() == Qt.Key_Tab:
@@ -205,47 +233,22 @@ class NetworkView(QGraphicsView):
             super().contextMenuEvent(event)
 
     def _show_node_menu(self, global_pos, scene_pos: QPointF):
-        """Show the node creation menu."""
-        from ...core.registry import NodeRegistry
+        """Show the node creation menu with search."""
+        from ..widgets.node_palette import NodePaletteDialog
 
-        menu = QMenu(self)
-        menu.setStyleSheet("""
-            QMenu {
-                background-color: #3c3c3c;
-                color: #dcdcdc;
-                border: 1px solid #5c5c5c;
-            }
-            QMenu::item:selected {
-                background-color: #505050;
-            }
-            QMenu::separator {
-                height: 1px;
-                background: #5c5c5c;
-            }
-        """)
+        # Create and show searchable node palette as popup
+        palette = NodePaletteDialog(scene_pos, self)
+        palette.node_selected.connect(self._on_node_palette_selected)
+        palette.cancelled.connect(lambda: palette.close())
 
-        # Group nodes by category
-        categories = NodeRegistry.get_categories()
+        # Position the popup near the cursor
+        palette.move(global_pos)
+        palette.show()
 
-        for category in categories:
-            category_menu = menu.addMenu(category)
-            nodes = NodeRegistry.get_nodes_by_category(category)
-
-            for node_type, node_class in nodes.items():
-                action = category_menu.addAction(node_type)
-                action.setData((node_type, scene_pos))
-
-        # Connect action
-        menu.triggered.connect(self._on_node_menu_action)
-        menu.exec(global_pos)
-
-    def _on_node_menu_action(self, action):
-        """Handle node menu action."""
-        data = action.data()
-        if not data or not self._scene or not self._scene.network_model:
+    def _on_node_palette_selected(self, node_type: str, scene_pos: QPointF):
+        """Handle node selection from palette."""
+        if not self._scene or not self._scene.network_model:
             return
-
-        node_type, scene_pos = data
 
         from ...core.registry import NodeRegistry
 
@@ -259,6 +262,56 @@ class NetworkView(QGraphicsView):
 
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Failed to create node: {e}")
+
+    def _complete_click_connection(self, target_port: "PortGraphicsItem"):
+        """Complete a click-to-connect connection."""
+        if not self._click_to_connect_port or not self._scene:
+            return
+
+        source_port = self._click_to_connect_port
+
+        # Validate connection
+        if source_port.is_output == target_port.is_output:
+            # Can't connect input to input or output to output
+            self._cancel_click_connection()
+            return
+
+        if source_port.connector.node == target_port.connector.node:
+            # Can't connect to same node
+            self._cancel_click_connection()
+            return
+
+        # Determine which is source and which is target
+        if source_port.is_output:
+            output_port = source_port
+            input_port = target_port
+        else:
+            output_port = target_port
+            input_port = source_port
+
+        # Create the connection
+        self._scene.create_connection(output_port, input_port)
+
+        # Clean up
+        self._cancel_click_connection()
+
+    def _cancel_click_connection(self):
+        """Cancel click-to-connect mode."""
+        if self._click_to_connect_port and self._scene:
+            # Remove temporary connection if it exists
+            self._scene.cancel_connection_drag()
+
+        self._click_to_connect_port = None
+        self._connecting = False
+
+    def _on_node_menu_action(self, action):
+        """Handle node menu action (legacy, for compatibility)."""
+        data = action.data()
+        if not data or not self._scene or not self._scene.network_model:
+            return
+
+        node_type, scene_pos = data
+        self._on_node_palette_selected(node_type, scene_pos)
 
     def frame_selection(self):
         """Frame the view on selected items or all items."""

@@ -5,7 +5,7 @@ Connection Item
 QGraphicsItem for rendering connections between ports.
 """
 
-from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem, QWidget
+from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem, QWidget, QStyle
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtGui import QPainter, QColor, QPen, QPainterPath
 
@@ -77,6 +77,9 @@ class ConnectionItem(QGraphicsPathItem):
         else:
             return
 
+        # Determine if source is output (going right) or input (going left)
+        source_is_output = self.source_port.is_output
+
         # Create path
         path = QPainterPath()
         path.moveTo(start_pos)
@@ -89,12 +92,27 @@ class ConnectionItem(QGraphicsPathItem):
         ctrl_offset = min(abs(dx) * 0.5, 100)
         ctrl_offset = max(ctrl_offset, 30)
 
-        ctrl1 = QPointF(start_pos.x() + ctrl_offset, start_pos.y())
-        ctrl2 = QPointF(end_pos.x() - ctrl_offset, end_pos.y())
+        # Adjust control point direction based on port type
+        if source_is_output:
+            # Output port: curve goes right then to target
+            ctrl1 = QPointF(start_pos.x() + ctrl_offset, start_pos.y())
+            ctrl2 = QPointF(end_pos.x() - ctrl_offset, end_pos.y())
+        else:
+            # Input port: curve goes left then to target
+            ctrl1 = QPointF(start_pos.x() - ctrl_offset, start_pos.y())
+            ctrl2 = QPointF(end_pos.x() + ctrl_offset, end_pos.y())
 
         path.cubicTo(ctrl1, ctrl2, end_pos)
 
         self.setPath(path)
+
+    def shape(self):
+        """Return a more precise shape for mouse interaction."""
+        # Create a stroker to make a clickable area around the path
+        from PySide6.QtGui import QPainterPathStroker
+        stroker = QPainterPathStroker()
+        stroker.setWidth(8)  # Clickable width
+        return stroker.createStroke(self.path())
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None):
         """Paint the connection."""
@@ -111,6 +129,9 @@ class ConnectionItem(QGraphicsPathItem):
         pen = QPen(color, 2)
         pen.setCapStyle(Qt.RoundCap)
         self.setPen(pen)
+
+        # Disable selection rectangle by modifying the option
+        option.state &= ~QStyle.State_Selected
 
         super().paint(painter, option, widget)
 
