@@ -366,14 +366,22 @@ class NodePaletteDialog(QWidget):
 
             if key in (Qt.Key_Up, Qt.Key_Down):
                 # Navigate in the appropriate widget
-                if self.right_list.isVisible() and self.right_list_mode == 'search':
-                    # Only auto-navigate in search mode
-                    if obj != self.right_list:
+                if self.right_list.isVisible():
+                    # When right list is visible (both search and category mode)
+                    if self.right_list_mode == 'search':
+                        # In search mode, keep focus on search box
+                        if obj != self.right_list:
+                            self.right_list.setFocus()
+                            self.right_list.event(event)
+                            self.search_box.setFocus()
+                            return True
+                    else:
+                        # In category mode, navigate right list directly
                         self.right_list.setFocus()
                         self.right_list.event(event)
-                        self.search_box.setFocus()
                         return True
                 else:
+                    # No right list, navigate category list
                     if obj != self.category_list:
                         self.category_list.setFocus()
                         self.category_list.event(event)
@@ -381,7 +389,7 @@ class NodePaletteDialog(QWidget):
                         return True
 
             if key in (Qt.Key_Right, Qt.Key_Left):
-                # Right arrow opens node list, left arrow focuses back on categories
+                # Right arrow opens node list, left arrow closes it
                 if self.right_list_mode != 'search':
                     if key == Qt.Key_Right:
                         if self.right_list.isVisible():
@@ -395,10 +403,18 @@ class NodePaletteDialog(QWidget):
                             current_item = self.category_list.currentItem()
                             if current_item:
                                 self._on_category_hovered(current_item)
+                                # After opening, focus on right list
+                                self.right_list.setFocus()
+                                if self.right_list.count() > 0:
+                                    self.right_list.setCurrentRow(0)
                                 return True
                     elif key == Qt.Key_Left:
-                        # Focus back on category list
-                        self.category_list.setFocus()
-                        return True
+                        if self.right_list.isVisible():
+                            # Close right list and return to category list
+                            self.right_list.hide()
+                            self.right_list_mode = None
+                            self.category_list.setFocus()
+                            self._adjust_size()
+                            return True
 
         return super().eventFilter(obj, event)

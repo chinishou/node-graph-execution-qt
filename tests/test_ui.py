@@ -5,7 +5,7 @@ Uses pytest-qt for Qt testing.
 """
 
 import pytest
-from PySide6.QtCore import Qt, QPoint, QPointF
+from PySide6.QtCore import Qt, QPoint, QPointF, QEvent
 from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtTest import QTest
 
@@ -656,6 +656,79 @@ class TestNodePalette:
         # Should have emitted signal
         assert len(signal_emitted) == 1
         assert isinstance(signal_emitted[0], str)
+
+    def test_arrow_keys_navigate_right_list_in_category_mode(self, qtbot):
+        """Test that up/down arrows navigate right list when in category mode."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+        from PySide6.QtGui import QKeyEvent
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()
+        qtbot.waitExposed(palette)
+
+        # Open category nodes
+        first_category = palette.category_list.item(0)
+        palette._on_category_hovered(first_category)
+        assert palette.right_list.isVisible()
+        assert palette.right_list_mode == 'category'
+
+        # Create and send down arrow key event directly to eventFilter
+        key_event = QKeyEvent(QEvent.KeyPress, Qt.Key_Down, Qt.NoModifier)
+        palette.eventFilter(palette, key_event)
+
+        # Right list should have focus (eventFilter sets it)
+        assert palette.right_list.hasFocus()
+        assert palette.right_list.currentRow() >= 0
+
+    def test_left_arrow_closes_right_list(self, qtbot):
+        """Test that left arrow closes right list in category mode."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+        from PySide6.QtGui import QKeyEvent
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()
+        qtbot.waitExposed(palette)
+
+        # Open category nodes
+        first_category = palette.category_list.item(0)
+        palette._on_category_hovered(first_category)
+        assert palette.right_list.isVisible()
+
+        # Create and send left arrow key event directly to eventFilter
+        key_event = QKeyEvent(QEvent.KeyPress, Qt.Key_Left, Qt.NoModifier)
+        palette.eventFilter(palette, key_event)
+
+        # Right list should be hidden
+        assert not palette.right_list.isVisible()
+        assert palette.right_list_mode is None
+        assert palette.category_list.hasFocus()
+
+    def test_right_arrow_opens_and_focuses_right_list(self, qtbot):
+        """Test that right arrow opens and focuses right list."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+        from PySide6.QtGui import QKeyEvent
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()
+        qtbot.waitExposed(palette)
+
+        # Set focus on category list and select first item
+        palette.category_list.setFocus()
+        palette.category_list.setCurrentRow(0)
+
+        # Create and send right arrow key event directly to eventFilter
+        key_event = QKeyEvent(QEvent.KeyPress, Qt.Key_Right, Qt.NoModifier)
+        palette.eventFilter(palette, key_event)
+
+        # Right list should be visible and have focus
+        assert palette.right_list.isVisible()
+        assert palette.right_list_mode == 'category'
+        assert palette.right_list.hasFocus()
+        if palette.right_list.count() > 0:
+            assert palette.right_list.currentRow() == 0
 
 
 # Add helper method to NetworkView for testing
