@@ -236,10 +236,14 @@ class NetworkView(QGraphicsView):
         """Show the node creation menu with search."""
         from ..widgets.node_palette import NodePaletteDialog
 
-        # Create and show searchable node palette dialog
-        dialog = NodePaletteDialog(scene_pos, self)
-        dialog.node_selected.connect(self._on_node_palette_selected)
-        dialog.exec()
+        # Create and show searchable node palette as popup
+        palette = NodePaletteDialog(scene_pos, self)
+        palette.node_selected.connect(self._on_node_palette_selected)
+        palette.cancelled.connect(lambda: palette.close())
+
+        # Position the popup near the cursor
+        palette.move(global_pos)
+        palette.show()
 
     def _on_node_palette_selected(self, node_type: str, scene_pos: QPointF):
         """Handle node selection from palette."""

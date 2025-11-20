@@ -6,105 +6,144 @@ Searchable node palette for creating nodes.
 """
 
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
-    QLabel, QWidget, QHBoxLayout
+    QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
+    QTreeWidget, QTreeWidgetItem, QLabel, QFrame
 )
-from PySide6.QtCore import Qt, Signal, QPointF
+from PySide6.QtCore import Qt, Signal, QPointF, QEvent
 from PySide6.QtGui import QKeyEvent
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
     from ...core.registry import NodeRegistry
 
 
-class NodePaletteDialog(QDialog):
+class NodePaletteDialog(QWidget):
     """
-    Searchable node palette dialog.
+    Searchable node palette with hierarchical menu.
 
-    Shows all available nodes with fuzzy search/filtering.
+    Shows categories on the left, search results on the right when typing.
     """
 
     node_selected = Signal(str, QPointF)  # node_type, position
+    cancelled = Signal()
 
     def __init__(self, scene_pos: QPointF, parent=None):
         super().__init__(parent)
 
         self.scene_pos = scene_pos
-        self.all_nodes = {}  # {display_name: node_type}
-        self.filtered_items = []
+        self.all_nodes: Dict[str, str] = {}  # {display_name: node_type}
+        self.categories: Dict[str, List[tuple]] = {}  # {category: [(node_type, node_class)]}
+
+        # Set window flags for popup behavior
+        self.setWindowFlags(Qt.Popup | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_DeleteOnClose)
 
         self._setup_ui()
         self._load_nodes()
-        self._update_list()
+        self._populate_categories()
 
         # Auto-focus search box
         self.search_box.setFocus()
 
     def _setup_ui(self):
         """Setup the UI."""
-        self.setWindowTitle("Add Node")
-        self.setModal(True)
-        self.setMinimumWidth(400)
-        self.setMinimumHeight(500)
+        self.setMinimumWidth(300)
+        self.setMinimumHeight(400)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Container with border
+        container = QFrame()
+        container.setObjectName("paletteContainer")
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(4, 4, 4, 4)
+        container_layout.setSpacing(4)
 
         # Search box
-        search_label = QLabel("Search:")
-        layout.addWidget(search_label)
-
         self.search_box = QLineEdit()
-        self.search_box.setPlaceholderText("Type to filter nodes...")
+        self.search_box.setPlaceholderText("node")
         self.search_box.textChanged.connect(self._on_search_changed)
-        layout.addWidget(self.search_box)
+        self.search_box.installEventFilter(self)
+        container_layout.addWidget(self.search_box)
 
-        # Node list
-        self.node_list = QListWidget()
-        self.node_list.itemDoubleClicked.connect(self._on_item_double_clicked)
-        layout.addWidget(self.node_list)
+        # Content area (categories and results)
+        self.content_layout = QHBoxLayout()
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(0)
+        container_layout.addLayout(self.content_layout)
 
-        # Instructions
-        info_label = QLabel("Double-click or press Enter to create node")
-        info_label.setStyleSheet("color: #888; font-size: 10px;")
-        layout.addWidget(info_label)
+        # Category tree (left side - always visible)
+        self.category_tree = QTreeWidget()
+        self.category_tree.setHeaderHidden(True)
+        self.category_tree.setIndentation(12)
+        self.category_tree.itemClicked.connect(self._on_category_item_clicked)
+        self.category_tree.installEventFilter(self)
+        self.content_layout.addWidget(self.category_tree)
+
+        # Results list (right side - only visible when searching)
+        self.results_list = QListWidget()
+        self.results_list.itemClicked.connect(self._on_result_item_clicked)
+        self.results_list.installEventFilter(self)
+        self.results_list.hide()  # Hidden by default
+        self.content_layout.addWidget(self.results_list)
+
+        layout.addWidget(container)
 
         # Style
         self.setStyleSheet("""
-            QDialog {
+            QWidget {
                 background-color: #2d2d2d;
                 color: #dcdcdc;
+            }
+            QFrame#paletteContainer {
+                background-color: #2d2d2d;
+                border: 1px solid #1a1a1a;
             }
             QLineEdit {
                 background-color: #3c3c3c;
                 border: 1px solid #4c4c4c;
-                border-radius: 3px;
-                padding: 6px;
+                border-radius: 2px;
+                padding: 4px 6px;
                 color: #dcdcdc;
+                font-size: 12px;
             }
             QLineEdit:focus {
                 border: 1px solid #6c6c6c;
             }
-            QListWidget {
+            QTreeWidget {
                 background-color: #2d2d2d;
-                border: 1px solid #3c3c3c;
+                border: none;
                 color: #dcdcdc;
                 outline: none;
+                font-size: 11px;
+            }
+            QTreeWidget::item {
+                padding: 3px;
+            }
+            QTreeWidget::item:selected {
+                background-color: #4a4a4a;
+            }
+            QTreeWidget::item:hover {
+                background-color: #3a3a3a;
+            }
+            QListWidget {
+                background-color: #2d2d2d;
+                border-left: 1px solid #1a1a1a;
+                color: #dcdcdc;
+                outline: none;
+                font-size: 11px;
             }
             QListWidget::item {
-                padding: 6px;
-                border-radius: 2px;
+                padding: 4px 8px;
             }
             QListWidget::item:selected {
                 background-color: #4a4a4a;
             }
             QListWidget::item:hover {
                 background-color: #3a3a3a;
-            }
-            QLabel {
-                color: #dcdcdc;
             }
         """)
 
@@ -116,34 +155,55 @@ class NodePaletteDialog(QDialog):
 
         for category in sorted(categories):
             nodes = NodeRegistry.get_nodes_by_category(category)
+            self.categories[category] = sorted(nodes.items())
 
-            for node_type, node_class in sorted(nodes.items()):
-                display_name = f"{category} > {node_type}"
+            for node_type, node_class in nodes.items():
+                display_name = f"{node_type}"
                 self.all_nodes[display_name] = node_type
 
-    def _update_list(self, filter_text: str = ""):
-        """Update the node list based on filter."""
-        self.node_list.clear()
-        self.filtered_items = []
+    def _populate_categories(self):
+        """Populate the category tree."""
+        self.category_tree.clear()
 
-        # Filter nodes
-        if not filter_text:
-            # Show all nodes grouped by category
-            items = sorted(self.all_nodes.items())
+        for category in sorted(self.categories.keys()):
+            # Add category item
+            category_item = QTreeWidgetItem(self.category_tree)
+            category_item.setText(0, category)
+            category_item.setData(0, Qt.UserRole, None)  # Categories don't create nodes
+
+            # Add node items under category
+            for node_type, node_class in self.categories[category]:
+                node_item = QTreeWidgetItem(category_item)
+                node_item.setText(0, node_type)
+                node_item.setData(0, Qt.UserRole, node_type)
+
+    def _on_search_changed(self, text: str):
+        """Handle search text change."""
+        if text.strip():
+            # Collapse all category tree items when showing search results
+            self.category_tree.collapseAll()
+
+            # Show search results
+            self._show_search_results(text)
+            self.results_list.show()
+            if self.results_list.count() > 0:
+                self.results_list.setCurrentRow(0)
         else:
-            # Filter using fuzzy matching
-            items = self._fuzzy_filter(filter_text)
+            # Hide search results
+            self.results_list.hide()
 
-        # Add to list
-        for display_name, node_type in items:
+    def _show_search_results(self, filter_text: str):
+        """Show filtered search results."""
+        self.results_list.clear()
+
+        # Filter using fuzzy matching
+        results = self._fuzzy_filter(filter_text)
+
+        # Add to results list
+        for display_name, node_type in results:
             item = QListWidgetItem(display_name)
             item.setData(Qt.UserRole, node_type)
-            self.node_list.addItem(item)
-            self.filtered_items.append((display_name, node_type))
-
-        # Auto-select first item
-        if self.node_list.count() > 0:
-            self.node_list.setCurrentRow(0)
+            self.results_list.addItem(item)
 
     def _fuzzy_filter(self, filter_text: str):
         """
@@ -198,37 +258,63 @@ class NodePaletteDialog(QDialog):
         # Fuzzy match gets lower score
         return 50
 
-    def _on_search_changed(self, text: str):
-        """Handle search text change."""
-        self._update_list(text)
+    def _on_category_item_clicked(self, item: QTreeWidgetItem, column: int):
+        """Handle category tree item click."""
+        node_type = item.data(0, Qt.UserRole)
+        if node_type:  # Node item, not category
+            self._select_node(node_type)
 
-    def _on_item_double_clicked(self, item: QListWidgetItem):
-        """Handle item double-click."""
+    def _on_result_item_clicked(self, item: QListWidgetItem):
+        """Handle result list item click."""
         node_type = item.data(Qt.UserRole)
+        if node_type:
+            self._select_node(node_type)
+
+    def _select_node(self, node_type: str):
+        """Select and emit node."""
         self.node_selected.emit(node_type, self.scene_pos)
-        self.accept()
+        self.close()
 
-    def keyPressEvent(self, event: QKeyEvent):
-        """Handle key press."""
-        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
-            # Create selected node
-            current_item = self.node_list.currentItem()
-            if current_item:
-                node_type = current_item.data(Qt.UserRole)
-                self.node_selected.emit(node_type, self.scene_pos)
-                self.accept()
-            return
+    def eventFilter(self, obj, event):
+        """Filter events for keyboard navigation."""
+        if event.type() == QEvent.KeyPress:
+            key = event.key()
 
-        if event.key() == Qt.Key_Escape:
-            # Cancel
-            self.reject()
-            return
+            if key == Qt.Key_Escape:
+                self.cancelled.emit()
+                self.close()
+                return True
 
-        if event.key() == Qt.Key_Up or event.key() == Qt.Key_Down:
-            # Let list widget handle navigation
-            self.node_list.setFocus()
-            self.node_list.keyPressEvent(event)
-            self.search_box.setFocus()
-            return
+            if key == Qt.Key_Return or key == Qt.Key_Enter:
+                # Create selected node
+                if self.results_list.isVisible():
+                    current_item = self.results_list.currentItem()
+                    if current_item:
+                        node_type = current_item.data(Qt.UserRole)
+                        self._select_node(node_type)
+                        return True
+                else:
+                    current_item = self.category_tree.currentItem()
+                    if current_item:
+                        node_type = current_item.data(0, Qt.UserRole)
+                        if node_type:
+                            self._select_node(node_type)
+                            return True
+                return True
 
-        super().keyPressEvent(event)
+            if key in (Qt.Key_Up, Qt.Key_Down):
+                # Navigate in the appropriate widget
+                if self.results_list.isVisible():
+                    if obj != self.results_list:
+                        self.results_list.setFocus()
+                        self.results_list.event(event)
+                        self.search_box.setFocus()
+                        return True
+                else:
+                    if obj != self.category_tree:
+                        self.category_tree.setFocus()
+                        self.category_tree.event(event)
+                        self.search_box.setFocus()
+                        return True
+
+        return super().eventFilter(obj, event)
