@@ -407,6 +407,69 @@ class TestPrintNode:
         assert "42.0" in output_text or "42" in output_text
 
 
+class TestConnectionModes:
+    """Tests for connection modes (drag and click-click)."""
+
+    def test_click_to_connect_mode(self, network_view, qtbot):
+        """Test click-click connection mode."""
+        scene = network_view._scene
+        network = scene.network_model
+
+        # Add two nodes
+        float_node = NodeRegistry.create_node("FloatVariable")
+        float_node.set_position(100, 100)
+        network.add_node(float_node)
+
+        add_node = NodeRegistry.create_node("AddNode")
+        add_node.set_position(300, 100)
+        network.add_node(add_node)
+
+        # Get port items
+        float_item = scene.get_node_item(float_node.id)
+        add_item = scene.get_node_item(add_node.id)
+
+        output_port = float_item.get_port("out", is_output=True)
+        input_port = add_item.get_port("a", is_output=False)
+
+        # Simulate click-to-connect
+        # First click on output port
+        network_view._click_to_connect_port = output_port
+        scene.start_connection_drag(output_port)
+
+        # Second click on input port
+        network_view._complete_click_connection(input_port)
+
+        # Check connection was created
+        assert len(network.connector_pairs()) == 1
+
+    def test_create_connection_directly(self, network_view, qtbot):
+        """Test creating connection with create_connection method."""
+        scene = network_view._scene
+        network = scene.network_model
+
+        # Add two nodes
+        float_node = NodeRegistry.create_node("FloatVariable")
+        float_node.set_position(100, 100)
+        network.add_node(float_node)
+
+        add_node = NodeRegistry.create_node("AddNode")
+        add_node.set_position(300, 100)
+        network.add_node(add_node)
+
+        # Get port items
+        float_item = scene.get_node_item(float_node.id)
+        add_item = scene.get_node_item(add_node.id)
+
+        output_port = float_item.get_port("out", is_output=True)
+        input_port = add_item.get_port("a", is_output=False)
+
+        # Create connection directly
+        success = scene.create_connection(output_port, input_port)
+
+        assert success is True
+        assert len(network.connector_pairs()) == 1
+
+
 # Add helper method to NetworkView for testing
 def _on_node_menu_action_direct(self, node_type: str, scene_pos: QPointF):
     """Direct node creation for testing."""
