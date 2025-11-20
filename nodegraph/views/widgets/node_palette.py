@@ -7,12 +7,12 @@ Searchable node palette for creating nodes.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
-    QMenu, QLabel, QFrame
+    QLabel, QFrame
 )
 from PySide6.QtCore import Qt, Signal, QPointF, QEvent
-from PySide6.QtGui import QKeyEvent, QAction
+from PySide6.QtGui import QKeyEvent
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
     from ...core.registry import NodeRegistry
@@ -34,7 +34,6 @@ class NodePaletteDialog(QWidget):
         self.scene_pos = scene_pos
         self.all_nodes: Dict[str, str] = {}  # {display_name: node_type}
         self.categories: Dict[str, List[tuple]] = {}  # {category: [(node_type, node_class)]}
-        self.category_menu: Optional[QMenu] = None
 
         # Set window flags for popup behavior
         self.setWindowFlags(Qt.Popup | Qt.FramelessWindowHint)
@@ -82,15 +81,17 @@ class NodePaletteDialog(QWidget):
         self.category_list.itemEntered.connect(self._on_category_hovered)
         self.category_list.itemClicked.connect(self._on_category_clicked)
         self.category_list.installEventFilter(self)
-        self.category_list.viewport().installEventFilter(self)  # Also track viewport events
         self.content_layout.addWidget(self.category_list)
 
-        # Results list (right side - only visible when searching)
-        self.results_list = QListWidget()
-        self.results_list.itemClicked.connect(self._on_result_item_clicked)
-        self.results_list.installEventFilter(self)
-        self.results_list.hide()  # Hidden by default
-        self.content_layout.addWidget(self.results_list)
+        # Right side list (for both node list and search results)
+        self.right_list = QListWidget()
+        self.right_list.itemClicked.connect(self._on_right_item_clicked)
+        self.right_list.installEventFilter(self)
+        self.right_list.hide()  # Hidden by default
+        self.content_layout.addWidget(self.right_list)
+
+        # Track current mode: 'category' or 'search'
+        self.right_list_mode = None
 
         layout.addWidget(container)
 
@@ -199,94 +200,79 @@ class NodePaletteDialog(QWidget):
         total_width = list_width + 8  # Add margins
         total_height = list_height + 40  # Add search box height + margins
 
-        if self.results_list.isVisible():
-            total_width += 200  # Add space for results list
-            self.results_list.setFixedHeight(list_height)
+        if self.right_list.isVisible():
+            # Calculate right list width based on content
+            right_width = 200
+            for i in range(self.right_list.count()):
+                item = self.right_list.item(i)
+                text_width = self.right_list.fontMetrics().horizontalAdvance(item.text())
+                right_width = max(right_width, text_width + 30)
+            right_width = min(right_width, 400)
+
+            total_width += right_width  # Add space for right list
+            self.right_list.setFixedWidth(right_width)
+            self.right_list.setFixedHeight(list_height)
 
         self.setFixedSize(total_width, total_height)
 
     def _on_category_hovered(self, item: QListWidgetItem):
-        """Handle category hover - show submenu with nodes."""
-        # Don't show submenu when in search mode
-        if self.results_list.isVisible():
+        """Handle category hover - show node list."""
+        # Don't show node list when in search mode
+        if self.right_list_mode == 'search':
             return
 
         category = item.data(Qt.UserRole)
         if not category or category not in self.categories:
             return
 
-        # Close any existing menu (to allow switching between categories)
-        if self.category_menu:
-            self.category_menu.close()
-            self.category_menu = None
-
-        # Create submenu for this category
-        self.category_menu = QMenu(self)
-
-        # Set the menu to not steal focus, allowing typing in search box
-        self.category_menu.setFocusPolicy(Qt.NoFocus)
-        self.category_menu.setAttribute(Qt.WA_ShowWithoutActivating)
-
-        # Don't make menu modal - allow interaction with parent widget
-        self.category_menu.setWindowModality(Qt.NonModal)
+        # Populate right list with nodes from this category
+        self.right_list.clear()
+        self.right_list_mode = 'category'
 
         for node_type, node_class in self.categories[category]:
-            action = QAction(node_type, self.category_menu)
-            action.setData((node_type, category))
-            action.triggered.connect(lambda checked=False, nt=node_type: self._on_node_action_triggered(nt))
-            self.category_menu.addAction(action)
+            list_item = QListWidgetItem(node_type)
+            list_item.setData(Qt.UserRole, node_type)
+            self.right_list.addItem(list_item)
 
-        # Position submenu to the right of the category item
-        item_rect = self.category_list.visualItemRect(item)
-        global_pos = self.category_list.mapToGlobal(item_rect.topRight())
-
-        self.category_menu.popup(global_pos)
-
-        # Force focus back to search box after menu popup
-        self.search_box.setFocus(Qt.OtherFocusReason)
+        # Show right list and adjust size
+        self.right_list.show()
+        self._adjust_size()
 
     def _on_category_clicked(self, item: QListWidgetItem):
         """Handle category click - same as hover."""
         self._on_category_hovered(item)
 
-    def _on_node_action_triggered(self, node_type: str):
-        """Handle node action triggered from submenu."""
-        self._select_node(node_type)
-
     def _on_search_changed(self, text: str):
         """Handle search text change."""
         if text.strip():
-            # Close any open submenu
-            if self.category_menu:
-                self.category_menu.close()
-                self.category_menu = None
-
             # Show search results
+            self.right_list_mode = 'search'
             self._show_search_results(text)
-            self.results_list.show()
-            if self.results_list.count() > 0:
-                self.results_list.setCurrentRow(0)
+            self.right_list.show()
+            if self.right_list.count() > 0:
+                self.right_list.setCurrentRow(0)
 
             # Adjust size to include results panel
             self._adjust_size()
         else:
-            # Hide search results
-            self.results_list.hide()
+            # Hide right list
+            self.right_list_mode = None
+            self.right_list.hide()
             # Adjust size back to category list only
             self._adjust_size()
 
     def _show_search_results(self, filter_text: str):
         """Show filtered search results."""
-        self.results_list.clear()
+        self.right_list.clear()
 
         # Filter using fuzzy matching
         results = self._fuzzy_filter(filter_text)
 
-        # Add to results list
+        # Add to right list
         for display_name, node_type in results:
             item = QListWidgetItem(display_name)
             item.setData(Qt.UserRole, node_type)
-            self.results_list.addItem(item)
+            self.right_list.addItem(item)
 
     def _fuzzy_filter(self, filter_text: str):
         """
@@ -341,8 +327,8 @@ class NodePaletteDialog(QWidget):
         # Fuzzy match gets lower score
         return 50
 
-    def _on_result_item_clicked(self, item: QListWidgetItem):
-        """Handle result list item click."""
+    def _on_right_item_clicked(self, item: QListWidgetItem):
+        """Handle right list item click (both search results and category nodes)."""
         node_type = item.data(Qt.UserRole)
         if node_type:
             self._select_node(node_type)
@@ -353,18 +339,7 @@ class NodePaletteDialog(QWidget):
         self.close()
 
     def eventFilter(self, obj, event):
-        """Filter events for keyboard navigation and mouse tracking."""
-        # Handle mouse move events for category switching when submenu is open
-        if event.type() == QEvent.MouseMove:
-            if obj == self.category_list.viewport() and self.category_menu and not self.results_list.isVisible():
-                # Get item under mouse cursor
-                pos = event.position().toPoint()
-                item = self.category_list.itemAt(pos)
-                if item:
-                    # Trigger hover to switch submenu
-                    self._on_category_hovered(item)
-                return False  # Don't consume event
-
+        """Filter events for keyboard navigation."""
         if event.type() == QEvent.KeyPress:
             key = event.key()
 
@@ -375,8 +350,8 @@ class NodePaletteDialog(QWidget):
 
             if key == Qt.Key_Return or key == Qt.Key_Enter:
                 # Create selected node
-                if self.results_list.isVisible():
-                    current_item = self.results_list.currentItem()
+                if self.right_list.isVisible():
+                    current_item = self.right_list.currentItem()
                     if current_item:
                         node_type = current_item.data(Qt.UserRole)
                         self._select_node(node_type)
@@ -391,10 +366,11 @@ class NodePaletteDialog(QWidget):
 
             if key in (Qt.Key_Up, Qt.Key_Down):
                 # Navigate in the appropriate widget
-                if self.results_list.isVisible():
-                    if obj != self.results_list:
-                        self.results_list.setFocus()
-                        self.results_list.event(event)
+                if self.right_list.isVisible() and self.right_list_mode == 'search':
+                    # Only auto-navigate in search mode
+                    if obj != self.right_list:
+                        self.right_list.setFocus()
+                        self.right_list.event(event)
                         self.search_box.setFocus()
                         return True
                 else:
@@ -405,17 +381,24 @@ class NodePaletteDialog(QWidget):
                         return True
 
             if key in (Qt.Key_Right, Qt.Key_Left):
-                # Right arrow opens submenu, left arrow closes it
-                if not self.results_list.isVisible():
+                # Right arrow opens node list, left arrow focuses back on categories
+                if self.right_list_mode != 'search':
                     if key == Qt.Key_Right:
-                        current_item = self.category_list.currentItem()
-                        if current_item:
-                            self._on_category_hovered(current_item)
+                        if self.right_list.isVisible():
+                            # Focus on right list
+                            self.right_list.setFocus()
+                            if self.right_list.count() > 0:
+                                self.right_list.setCurrentRow(0)
                             return True
+                        else:
+                            # Open node list for current category
+                            current_item = self.category_list.currentItem()
+                            if current_item:
+                                self._on_category_hovered(current_item)
+                                return True
                     elif key == Qt.Key_Left:
-                        if self.category_menu:
-                            self.category_menu.close()
-                            self.category_menu = None
-                            return True
+                        # Focus back on category list
+                        self.category_list.setFocus()
+                        return True
 
         return super().eventFilter(obj, event)
