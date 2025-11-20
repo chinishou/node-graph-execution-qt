@@ -61,9 +61,12 @@ class VariableNode(BaseNode):
         kwargs['_setup_data_type'] = data_type
         kwargs['_setup_default_value'] = default_value
 
+        # Get node_type from kwargs or use default
+        node_type = kwargs.pop('node_type', 'VariableNode')
+
         super().__init__(
             name=name,
-            node_type="VariableNode",
+            node_type=node_type,
             **kwargs
         )
 
@@ -108,6 +111,8 @@ class IntVariable(VariableNode):
     """Integer variable node."""
 
     def __init__(self, default_value: int = 0, **kwargs):
+        # Set node_type before calling super
+        kwargs['node_type'] = kwargs.get('node_type', 'IntVariable')
         super().__init__(
             data_type="int",
             default_value=default_value,
@@ -120,6 +125,8 @@ class FloatVariable(VariableNode):
     """Float variable node."""
 
     def __init__(self, default_value: float = 0.0, **kwargs):
+        # Set node_type before calling super
+        kwargs['node_type'] = kwargs.get('node_type', 'FloatVariable')
         super().__init__(
             data_type="float",
             default_value=default_value,
@@ -132,6 +139,8 @@ class StringVariable(VariableNode):
     """String variable node."""
 
     def __init__(self, default_value: str = "", **kwargs):
+        # Set node_type before calling super
+        kwargs['node_type'] = kwargs.get('node_type', 'StringVariable')
         super().__init__(
             data_type="str",
             default_value=default_value,
@@ -144,6 +153,8 @@ class BoolVariable(VariableNode):
     """Boolean variable node."""
 
     def __init__(self, default_value: bool = False, **kwargs):
+        # Set node_type before calling super
+        kwargs['node_type'] = kwargs.get('node_type', 'BoolVariable')
         super().__init__(
             data_type="bool",
             default_value=default_value,
