@@ -20,15 +20,32 @@ class AddNode(BaseNode):
 
     def setup(self) -> None:
         """Setup add node interface."""
-        self.add_input("a", data_type="float", default_value=0.0, label="A")
-        self.add_input("b", data_type="float", default_value=0.0, label="B")
-        self.add_output("result", data_type="float", label="Result")
+        self.add_parameter(
+            "type",
+            data_type="str",
+            default_value="float",
+            label="Type",
+            menu_items=["int", "float"]
+        )
+        self.add_input("a", data_type="any", default_value=0.0, label="A")
+        self.add_input("b", data_type="any", default_value=0.0, label="B")
+        self.add_output("result", data_type="any", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Add a and b."""
         a = inputs.get("a", 0.0)
         b = inputs.get("b", 0.0)
-        return {"result": a + b}
+        value_type = self.parameter("type").value()
+
+        result = a + b
+
+        # Convert to selected type
+        if value_type == "int":
+            result = int(result)
+        else:
+            result = float(result)
+
+        return {"result": result}
 
 
 class SubtractNode(BaseNode):
@@ -42,15 +59,32 @@ class SubtractNode(BaseNode):
 
     def setup(self) -> None:
         """Setup subtract node interface."""
-        self.add_input("a", data_type="float", default_value=0.0, label="A")
-        self.add_input("b", data_type="float", default_value=0.0, label="B")
-        self.add_output("result", data_type="float", label="Result")
+        self.add_parameter(
+            "type",
+            data_type="str",
+            default_value="float",
+            label="Type",
+            menu_items=["int", "float"]
+        )
+        self.add_input("a", data_type="any", default_value=0.0, label="A")
+        self.add_input("b", data_type="any", default_value=0.0, label="B")
+        self.add_output("result", data_type="any", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Subtract b from a."""
         a = inputs.get("a", 0.0)
         b = inputs.get("b", 0.0)
-        return {"result": a - b}
+        value_type = self.parameter("type").value()
+
+        result = a - b
+
+        # Convert to selected type
+        if value_type == "int":
+            result = int(result)
+        else:
+            result = float(result)
+
+        return {"result": result}
 
 
 class MultiplyNode(BaseNode):
@@ -64,15 +98,32 @@ class MultiplyNode(BaseNode):
 
     def setup(self) -> None:
         """Setup multiply node interface."""
-        self.add_input("a", data_type="float", default_value=1.0, label="A")
-        self.add_input("b", data_type="float", default_value=1.0, label="B")
-        self.add_output("result", data_type="float", label="Result")
+        self.add_parameter(
+            "type",
+            data_type="str",
+            default_value="float",
+            label="Type",
+            menu_items=["int", "float"]
+        )
+        self.add_input("a", data_type="any", default_value=1.0, label="A")
+        self.add_input("b", data_type="any", default_value=1.0, label="B")
+        self.add_output("result", data_type="any", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Multiply a and b."""
         a = inputs.get("a", 1.0)
         b = inputs.get("b", 1.0)
-        return {"result": a * b}
+        value_type = self.parameter("type").value()
+
+        result = a * b
+
+        # Convert to selected type
+        if value_type == "int":
+            result = int(result)
+        else:
+            result = float(result)
+
+        return {"result": result}
 
 
 class DivideNode(BaseNode):
@@ -86,17 +137,33 @@ class DivideNode(BaseNode):
 
     def setup(self) -> None:
         """Setup divide node interface."""
-        self.add_input("a", data_type="float", default_value=1.0, label="A")
-        self.add_input("b", data_type="float", default_value=1.0, label="B")
-        self.add_output("result", data_type="float", label="Result")
+        self.add_parameter(
+            "type",
+            data_type="str",
+            default_value="float",
+            label="Type",
+            menu_items=["int", "float"]
+        )
+        self.add_input("a", data_type="any", default_value=1.0, label="A")
+        self.add_input("b", data_type="any", default_value=1.0, label="B")
+        self.add_output("result", data_type="any", label="Result")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Divide a by b."""
         a = inputs.get("a", 1.0)
         b = inputs.get("b", 1.0)
+        value_type = self.parameter("type").value()
 
         if b == 0:
             print(f"Warning: Division by zero in node '{self.name}'")
-            return {"result": 0.0}
+            return {"result": 0}
 
-        return {"result": a / b}
+        result = a / b
+
+        # Convert to selected type
+        if value_type == "int":
+            result = int(result)
+        else:
+            result = float(result)
+
+        return {"result": result}

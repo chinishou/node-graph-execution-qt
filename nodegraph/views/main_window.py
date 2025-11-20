@@ -211,6 +211,7 @@ class MainWindow(QMainWindow):
         from ..nodes.operators.math_nodes import (
             AddNode, SubtractNode, MultiplyNode, DivideNode
         )
+        from ..nodes.operators.convert_node import ConvertNode
         from ..nodes.utils import PrintNode, DisplayNode
         from ..nodes.base import (
             IntVariable, FloatVariable, StringVariable, BoolVariable
@@ -221,6 +222,9 @@ class MainWindow(QMainWindow):
         NodeRegistry.register(SubtractNode)
         NodeRegistry.register(MultiplyNode)
         NodeRegistry.register(DivideNode)
+
+        # Conversion nodes
+        NodeRegistry.register(ConvertNode)
 
         # Utility nodes
         NodeRegistry.register(PrintNode)

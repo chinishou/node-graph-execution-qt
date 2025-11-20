@@ -8,7 +8,7 @@ Widget for displaying and editing node parameters.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QCheckBox, QScrollArea, QFrame,
-    QGroupBox, QPushButton
+    QGroupBox, QPushButton, QComboBox
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -154,6 +154,11 @@ class ParametersPane(QWidget):
                 widget = self._create_connector_widget(connector)
                 group_layout.addWidget(widget)
 
+                # Connect signal to update enabled state when connection changes
+                connector.connected_changed.connect(
+                    lambda c=connector: self._on_connector_connection_changed(c)
+                )
+
             self._content_layout.insertWidget(
                 self._content_layout.count() - 1, group
             )
@@ -205,6 +210,9 @@ class ParametersPane(QWidget):
         )
         layout.addWidget(editor)
 
+        # Disable editor if connector is already connected
+        editor.setEnabled(not connector.is_connected())
+
         self._widgets[f"input_{connector.name}"] = editor
 
         return widget
@@ -220,14 +228,32 @@ class ParametersPane(QWidget):
         label.setMinimumWidth(80)
         layout.addWidget(label)
 
-        # Editor
-        editor = self._create_value_editor(
-            param.data_type,
-            param.value(),
-            lambda v: self._on_parameter_value_changed(param, v)
-        )
-        layout.addWidget(editor)
+        # Editor - check if parameter has menu_items (dropdown)
+        if param.menu_items and len(param.menu_items) > 0:
+            # Create combo box for menu selection
+            editor = QComboBox()
+            for item in param.menu_items:
+                editor.addItem(str(item))
 
+            # Set current value
+            current_value = str(param.value())
+            index = editor.findText(current_value)
+            if index >= 0:
+                editor.setCurrentIndex(index)
+
+            # Connect signal
+            editor.currentTextChanged.connect(
+                lambda v: self._on_parameter_value_changed(param, v)
+            )
+        else:
+            # Use standard value editor
+            editor = self._create_value_editor(
+                param.data_type,
+                param.value(),
+                lambda v: self._on_parameter_value_changed(param, v)
+            )
+
+        layout.addWidget(editor)
         self._widgets[f"param_{param.name}"] = editor
 
         return widget
@@ -288,6 +314,15 @@ class ParametersPane(QWidget):
         """Handle parameter value change."""
         param.set_value(value)
         self.parameter_changed.emit()
+
+    def _on_connector_connection_changed(self, connector: "ConnectorModel"):
+        """Handle connector connection state change."""
+        # Update the enabled state of the corresponding input widget
+        widget_key = f"input_{connector.name}"
+        if widget_key in self._widgets:
+            editor = self._widgets[widget_key]
+            # Disable if connected, enable if disconnected
+            editor.setEnabled(not connector.is_connected())
 
     def _on_execute(self):
         """Execute the current node."""

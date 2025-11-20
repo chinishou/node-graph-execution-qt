@@ -48,6 +48,8 @@ class NetworkView(QGraphicsView):
         self._connecting = False
         self._zoom_level = 1.0
         self._click_to_connect_port: Optional["PortGraphicsItem"] = None  # For click-click connection
+        self._press_pos = QPointF()  # Track initial press position
+        self._drag_threshold = 5  # Pixels to move before considering it a drag
 
         # Setup view
         self.setRenderHint(QPainter.Antialiasing)
@@ -126,10 +128,11 @@ class NetworkView(QGraphicsView):
                     event.accept()
                     return
                 else:
-                    # First click: start click-to-connect mode
-                    # But also prepare for potential drag
+                    # First click on port: prepare for both drag and click modes
                     self._click_to_connect_port = port
+                    self._press_pos = event.position()
                     self._scene.start_connection_drag(port)
+                    # Don't set _connecting yet - wait for mouse movement
                     event.accept()
                     return
             else:
@@ -155,8 +158,17 @@ class NetworkView(QGraphicsView):
             event.accept()
             return
 
-        if self._connecting and self._scene:
-            # Update connection drag
+        # Handle connection dragging or click-to-connect mode
+        if self._click_to_connect_port and self._scene:
+            # Check if we should enter drag mode (moved beyond threshold)
+            if not self._connecting:
+                delta = event.position() - self._press_pos
+                distance = (delta.x() ** 2 + delta.y() ** 2) ** 0.5
+                if distance > self._drag_threshold:
+                    # Enter drag mode
+                    self._connecting = True
+
+            # Update temporary connection line (in both drag and click modes)
             scene_pos = self.mapToScene(event.position().toPoint())
             self._scene.update_connection_drag(scene_pos)
             event.accept()
@@ -172,14 +184,27 @@ class NetworkView(QGraphicsView):
             event.accept()
             return
 
-        if event.button() == Qt.LeftButton and self._connecting:
-            # Finish connection drag
-            scene_pos = self.mapToScene(event.position().toPoint())
-            if self._scene:
-                self._scene.finish_connection_drag(scene_pos)
-            self._connecting = False
-            event.accept()
-            return
+        if event.button() == Qt.LeftButton:
+            if self._connecting:
+                # Finish drag connection mode
+                scene_pos = self.mapToScene(event.position().toPoint())
+                if self._scene:
+                    success = self._scene.finish_connection_drag(scene_pos)
+                    if success:
+                        # Connection completed, clean up
+                        self._click_to_connect_port = None
+                        self._connecting = False
+                    else:
+                        # Connection failed, stay in click-to-connect mode
+                        self._connecting = False
+                        # Keep _click_to_connect_port for second click
+                event.accept()
+                return
+            elif self._click_to_connect_port:
+                # Mouse released without dragging - stay in click-to-connect mode
+                # The temporary line will continue following the cursor
+                event.accept()
+                return
 
         super().mouseReleaseEvent(event)
 

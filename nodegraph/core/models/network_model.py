@@ -179,6 +179,17 @@ class NetworkModel:
         if not source_connector or not target_connector:
             return False
 
+        # If target is an input and already connected, disconnect it first
+        # This ensures only one connection to an input at a time
+        if target_connector.is_input() and target_connector.is_connected():
+            existing_connections = target_connector.connections()
+            for existing_conn in existing_connections:
+                # Disconnect through network model to emit proper signals
+                self.disconnect(
+                    existing_conn.node.id, existing_conn.name,
+                    target_node_id, target_input
+                )
+
         success = source_connector.connect_to(target_connector)
 
         if success:
