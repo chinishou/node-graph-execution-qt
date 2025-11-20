@@ -5,7 +5,7 @@ Connection Item
 QGraphicsItem for rendering connections between ports.
 """
 
-from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem, QWidget
+from PySide6.QtWidgets import QGraphicsPathItem, QStyleOptionGraphicsItem, QWidget, QStyle
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtGui import QPainter, QColor, QPen, QPainterPath
 
@@ -131,7 +131,7 @@ class ConnectionItem(QGraphicsPathItem):
         self.setPen(pen)
 
         # Disable selection rectangle by modifying the option
-        option.state &= ~QStyleOptionGraphicsItem.State_Selected
+        option.state &= ~QStyle.State_Selected
 
         super().paint(painter, option, widget)
 
