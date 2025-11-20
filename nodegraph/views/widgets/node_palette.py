@@ -206,17 +206,25 @@ class NodePaletteDialog(QWidget):
 
     def _on_category_hovered(self, item: QListWidgetItem):
         """Handle category hover - show submenu with nodes."""
+        # Don't show submenu when in search mode
+        if self.results_list.isVisible():
+            return
+
         category = item.data(Qt.UserRole)
         if not category or category not in self.categories:
             return
 
-        # Close any existing menu
+        # Close any existing menu (to allow switching between categories)
         if self.category_menu:
             self.category_menu.close()
             self.category_menu = None
 
         # Create submenu for this category
         self.category_menu = QMenu(self)
+
+        # Set the menu to not steal focus, allowing typing in search box
+        self.category_menu.setFocusPolicy(Qt.NoFocus)
+        self.category_menu.setAttribute(Qt.WA_ShowWithoutActivating)
 
         for node_type, node_class in self.categories[category]:
             action = QAction(node_type, self.category_menu)
