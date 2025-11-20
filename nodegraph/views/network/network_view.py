@@ -58,6 +58,9 @@ class NetworkView(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
         self.setDragMode(QGraphicsView.RubberBandDrag)
 
+        # Set large scene rect for unlimited panning
+        self.setSceneRect(-10000, -10000, 20000, 20000)
+
         # Enable focus for key events
         self.setFocusPolicy(Qt.StrongFocus)
 
@@ -166,6 +169,18 @@ class NetworkView(QGraphicsView):
             return
 
         super().mouseReleaseEvent(event)
+
+    def event(self, event):
+        """Override event to catch Tab key before focus system."""
+        if event.type() == event.Type.KeyPress:
+            key_event = event
+            if key_event.key() == Qt.Key_Tab:
+                # Show node palette at cursor position
+                cursor_pos = self.mapFromGlobal(self.cursor().pos())
+                scene_pos = self.mapToScene(cursor_pos)
+                self._show_node_menu(self.mapToGlobal(cursor_pos), scene_pos)
+                return True
+        return super().event(event)
 
     def keyPressEvent(self, event: QKeyEvent):
         """Handle key press."""

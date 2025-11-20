@@ -104,11 +104,15 @@ class NetworkScene(QGraphicsScene):
             item = self._node_items.pop(node.id)
             self.removeItem(item)
 
-            # Remove associated connections
-            self._connection_items = [
+            # Remove associated connections from scene
+            connections_to_remove = [
                 conn for conn in self._connection_items
-                if not self._connection_involves_node(conn, node)
+                if self._connection_involves_node(conn, node)
             ]
+
+            for conn in connections_to_remove:
+                self.removeItem(conn)
+                self._connection_items.remove(conn)
 
     def _connection_involves_node(self, connection: "ConnectionItem", node: "NodeModel") -> bool:
         """Check if a connection involves a node."""
