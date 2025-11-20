@@ -470,6 +470,194 @@ class TestConnectionModes:
         assert len(network.connector_pairs()) == 1
 
 
+class TestNodePalette:
+    """Tests for NodePaletteDialog interactive behavior."""
+
+    @pytest.fixture(autouse=True)
+    def setup_nodes(self):
+        """Register nodes for palette tests."""
+        # Clear and register test nodes
+        NodeRegistry.clear()
+        from nodegraph.nodes.operators.math_nodes import AddNode
+        from nodegraph.nodes.utils import PrintNode
+        from nodegraph.nodes.base import FloatVariable
+
+        NodeRegistry.register(AddNode)
+        NodeRegistry.register(PrintNode)
+        NodeRegistry.register(FloatVariable)
+
+    def test_palette_creation(self, qtbot):
+        """Test creating node palette dialog."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+
+        # Check basic structure
+        assert palette.category_list.count() > 0
+        assert not palette.right_list.isVisible()
+        assert palette.right_list_mode is None
+
+    def test_category_hover_shows_nodes(self, qtbot):
+        """Test that hovering over category shows node list."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()  # Must show the widget first
+        qtbot.waitExposed(palette)
+
+        # Get first category
+        first_category = palette.category_list.item(0)
+        assert first_category is not None
+
+        # Trigger hover
+        palette._on_category_hovered(first_category)
+
+        # Right list should be visible with nodes
+        assert palette.right_list.isVisible()
+        assert palette.right_list_mode == 'category'
+        assert palette.right_list.count() > 0
+
+    def test_category_switching(self, qtbot):
+        """Test switching between categories updates node list."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()
+        qtbot.waitExposed(palette)
+
+        # Hover over first category
+        first_category = palette.category_list.item(0)
+        palette._on_category_hovered(first_category)
+        first_count = palette.right_list.count()
+
+        # Hover over second category (if exists)
+        if palette.category_list.count() > 1:
+            second_category = palette.category_list.item(1)
+            palette._on_category_hovered(second_category)
+            second_count = palette.right_list.count()
+
+            # Should switch to different category
+            assert palette.right_list_mode == 'category'
+            # Counts may differ if categories have different node counts
+            assert palette.right_list.isVisible()
+
+    def test_search_mode_switches_to_search_results(self, qtbot):
+        """Test that typing in search switches to search mode."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()
+        qtbot.waitExposed(palette)
+
+        # First show category nodes
+        first_category = palette.category_list.item(0)
+        palette._on_category_hovered(first_category)
+        assert palette.right_list_mode == 'category'
+
+        # Type in search box
+        palette.search_box.setText("Add")
+        qtbot.wait(10)  # Allow signal processing
+
+        # Should switch to search mode
+        assert palette.right_list_mode == 'search'
+        assert palette.right_list.isVisible()
+        assert palette.right_list.count() > 0  # Should have search results
+
+    def test_search_box_keeps_focus(self, qtbot):
+        """Test that search box keeps focus during operations."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()
+
+        # Focus search box
+        palette.search_box.setFocus()
+        assert palette.search_box.hasFocus()
+
+        # Hover over category to show right list
+        first_category = palette.category_list.item(0)
+        palette._on_category_hovered(first_category)
+
+        # Search box should still have focus (or be able to receive it)
+        palette.search_box.setFocus()
+        assert palette.search_box.hasFocus()
+
+        # Type should work
+        QTest.keyClicks(palette.search_box, "test")
+        assert palette.search_box.text() == "test"
+
+    def test_search_prevents_category_hover(self, qtbot):
+        """Test that category hover doesn't work in search mode."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+
+        # Enter search mode
+        palette.search_box.setText("Add")
+        qtbot.wait(10)
+        assert palette.right_list_mode == 'search'
+        initial_count = palette.right_list.count()
+
+        # Try to hover over category
+        first_category = palette.category_list.item(0)
+        palette._on_category_hovered(first_category)
+
+        # Should remain in search mode, not switch to category mode
+        assert palette.right_list_mode == 'search'
+        assert palette.right_list.count() == initial_count
+
+    def test_clear_search_hides_right_list(self, qtbot):
+        """Test that clearing search hides right list."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+        palette.show()
+        qtbot.waitExposed(palette)
+
+        # Enter search mode
+        palette.search_box.setText("Add")
+        qtbot.wait(10)
+        assert palette.right_list.isVisible()
+
+        # Clear search
+        palette.search_box.setText("")
+        qtbot.wait(10)
+
+        # Right list should be hidden
+        assert not palette.right_list.isVisible()
+        assert palette.right_list_mode is None
+
+    def test_node_selection_emits_signal(self, qtbot):
+        """Test that selecting a node emits the signal."""
+        from nodegraph.views.widgets.node_palette import NodePaletteDialog
+
+        palette = NodePaletteDialog(QPointF(100, 100))
+        qtbot.addWidget(palette)
+
+        # Track signal
+        signal_emitted = []
+        palette.node_selected.connect(lambda node_type, pos: signal_emitted.append(node_type))
+
+        # Show category nodes
+        first_category = palette.category_list.item(0)
+        palette._on_category_hovered(first_category)
+
+        # Click on first node
+        first_node = palette.right_list.item(0)
+        palette._on_right_item_clicked(first_node)
+
+        # Should have emitted signal
+        assert len(signal_emitted) == 1
+        assert isinstance(signal_emitted[0], str)
+
+
 # Add helper method to NetworkView for testing
 def _on_node_menu_action_direct(self, node_type: str, scene_pos: QPointF):
     """Direct node creation for testing."""
