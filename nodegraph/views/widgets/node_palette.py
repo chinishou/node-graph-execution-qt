@@ -48,8 +48,8 @@ class NodePaletteDialog(QWidget):
 
     def _setup_ui(self):
         """Setup the UI."""
-        self.setMinimumWidth(300)
-        self.setMinimumHeight(400)
+        self.setMinimumWidth(200)
+        self.setMinimumHeight(300)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -79,7 +79,9 @@ class NodePaletteDialog(QWidget):
         self.category_tree = QTreeWidget()
         self.category_tree.setHeaderHidden(True)
         self.category_tree.setIndentation(12)
+        self.category_tree.setMouseTracking(True)  # Enable hover tracking
         self.category_tree.itemClicked.connect(self._on_category_item_clicked)
+        self.category_tree.itemEntered.connect(self._on_category_item_hovered)
         self.category_tree.installEventFilter(self)
         self.content_layout.addWidget(self.category_tree)
 
@@ -177,6 +179,43 @@ class NodePaletteDialog(QWidget):
                 node_item.setText(0, node_type)
                 node_item.setData(0, Qt.UserRole, node_type)
 
+        # Adjust size based on content
+        self._adjust_size()
+
+    def _adjust_size(self):
+        """Adjust widget size based on content."""
+        # Calculate tree width based on content
+        self.category_tree.resizeColumnToContents(0)
+        tree_width = self.category_tree.sizeHintForColumn(0) + 40  # Add padding for scrollbar
+        tree_width = max(180, min(tree_width, 400))  # Clamp between 180-400
+
+        # Calculate tree height based on item count
+        total_items = self.category_tree.topLevelItemCount()
+        for i in range(total_items):
+            item = self.category_tree.topLevelItem(i)
+            total_items += item.childCount()
+
+        tree_height = min(total_items * 22 + 40, 600)  # Max 600px height
+        tree_height = max(200, tree_height)  # Min 200px
+
+        # Set sizes
+        self.category_tree.setMinimumWidth(tree_width)
+        self.category_tree.setMaximumWidth(tree_width)
+
+        # Adjust overall widget size
+        total_width = tree_width + 8  # Add margins
+        if self.results_list.isVisible():
+            total_width += 200  # Add space for results list
+
+        self.setFixedSize(total_width, tree_height)
+
+    def _on_category_item_hovered(self, item: QTreeWidgetItem, column: int):
+        """Handle category tree item hover - auto expand categories."""
+        # Only expand if it's a category (has children)
+        if item.childCount() > 0:
+            # Expand the hovered category
+            item.setExpanded(True)
+
     def _on_search_changed(self, text: str):
         """Handle search text change."""
         if text.strip():
@@ -188,9 +227,14 @@ class NodePaletteDialog(QWidget):
             self.results_list.show()
             if self.results_list.count() > 0:
                 self.results_list.setCurrentRow(0)
+
+            # Adjust size to include results panel
+            self._adjust_size()
         else:
             # Hide search results
             self.results_list.hide()
+            # Adjust size back to tree only
+            self._adjust_size()
 
     def _show_search_results(self, filter_text: str):
         """Show filtered search results."""
