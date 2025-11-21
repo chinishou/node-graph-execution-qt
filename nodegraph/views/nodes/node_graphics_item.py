@@ -145,10 +145,22 @@ class NodeGraphicsItem(QGraphicsItem):
         font.setPointSize(8)
         painter.setFont(font)
 
+        # Import port color mapping
+        from .port_graphics_item import PortGraphicsItem
+
         # Input labels
         for i, (name, connector) in enumerate(self.node_model.inputs().items()):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
+
+            # Set color based on data type
+            data_type = connector.data_type
+            if data_type in PortGraphicsItem.TYPE_COLORS:
+                label_color = PortGraphicsItem.TYPE_COLORS[data_type]
+            else:
+                label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+
+            painter.setPen(QPen(label_color))
             text_rect = QRectF(12, y, self.NODE_WIDTH / 2 - 16, self.PORT_HEIGHT)
             painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignLeft, label)
 
@@ -156,6 +168,15 @@ class NodeGraphicsItem(QGraphicsItem):
         for i, (name, connector) in enumerate(self.node_model.outputs().items()):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
+
+            # Set color based on data type
+            data_type = connector.data_type
+            if data_type in PortGraphicsItem.TYPE_COLORS:
+                label_color = PortGraphicsItem.TYPE_COLORS[data_type]
+            else:
+                label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+
+            painter.setPen(QPen(label_color))
             text_rect = QRectF(self.NODE_WIDTH / 2, y, self.NODE_WIDTH / 2 - 12, self.PORT_HEIGHT)
             painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignRight, label)
 

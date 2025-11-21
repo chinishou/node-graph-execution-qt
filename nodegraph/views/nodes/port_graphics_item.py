@@ -24,10 +24,15 @@ class PortGraphicsItem(QGraphicsItem):
 
     PORT_RADIUS = 6
 
-    # Colors
-    INPUT_COLOR = QColor(100, 180, 100)
-    OUTPUT_COLOR = QColor(180, 100, 100)
-    CONNECTED_COLOR = QColor(255, 200, 50)
+    # Colors by data type
+    TYPE_COLORS = {
+        'int': QColor(100, 200, 255),      # Light blue
+        'float': QColor(150, 255, 150),    # Light green
+        'bool': QColor(255, 100, 100),     # Light red
+        'str': QColor(255, 200, 100),      # Orange
+        'any': QColor(200, 200, 200),      # Gray
+    }
+    CUSTOM_TYPE_COLOR = QColor(200, 150, 255)  # Purple for custom types
     HOVER_COLOR = QColor(255, 255, 255)
 
     def __init__(self, connector: "ConnectorModel", is_output: bool, parent=None):
@@ -49,15 +54,21 @@ class PortGraphicsItem(QGraphicsItem):
         """Paint the port."""
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Determine color
+        # Determine color based on hover state or data type
         if self._is_hovered:
             color = self.HOVER_COLOR
-        elif self.connector.is_connected():
-            color = self.CONNECTED_COLOR
-        elif self.is_output:
-            color = self.OUTPUT_COLOR
         else:
-            color = self.INPUT_COLOR
+            # Get color based on data type
+            data_type = self.connector.data_type
+            if data_type in self.TYPE_COLORS:
+                color = self.TYPE_COLORS[data_type]
+            else:
+                # Custom type - use purple
+                color = self.CUSTOM_TYPE_COLOR
+
+            # If connected, make color brighter
+            if self.connector.is_connected():
+                color = color.lighter(130)
 
         # Draw port circle
         painter.setBrush(QBrush(color))
