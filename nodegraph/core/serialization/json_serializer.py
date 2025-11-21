@@ -171,6 +171,13 @@ class JSONSerializer:
                         if param:
                             param.set_value(param_data.get("value"), emit_signal=False)
 
+                    # Special handling for SubnetNode
+                    if node_type == "SubnetNode" and "internal_network" in node_data:
+                        # Recursively deserialize internal network
+                        internal_data = {"network": node_data["internal_network"]}
+                        internal_network, _ = cls.deserialize_network(internal_data)
+                        node.set_internal_network(internal_network)
+
                     network.add_node(node)
                     node_map[node.id] = node
                 else:
