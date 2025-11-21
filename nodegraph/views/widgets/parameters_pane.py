@@ -8,7 +8,7 @@ Widget for displaying and editing node parameters.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QCheckBox, QScrollArea, QFrame,
-    QGroupBox, QPushButton
+    QGroupBox, QPushButton, QComboBox
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -36,6 +36,7 @@ class ParametersPane(QWidget):
 
         self._node: Optional["NodeModel"] = None
         self._widgets: Dict[str, QWidget] = {}
+        self._labels: Dict[str, QLabel] = {}  # Store labels for styling updates
 
         self._setup_ui()
 
@@ -106,6 +107,44 @@ class ParametersPane(QWidget):
             QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
                 border: 1px solid #6c6c6c;
             }
+            QCheckBox {
+                spacing: 5px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 2px solid #6a6a6a;
+                border-radius: 3px;
+                background-color: #2a2a2a;
+            }
+            QCheckBox::indicator:hover {
+                border: 2px solid #8a8a8a;
+                background-color: #3a3a3a;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #ff9500;
+                border: 2px solid #ff9500;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #4c4c4c;
+                border-radius: 3px;
+                padding: 4px;
+            }
+            QComboBox:focus {
+                border: 1px solid #6c6c6c;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 6px solid #dcdcdc;
+                margin-right: 6px;
+            }
             QPushButton {
                 background-color: #4a4a4a;
                 border: 1px solid #5a5a5a;
@@ -128,6 +167,7 @@ class ParametersPane(QWidget):
         """Set the node to display."""
         self._node = node
         self._widgets.clear()
+        self._labels.clear()
 
         # Clear content
         while self._content_layout.count() > 1:
@@ -153,6 +193,11 @@ class ParametersPane(QWidget):
             for name, connector in inputs.items():
                 widget = self._create_connector_widget(connector)
                 group_layout.addWidget(widget)
+
+                # Connect signal to update enabled state when connection changes
+                connector.connected_changed.connect(
+                    lambda c=connector: self._on_connector_connection_changed(c)
+                )
 
             self._content_layout.insertWidget(
                 self._content_layout.count() - 1, group
@@ -205,7 +250,19 @@ class ParametersPane(QWidget):
         )
         layout.addWidget(editor)
 
+        # Store widgets for later updates
         self._widgets[f"input_{connector.name}"] = editor
+        self._labels[f"input_{connector.name}"] = label
+
+        # Apply initial style based on connection state
+        is_connected = connector.is_connected()
+        editor.setEnabled(not is_connected)
+        if is_connected:
+            label.setStyleSheet("color: #888888; font-style: italic;")
+            editor.setStyleSheet("background-color: #1a1a1a; color: #666666;")
+        else:
+            label.setStyleSheet("")
+            editor.setStyleSheet("")
 
         return widget
 
@@ -220,14 +277,32 @@ class ParametersPane(QWidget):
         label.setMinimumWidth(80)
         layout.addWidget(label)
 
-        # Editor
-        editor = self._create_value_editor(
-            param.data_type,
-            param.value(),
-            lambda v: self._on_parameter_value_changed(param, v)
-        )
-        layout.addWidget(editor)
+        # Editor - check if parameter has menu_items (dropdown)
+        if param.menu_items and len(param.menu_items) > 0:
+            # Create combo box for menu selection
+            editor = QComboBox()
+            for item in param.menu_items:
+                editor.addItem(str(item))
 
+            # Set current value
+            current_value = str(param.value())
+            index = editor.findText(current_value)
+            if index >= 0:
+                editor.setCurrentIndex(index)
+
+            # Connect signal
+            editor.currentTextChanged.connect(
+                lambda v: self._on_parameter_value_changed(param, v)
+            )
+        else:
+            # Use standard value editor
+            editor = self._create_value_editor(
+                param.data_type,
+                param.value(),
+                lambda v: self._on_parameter_value_changed(param, v)
+            )
+
+        layout.addWidget(editor)
         self._widgets[f"param_{param.name}"] = editor
 
         return widget
@@ -259,6 +334,7 @@ class ParametersPane(QWidget):
             editor.setRange(-999999, 999999)
             editor.setValue(int(value) if value is not None else 0)
             editor.valueChanged.connect(callback)
+            editor.setButtonSymbols(QSpinBox.NoButtons)  # Remove up/down buttons
 
         elif data_type == "float":
             editor = QDoubleSpinBox()
@@ -266,6 +342,7 @@ class ParametersPane(QWidget):
             editor.setDecimals(4)
             editor.setValue(float(value) if value is not None else 0.0)
             editor.valueChanged.connect(callback)
+            editor.setButtonSymbols(QDoubleSpinBox.NoButtons)  # Remove up/down buttons
 
         elif data_type == "bool":
             editor = QCheckBox()
@@ -288,6 +365,30 @@ class ParametersPane(QWidget):
         """Handle parameter value change."""
         param.set_value(value)
         self.parameter_changed.emit()
+
+    def _on_connector_connection_changed(self, connector: "ConnectorModel"):
+        """Handle connector connection state change."""
+        # Update the enabled state and appearance of the corresponding input widget
+        widget_key = f"input_{connector.name}"
+        if widget_key in self._widgets:
+            editor = self._widgets[widget_key]
+            label = self._labels.get(widget_key)
+
+            is_connected = connector.is_connected()
+            # Disable if connected, enable if disconnected
+            editor.setEnabled(not is_connected)
+
+            # Update visual appearance
+            if is_connected:
+                # Connected: gray out and italicize
+                if label:
+                    label.setStyleSheet("color: #888888; font-style: italic;")
+                editor.setStyleSheet("background-color: #1a1a1a; color: #666666;")
+            else:
+                # Disconnected: restore normal appearance
+                if label:
+                    label.setStyleSheet("")
+                editor.setStyleSheet("")
 
     def _on_execute(self):
         """Execute the current node."""

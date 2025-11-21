@@ -124,7 +124,8 @@ class ConnectionItem(QGraphicsPathItem):
         elif self.isSelected():
             color = self.SELECTED_COLOR
         else:
-            color = self.NORMAL_COLOR
+            # Get color based on data type
+            color = self._get_connection_color()
 
         pen = QPen(color, 2)
         pen.setCapStyle(Qt.RoundCap)
@@ -134,6 +135,28 @@ class ConnectionItem(QGraphicsPathItem):
         option.state &= ~QStyle.State_Selected
 
         super().paint(painter, option, widget)
+
+    def _get_connection_color(self) -> QColor:
+        """Get the connection color based on data type."""
+        from ..nodes.port_graphics_item import PortGraphicsItem
+
+        if not self.source_port or not self.target_port:
+            return self.NORMAL_COLOR
+
+        # Use the recursive type resolution from the source port
+        # This handles all cases: concrete types, Math/Convert nodes, pass-through nodes, etc.
+        data_type = self.source_port._resolve_data_type()
+
+        # If source is still 'any', try target port
+        if data_type == 'any':
+            data_type = self.target_port._resolve_data_type()
+
+        # Get color based on data type
+        if data_type in PortGraphicsItem.TYPE_COLORS:
+            return PortGraphicsItem.TYPE_COLORS[data_type]
+        else:
+            # Custom type - use purple
+            return PortGraphicsItem.CUSTOM_TYPE_COLOR
 
 
 class TempConnectionItem(ConnectionItem):

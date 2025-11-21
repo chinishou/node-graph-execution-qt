@@ -80,12 +80,16 @@ class NodeGraphicsItem(QGraphicsItem):
             port = PortGraphicsItem(connector, is_output=False, parent=self)
             port.setPos(0, self.HEADER_HEIGHT + i * self.PORT_HEIGHT + self.PORT_HEIGHT / 2)
             self._ports[f"input_{name}"] = port
+            # Connect to connector's signal to update colors when connection changes
+            connector.connected_changed.connect(self._on_connection_changed)
 
         # Create output ports
         for i, (name, connector) in enumerate(self.node_model.outputs().items()):
             port = PortGraphicsItem(connector, is_output=True, parent=self)
             port.setPos(self.NODE_WIDTH, self.HEADER_HEIGHT + i * self.PORT_HEIGHT + self.PORT_HEIGHT / 2)
             self._ports[f"output_{name}"] = port
+            # Connect to connector's signal to update colors when connection changes
+            connector.connected_changed.connect(self._on_connection_changed)
 
     def _update_height(self):
         """Update node height based on number of ports."""
@@ -145,10 +149,27 @@ class NodeGraphicsItem(QGraphicsItem):
         font.setPointSize(8)
         painter.setFont(font)
 
+        # Import port color mapping
+        from .port_graphics_item import PortGraphicsItem
+
         # Input labels
         for i, (name, connector) in enumerate(self.node_model.inputs().items()):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
+
+            # Get resolved data type from the port (uses recursive resolution)
+            port = self.get_port(name, is_output=False)
+            if port:
+                data_type = port._resolve_data_type()
+            else:
+                data_type = connector.data_type
+
+            if data_type in PortGraphicsItem.TYPE_COLORS:
+                label_color = PortGraphicsItem.TYPE_COLORS[data_type]
+            else:
+                label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+
+            painter.setPen(QPen(label_color))
             text_rect = QRectF(12, y, self.NODE_WIDTH / 2 - 16, self.PORT_HEIGHT)
             painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignLeft, label)
 
@@ -156,6 +177,20 @@ class NodeGraphicsItem(QGraphicsItem):
         for i, (name, connector) in enumerate(self.node_model.outputs().items()):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
+
+            # Get resolved data type from the port (uses recursive resolution)
+            port = self.get_port(name, is_output=True)
+            if port:
+                data_type = port._resolve_data_type()
+            else:
+                data_type = connector.data_type
+
+            if data_type in PortGraphicsItem.TYPE_COLORS:
+                label_color = PortGraphicsItem.TYPE_COLORS[data_type]
+            else:
+                label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+
+            painter.setPen(QPen(label_color))
             text_rect = QRectF(self.NODE_WIDTH / 2, y, self.NODE_WIDTH / 2 - 12, self.PORT_HEIGHT)
             painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignRight, label)
 
@@ -179,7 +214,33 @@ class NodeGraphicsItem(QGraphicsItem):
 
     def _on_parameter_changed(self):
         """Handle parameter change from model."""
+        # Update the node to reflect new colors
         self.update()
+        # Update all ports (important for Math/Convert nodes where type changes)
+        for port in self._ports.values():
+            port.update()
+        # Update all connections involving this node
+        scene = self.scene()
+        if scene and hasattr(scene, '_connection_items'):
+            for conn_item in scene._connection_items:
+                if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
+                   (conn_item.target_port and conn_item.target_port.parentItem() == self):
+                    conn_item.update()
+
+    def _on_connection_changed(self):
+        """Handle connector connection state change."""
+        # Update the node to reflect new colors
+        self.update()
+        # Update all ports
+        for port in self._ports.values():
+            port.update()
+        # Update all connections involving this node
+        scene = self.scene()
+        if scene and hasattr(scene, '_connection_items'):
+            for conn_item in scene._connection_items:
+                if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
+                   (conn_item.target_port and conn_item.target_port.parentItem() == self):
+                    conn_item.update()
 
     def mouseDoubleClickEvent(self, event):
         """Handle double-click to execute node."""
@@ -187,3 +248,4 @@ class NodeGraphicsItem(QGraphicsItem):
             # Visual feedback
             self.update()
         super().mouseDoubleClickEvent(event)
+

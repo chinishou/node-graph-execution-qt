@@ -32,21 +32,22 @@ class JSONSerializer:
     VERSION = "1.0"
 
     @classmethod
-    def save(cls, network: NetworkModel, file_path: str, pretty: bool = True) -> bool:
+    def save(cls, network: NetworkModel, file_path: str, sticky_notes: list = None, pretty: bool = True) -> bool:
         """
         Save a network to a JSON file.
 
         Args:
             network: The network to save
             file_path: Path to the JSON file
+            sticky_notes: Optional list of sticky note items to save
             pretty: Whether to format the JSON with indentation
 
         Returns:
             True if save was successful
         """
         try:
-            # Serialize network
-            data = cls.serialize_network(network)
+            # Serialize network with sticky notes
+            data = cls.serialize_network(network, sticky_notes=sticky_notes)
 
             # Write to file
             path = Path(file_path)
@@ -66,7 +67,7 @@ class JSONSerializer:
             return False
 
     @classmethod
-    def load(cls, file_path: str) -> NetworkModel:
+    def load(cls, file_path: str) -> tuple:
         """
         Load a network from a JSON file.
 
@@ -74,7 +75,7 @@ class JSONSerializer:
             file_path: Path to the JSON file
 
         Returns:
-            Loaded NetworkModel
+            Tuple of (Loaded NetworkModel, sticky_notes_data list)
 
         Raises:
             FileNotFoundError: If file doesn't exist
@@ -94,11 +95,11 @@ class JSONSerializer:
             if version != cls.VERSION:
                 print(f"Warning: File version ({version}) differs from current version ({cls.VERSION})")
 
-            # Deserialize network
-            network = cls.deserialize_network(data)
+            # Deserialize network and sticky notes
+            network, sticky_notes_data = cls.deserialize_network(data)
 
             print(f"Network loaded from: {file_path}")
-            return network
+            return network, sticky_notes_data
 
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON file: {e}")
@@ -106,24 +107,31 @@ class JSONSerializer:
             raise ValueError(f"Error loading network: {e}")
 
     @classmethod
-    def serialize_network(cls, network: NetworkModel) -> Dict[str, Any]:
+    def serialize_network(cls, network: NetworkModel, sticky_notes: list = None) -> Dict[str, Any]:
         """
         Serialize a network to a dictionary.
 
         Args:
             network: The network to serialize
+            sticky_notes: Optional list of sticky note items to serialize
 
         Returns:
             Dictionary representation
         """
-        return {
+        data = {
             "version": cls.VERSION,
             "type": "node_graph",
             "network": network.serialize(),
         }
 
+        # Add sticky notes if provided
+        if sticky_notes is not None:
+            data["sticky_notes"] = [note.to_dict() for note in sticky_notes]
+
+        return data
+
     @classmethod
-    def deserialize_network(cls, data: Dict[str, Any]) -> NetworkModel:
+    def deserialize_network(cls, data: Dict[str, Any]) -> tuple:
         """
         Deserialize a network from a dictionary.
 
@@ -131,7 +139,7 @@ class JSONSerializer:
             data: Dictionary representation
 
         Returns:
-            NetworkModel instance
+            Tuple of (NetworkModel instance, sticky_notes_data list)
         """
         network_data = data.get("network", {})
 
@@ -191,7 +199,10 @@ class JSONSerializer:
             except Exception as e:
                 print(f"Error deserializing connection: {e}")
 
-        return network
+        # Get sticky notes data
+        sticky_notes_data = data.get("sticky_notes", [])
+
+        return network, sticky_notes_data
 
     @classmethod
     def to_json_string(cls, network: NetworkModel, pretty: bool = True) -> str:
@@ -213,7 +224,7 @@ class JSONSerializer:
             return json.dumps(data, ensure_ascii=False)
 
     @classmethod
-    def from_json_string(cls, json_string: str) -> NetworkModel:
+    def from_json_string(cls, json_string: str) -> tuple:
         """
         Create network from JSON string.
 
@@ -221,7 +232,7 @@ class JSONSerializer:
             json_string: JSON string
 
         Returns:
-            NetworkModel instance
+            Tuple of (NetworkModel instance, sticky_notes_data list)
         """
         data = json.loads(json_string)
         return cls.deserialize_network(data)
