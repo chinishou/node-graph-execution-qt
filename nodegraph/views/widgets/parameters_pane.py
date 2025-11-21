@@ -107,6 +107,44 @@ class ParametersPane(QWidget):
             QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
                 border: 1px solid #6c6c6c;
             }
+            QCheckBox {
+                spacing: 5px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 2px solid #6a6a6a;
+                border-radius: 3px;
+                background-color: #2a2a2a;
+            }
+            QCheckBox::indicator:hover {
+                border: 2px solid #8a8a8a;
+                background-color: #3a3a3a;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #ff9500;
+                border: 2px solid #ff9500;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #4c4c4c;
+                border-radius: 3px;
+                padding: 4px;
+            }
+            QComboBox:focus {
+                border: 1px solid #6c6c6c;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 6px solid #dcdcdc;
+                margin-right: 6px;
+            }
             QPushButton {
                 background-color: #4a4a4a;
                 border: 1px solid #5a5a5a;

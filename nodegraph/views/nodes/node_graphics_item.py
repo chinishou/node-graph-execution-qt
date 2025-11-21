@@ -193,31 +193,25 @@ class NodeGraphicsItem(QGraphicsItem):
     def mousePressEvent(self, event):
         """Handle mouse press - check for Alt key to duplicate."""
         if event.modifiers() & Qt.AltModifier and event.button() == Qt.LeftButton:
-            # Alt+Click: start duplication mode
-            self._is_duplicating = True
-            self._original_node = self.node_model
-
-            # Duplicate the node
+            # Alt+Click: duplicate mode
             scene = self.scene()
             if scene and hasattr(scene, 'network_model'):
                 from ...core.registry import NodeRegistry
 
                 try:
-                    # Create duplicate node
-                    new_node = NodeRegistry.create_node(self._original_node.node_type)
-
-                    # Copy position (will be updated as user drags)
+                    # Create duplicate node at same position
+                    new_node = NodeRegistry.create_node(self.node_model.node_type)
                     pos = self.pos()
                     new_node.set_position(pos.x(), pos.y())
 
                     # Copy parameter values
-                    for name, param in self._original_node.parameters().items():
+                    for name, param in self.node_model.parameters().items():
                         new_param = new_node.parameter(name)
                         if new_param:
                             new_param.set_value(param.value())
 
                     # Copy input default values
-                    for name, connector in self._original_node.inputs().items():
+                    for name, connector in self.node_model.inputs().items():
                         new_connector = new_node.input(name)
                         if new_connector:
                             new_connector.default_value = connector.default_value
@@ -225,22 +219,18 @@ class NodeGraphicsItem(QGraphicsItem):
                     # Add to network
                     scene.network_model.add_node(new_node)
 
-                    # Switch to the new node for dragging
+                    # Deselect old, select new
+                    self.setSelected(False)
                     new_node_item = scene.get_node_item(new_node.id)
                     if new_node_item:
-                        # Deselect old, select new
-                        self.setSelected(False)
                         new_node_item.setSelected(True)
-
-                        # Forward the event to the new node so it starts dragging
-                        scene.clearFocus()
-                        new_node_item.setFocus()
-                        new_node_item.mousePressEvent(event)
+                        # Let the new node handle dragging by calling its parent's mousePressEvent
+                        # This avoids recursion because we're calling super, not this method
+                        QGraphicsItem.mousePressEvent(new_node_item, event)
                         return
 
                 except Exception as e:
                     print(f"Error duplicating node: {e}")
 
-            self._is_duplicating = False
-
+        # Normal drag (no Alt key)
         super().mousePressEvent(event)

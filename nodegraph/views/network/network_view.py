@@ -434,10 +434,12 @@ class NetworkView(QGraphicsView):
         for item in selected:
             if isinstance(item, NodeGraphicsItem):
                 node = item.node_model
+                # Get position using position() method
+                pos = node.position()
                 # Serialize node data
                 node_data = {
                     'node_type': node.node_type,
-                    'position': (node.x, node.y),
+                    'position': pos,  # Use tuple from position() method
                     'parameters': {}
                 }
 
