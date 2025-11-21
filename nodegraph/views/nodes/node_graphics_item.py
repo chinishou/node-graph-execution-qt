@@ -50,6 +50,8 @@ class NodeGraphicsItem(QGraphicsItem):
 
         self.node_model = node_model
         self._ports: Dict[str, "PortGraphicsItem"] = {}
+        self._is_duplicating = False  # Track if we're in duplicate mode
+        self._original_node = None  # Store original node for duplication
 
         # Enable features
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
@@ -187,3 +189,58 @@ class NodeGraphicsItem(QGraphicsItem):
             # Visual feedback
             self.update()
         super().mouseDoubleClickEvent(event)
+
+    def mousePressEvent(self, event):
+        """Handle mouse press - check for Alt key to duplicate."""
+        if event.modifiers() & Qt.AltModifier and event.button() == Qt.LeftButton:
+            # Alt+Click: start duplication mode
+            self._is_duplicating = True
+            self._original_node = self.node_model
+
+            # Duplicate the node
+            scene = self.scene()
+            if scene and hasattr(scene, 'network_model'):
+                from ...core.registry import NodeRegistry
+
+                try:
+                    # Create duplicate node
+                    new_node = NodeRegistry.create_node(self._original_node.node_type)
+
+                    # Copy position (will be updated as user drags)
+                    pos = self.pos()
+                    new_node.set_position(pos.x(), pos.y())
+
+                    # Copy parameter values
+                    for name, param in self._original_node.parameters().items():
+                        new_param = new_node.parameter(name)
+                        if new_param:
+                            new_param.set_value(param.value())
+
+                    # Copy input default values
+                    for name, connector in self._original_node.inputs().items():
+                        new_connector = new_node.input(name)
+                        if new_connector:
+                            new_connector.default_value = connector.default_value
+
+                    # Add to network
+                    scene.network_model.add_node(new_node)
+
+                    # Switch to the new node for dragging
+                    new_node_item = scene.get_node_item(new_node.id)
+                    if new_node_item:
+                        # Deselect old, select new
+                        self.setSelected(False)
+                        new_node_item.setSelected(True)
+
+                        # Forward the event to the new node so it starts dragging
+                        scene.clearFocus()
+                        new_node_item.setFocus()
+                        new_node_item.mousePressEvent(event)
+                        return
+
+                except Exception as e:
+                    print(f"Error duplicating node: {e}")
+
+            self._is_duplicating = False
+
+        super().mousePressEvent(event)

@@ -36,6 +36,7 @@ class ParametersPane(QWidget):
 
         self._node: Optional["NodeModel"] = None
         self._widgets: Dict[str, QWidget] = {}
+        self._labels: Dict[str, QLabel] = {}  # Store labels for styling updates
 
         self._setup_ui()
 
@@ -128,6 +129,7 @@ class ParametersPane(QWidget):
         """Set the node to display."""
         self._node = node
         self._widgets.clear()
+        self._labels.clear()
 
         # Clear content
         while self._content_layout.count() > 1:
@@ -210,10 +212,19 @@ class ParametersPane(QWidget):
         )
         layout.addWidget(editor)
 
-        # Disable editor if connector is already connected
-        editor.setEnabled(not connector.is_connected())
-
+        # Store widgets for later updates
         self._widgets[f"input_{connector.name}"] = editor
+        self._labels[f"input_{connector.name}"] = label
+
+        # Apply initial style based on connection state
+        is_connected = connector.is_connected()
+        editor.setEnabled(not is_connected)
+        if is_connected:
+            label.setStyleSheet("color: #888888; font-style: italic;")
+            editor.setStyleSheet("background-color: #1a1a1a; color: #666666;")
+        else:
+            label.setStyleSheet("")
+            editor.setStyleSheet("")
 
         return widget
 
@@ -285,6 +296,7 @@ class ParametersPane(QWidget):
             editor.setRange(-999999, 999999)
             editor.setValue(int(value) if value is not None else 0)
             editor.valueChanged.connect(callback)
+            editor.setButtonSymbols(QSpinBox.NoButtons)  # Remove up/down buttons
 
         elif data_type == "float":
             editor = QDoubleSpinBox()
@@ -292,6 +304,7 @@ class ParametersPane(QWidget):
             editor.setDecimals(4)
             editor.setValue(float(value) if value is not None else 0.0)
             editor.valueChanged.connect(callback)
+            editor.setButtonSymbols(QDoubleSpinBox.NoButtons)  # Remove up/down buttons
 
         elif data_type == "bool":
             editor = QCheckBox()
@@ -317,12 +330,27 @@ class ParametersPane(QWidget):
 
     def _on_connector_connection_changed(self, connector: "ConnectorModel"):
         """Handle connector connection state change."""
-        # Update the enabled state of the corresponding input widget
+        # Update the enabled state and appearance of the corresponding input widget
         widget_key = f"input_{connector.name}"
         if widget_key in self._widgets:
             editor = self._widgets[widget_key]
+            label = self._labels.get(widget_key)
+
+            is_connected = connector.is_connected()
             # Disable if connected, enable if disconnected
-            editor.setEnabled(not connector.is_connected())
+            editor.setEnabled(not is_connected)
+
+            # Update visual appearance
+            if is_connected:
+                # Connected: gray out and italicize
+                if label:
+                    label.setStyleSheet("color: #888888; font-style: italic;")
+                editor.setStyleSheet("background-color: #1a1a1a; color: #666666;")
+            else:
+                # Disconnected: restore normal appearance
+                if label:
+                    label.setStyleSheet("")
+                editor.setStyleSheet("")
 
     def _on_execute(self):
         """Execute the current node."""
