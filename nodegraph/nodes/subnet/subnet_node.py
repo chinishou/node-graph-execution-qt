@@ -7,6 +7,7 @@ A node that contains an entire sub-network.
 
 from typing import Dict, Any, List, Optional
 from uuid import UUID
+from pydantic import PrivateAttr
 from ..base import BaseNode
 from ...core.models import NetworkModel
 from .subnet_io_nodes import SubnetInputNode, SubnetOutputNode
@@ -23,10 +24,10 @@ class SubnetNode(BaseNode):
     category: str = "Network"
     description: str = "Container for a sub-network"
 
-    def __init__(self, name: str = "Subnet", **kwargs):
-        # Create internal network
-        self._internal_network: Optional[NetworkModel] = None
+    # Private attributes
+    _internal_network: Optional[NetworkModel] = PrivateAttr(default=None)
 
+    def __init__(self, name: str = "Subnet", **kwargs):
         super().__init__(
             name=name,
             node_type="SubnetNode",

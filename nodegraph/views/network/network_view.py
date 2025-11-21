@@ -326,8 +326,16 @@ class NetworkView(QGraphicsView):
         """Show the node creation menu with search."""
         from ..widgets.node_palette import NodePaletteDialog
 
+        # Determine if we're inside a subnet
+        is_inside_subnet = False
+        if hasattr(self, '_navigation_controller') and self._navigation_controller:
+            # Check if we're at depth > 0 (inside a subnet)
+            location = self._navigation_controller.get_current_location()
+            if location and len(location.path) > 0:
+                is_inside_subnet = True
+
         # Create and show searchable node palette as popup
-        palette = NodePaletteDialog(scene_pos, self)
+        palette = NodePaletteDialog(scene_pos, self, is_inside_subnet=is_inside_subnet)
         palette.node_selected.connect(self._on_node_palette_selected)
         palette.cancelled.connect(lambda: palette.close())
 

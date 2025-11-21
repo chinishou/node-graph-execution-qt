@@ -6,6 +6,7 @@ Special nodes that act as input/output interfaces for subnets.
 """
 
 from typing import Dict, Any, Optional
+from pydantic import PrivateAttr
 from ..base import BaseNode
 
 
@@ -20,12 +21,17 @@ class SubnetInputNode(BaseNode):
     category: str = "Subnet"
     description: str = "Input connector for subnet"
 
+    # Private attributes
+    _setup_connector_name: str = PrivateAttr(default="input")
+    _setup_data_type: str = PrivateAttr(default="any")
+    _setup_default_value: Any = PrivateAttr(default=None)
+
     def __init__(self, connector_name: str = "input", data_type: str = "any",
                  default_value: Any = None, **kwargs):
-        # Store setup parameters
-        self._setup_connector_name = connector_name
-        self._setup_data_type = data_type
-        self._setup_default_value = default_value
+        # Pass setup parameters through kwargs for BaseNode to handle
+        kwargs['_setup_connector_name'] = connector_name
+        kwargs['_setup_data_type'] = data_type
+        kwargs['_setup_default_value'] = default_value
 
         super().__init__(
             name=f"Input ({connector_name})",
@@ -81,10 +87,14 @@ class SubnetOutputNode(BaseNode):
     category: str = "Subnet"
     description: str = "Output connector for subnet"
 
+    # Private attributes
+    _setup_connector_name: str = PrivateAttr(default="output")
+    _setup_data_type: str = PrivateAttr(default="any")
+
     def __init__(self, connector_name: str = "output", data_type: str = "any", **kwargs):
-        # Store setup parameters
-        self._setup_connector_name = connector_name
-        self._setup_data_type = data_type
+        # Pass setup parameters through kwargs for BaseNode to handle
+        kwargs['_setup_connector_name'] = connector_name
+        kwargs['_setup_data_type'] = data_type
 
         super().__init__(
             name=f"Output ({connector_name})",
