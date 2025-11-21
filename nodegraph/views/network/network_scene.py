@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from ..nodes.node_graphics_item import NodeGraphicsItem
     from ..nodes.port_graphics_item import PortGraphicsItem
     from ..connectors.connection_item import ConnectionItem
+    from ..notes.sticky_note_item import StickyNoteItem
 
 
 class NetworkScene(QGraphicsScene):
@@ -44,6 +45,7 @@ class NetworkScene(QGraphicsScene):
         self.network_model = network_model
         self._node_items: Dict[UUID, "NodeGraphicsItem"] = {}
         self._connection_items: List["ConnectionItem"] = []
+        self._sticky_notes: Dict[UUID, "StickyNoteItem"] = {}
         self._temp_connection: Optional["ConnectionItem"] = None
         self._dragging_port: Optional["PortGraphicsItem"] = None
 
@@ -61,6 +63,7 @@ class NetworkScene(QGraphicsScene):
         self.clear()
         self._node_items.clear()
         self._connection_items.clear()
+        self._sticky_notes.clear()
 
         self.network_model = network_model
 
@@ -306,6 +309,7 @@ class NetworkScene(QGraphicsScene):
         for item in selected:
             from ..nodes.node_graphics_item import NodeGraphicsItem
             from ..connectors.connection_item import ConnectionItem
+            from ..notes.sticky_note_item import StickyNoteItem
 
             if isinstance(item, NodeGraphicsItem):
                 self.network_model.remove_node(item.node_model.id)
@@ -317,3 +321,44 @@ class NetworkScene(QGraphicsScene):
                         source_conn.node.id, source_conn.name,
                         target_conn.node.id, target_conn.name
                     )
+            elif isinstance(item, StickyNoteItem):
+                self.remove_sticky_note(item.note_id)
+
+    def add_sticky_note(self, position: QPointF = None, text: str = "",
+                       color: str = 'yellow', width: float = None,
+                       height: float = None) -> "StickyNoteItem":
+        """Add a new sticky note to the scene."""
+        from ..notes.sticky_note_item import StickyNoteItem
+
+        if position is None:
+            # Default to center of view
+            position = QPointF(0, 0)
+
+        note = StickyNoteItem(
+            position=position,
+            text=text,
+            color=color,
+            width=width,
+            height=height
+        )
+
+        self.addItem(note)
+        self._sticky_notes[note.note_id] = note
+
+        return note
+
+    def remove_sticky_note(self, note_id: UUID):
+        """Remove a sticky note from the scene."""
+        if note_id in self._sticky_notes:
+            note = self._sticky_notes.pop(note_id)
+            self.removeItem(note)
+
+    def get_sticky_notes(self) -> List["StickyNoteItem"]:
+        """Get all sticky notes in the scene."""
+        return list(self._sticky_notes.values())
+
+    def clear_sticky_notes(self):
+        """Clear all sticky notes from the scene."""
+        for note in list(self._sticky_notes.values()):
+            self.removeItem(note)
+        self._sticky_notes.clear()

@@ -277,12 +277,19 @@ class MainWindow(QMainWindow):
     def _load_file(self, file_path: str):
         """Load network from file."""
         try:
-            self._network_model = JSONSerializer.load(file_path)
+            self._network_model, sticky_notes_data = JSONSerializer.load(file_path)
             self._current_file = file_path
 
             # Create scene
             scene = NetworkScene(self._network_model)
             self._network_view.set_scene(scene)
+
+            # Load sticky notes
+            from ..views.notes.sticky_note_item import StickyNoteItem
+            for note_data in sticky_notes_data:
+                note = StickyNoteItem.from_dict(note_data)
+                scene.addItem(note)
+                scene._sticky_notes[note.note_id] = note
 
             # Update title
             self._update_title()
@@ -317,7 +324,13 @@ class MainWindow(QMainWindow):
     def _save_to_file(self, file_path: str):
         """Save network to file."""
         try:
-            JSONSerializer.save(self._network_model, file_path)
+            # Get sticky notes from scene
+            sticky_notes = []
+            scene = self._network_view.scene()
+            if scene and hasattr(scene, 'get_sticky_notes'):
+                sticky_notes = scene.get_sticky_notes()
+
+            JSONSerializer.save(self._network_model, file_path, sticky_notes=sticky_notes)
             self._current_file = file_path
 
             # Update title

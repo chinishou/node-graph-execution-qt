@@ -265,10 +265,48 @@ class NetworkView(QGraphicsView):
         # Check if clicking on empty space
         item = self.itemAt(event.pos())
         if item is None:
-            self._show_node_menu(event.globalPos(), scene_pos)
+            self._show_context_menu(event.globalPos(), scene_pos)
         else:
             # Show item-specific menu
             super().contextMenuEvent(event)
+
+    def _show_context_menu(self, global_pos, scene_pos: QPointF):
+        """Show context menu for empty space."""
+        menu = QMenu(self)
+
+        # Add sticky note options
+        sticky_note_menu = menu.addMenu("Add Sticky Note")
+
+        # Color options
+        colors = {
+            'Yellow': 'yellow',
+            'Green': 'green',
+            'Blue': 'blue',
+            'Pink': 'pink',
+            'Orange': 'orange',
+            'Purple': 'purple',
+        }
+
+        for color_name, color_key in colors.items():
+            action = sticky_note_menu.addAction(color_name)
+            action.triggered.connect(lambda checked=False, c=color_key, p=scene_pos:
+                                   self._create_sticky_note(p, c))
+
+        menu.addSeparator()
+
+        # Add nodes option
+        add_node_action = menu.addAction("Add Node...")
+        add_node_action.triggered.connect(lambda: self._show_node_menu(global_pos, scene_pos))
+
+        menu.exec(global_pos)
+
+    def _create_sticky_note(self, scene_pos: QPointF, color: str = 'yellow'):
+        """Create a sticky note at the given position."""
+        if self._scene:
+            note = self._scene.add_sticky_note(position=scene_pos, color=color)
+            # Optionally select and focus the note for immediate editing
+            self._scene.clearSelection()
+            note.setSelected(True)
 
     def _show_node_menu(self, global_pos, scene_pos: QPointF):
         """Show the node creation menu with search."""
