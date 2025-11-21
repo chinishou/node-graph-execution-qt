@@ -165,6 +165,10 @@ class NetworkScene(QGraphicsScene):
         self.addItem(conn_item)
         self._connection_items.append(conn_item)
 
+        # Connect to connector signals to update connection color when types change
+        source_conn.connected_changed.connect(lambda: conn_item.update())
+        target_conn.connected_changed.connect(lambda: conn_item.update())
+
     def update_connections(self, node_item: "NodeGraphicsItem"):
         """Update all connections involving a node."""
         for conn in self._connection_items:

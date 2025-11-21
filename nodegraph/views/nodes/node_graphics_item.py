@@ -160,15 +160,25 @@ class NodeGraphicsItem(QGraphicsItem):
             # Set color based on data type
             data_type = connector.data_type
 
-            # If this is 'any' type and connected, use the connected type's color
-            if data_type == 'any' and connector.is_connected():
-                connections = connector.connections()
-                if connections:
-                    # Get the data type from the first connected port
-                    connected_type = connections[0].data_type
-                    # If the connected port is also 'any', keep it gray
-                    if connected_type != 'any':
-                        data_type = connected_type
+            # If this is 'any' type, try to determine actual type
+            if data_type == 'any':
+                # First, check if connected and use connected type
+                if connector.is_connected():
+                    connections = connector.connections()
+                    if connections:
+                        # Get the data type from the first connected port
+                        connected_type = connections[0].data_type
+                        # If the connected port is also 'any', keep checking
+                        if connected_type != 'any':
+                            data_type = connected_type
+
+                # If still 'any', check if node has a 'type' parameter (for Math nodes)
+                if data_type == 'any' and connector.node:
+                    type_param = connector.node.parameter('type')
+                    if type_param:
+                        param_value = type_param.value()
+                        if param_value in PortGraphicsItem.TYPE_COLORS:
+                            data_type = param_value
 
             if data_type in PortGraphicsItem.TYPE_COLORS:
                 label_color = PortGraphicsItem.TYPE_COLORS[data_type]
@@ -187,15 +197,33 @@ class NodeGraphicsItem(QGraphicsItem):
             # Set color based on data type
             data_type = connector.data_type
 
-            # If this is 'any' type and connected, use the connected type's color
-            if data_type == 'any' and connector.is_connected():
-                connections = connector.connections()
-                if connections:
-                    # Get the data type from the first connected port
-                    connected_type = connections[0].data_type
-                    # If the connected port is also 'any', keep it gray
-                    if connected_type != 'any':
-                        data_type = connected_type
+            # If this is 'any' type, try to determine actual type
+            if data_type == 'any':
+                # First, check if connected and use connected type
+                if connector.is_connected():
+                    connections = connector.connections()
+                    if connections:
+                        # Get the data type from the first connected port
+                        connected_type = connections[0].data_type
+                        # If the connected port is also 'any', keep checking
+                        if connected_type != 'any':
+                            data_type = connected_type
+
+                # If still 'any', check node parameters
+                if data_type == 'any' and connector.node:
+                    # For Math nodes, check 'type' parameter
+                    type_param = connector.node.parameter('type')
+                    if type_param:
+                        param_value = type_param.value()
+                        if param_value in PortGraphicsItem.TYPE_COLORS:
+                            data_type = param_value
+
+                    # For Convert node, check 'output_type' parameter
+                    output_type_param = connector.node.parameter('output_type')
+                    if output_type_param:
+                        param_value = output_type_param.value()
+                        if param_value in PortGraphicsItem.TYPE_COLORS:
+                            data_type = param_value
 
             if data_type in PortGraphicsItem.TYPE_COLORS:
                 label_color = PortGraphicsItem.TYPE_COLORS[data_type]
@@ -226,7 +254,18 @@ class NodeGraphicsItem(QGraphicsItem):
 
     def _on_parameter_changed(self):
         """Handle parameter change from model."""
+        # Update the node to reflect new colors
         self.update()
+        # Update all ports (important for Math/Convert nodes where type changes)
+        for port in self._ports.values():
+            port.update()
+        # Update all connections involving this node
+        scene = self.scene()
+        if scene and hasattr(scene, '_connection_items'):
+            for conn_item in scene._connection_items:
+                if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
+                   (conn_item.target_port and conn_item.target_port.parentItem() == self):
+                    conn_item.update()
 
     def _on_connection_changed(self):
         """Handle connector connection state change."""
@@ -235,6 +274,13 @@ class NodeGraphicsItem(QGraphicsItem):
         # Update all ports
         for port in self._ports.values():
             port.update()
+        # Update all connections involving this node
+        scene = self.scene()
+        if scene and hasattr(scene, '_connection_items'):
+            for conn_item in scene._connection_items:
+                if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
+                   (conn_item.target_port and conn_item.target_port.parentItem() == self):
+                    conn_item.update()
 
     def mouseDoubleClickEvent(self, event):
         """Handle double-click to execute node."""

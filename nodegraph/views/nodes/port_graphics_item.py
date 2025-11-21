@@ -61,15 +61,33 @@ class PortGraphicsItem(QGraphicsItem):
             # Get the actual data type to use for coloring
             data_type = self.connector.data_type
 
-            # If this is 'any' type and connected, use the connected type's color
-            if data_type == 'any' and self.connector.is_connected():
-                connections = self.connector.connections()
-                if connections:
-                    # Get the data type from the first connected port
-                    connected_type = connections[0].data_type
-                    # If the connected port is also 'any', keep it gray
-                    if connected_type != 'any':
-                        data_type = connected_type
+            # If this is 'any' type, try to determine actual type
+            if data_type == 'any':
+                # First, check if connected and use connected type
+                if self.connector.is_connected():
+                    connections = self.connector.connections()
+                    if connections:
+                        # Get the data type from the first connected port
+                        connected_type = connections[0].data_type
+                        # If the connected port is also 'any', keep checking
+                        if connected_type != 'any':
+                            data_type = connected_type
+
+                # If still 'any', check if node has a 'type' parameter (for Math/Convert nodes)
+                if data_type == 'any' and self.connector.node:
+                    type_param = self.connector.node.parameter('type')
+                    if type_param:
+                        param_value = type_param.value()
+                        # Use the parameter value as the data type
+                        if param_value in self.TYPE_COLORS:
+                            data_type = param_value
+
+                    # For Convert node, check 'output_type' parameter
+                    output_type_param = self.connector.node.parameter('output_type')
+                    if output_type_param and self.is_output:
+                        param_value = output_type_param.value()
+                        if param_value in self.TYPE_COLORS:
+                            data_type = param_value
 
             # Get color based on data type
             if data_type in self.TYPE_COLORS:
