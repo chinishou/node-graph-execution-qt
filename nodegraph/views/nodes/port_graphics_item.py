@@ -85,6 +85,10 @@ class PortGraphicsItem(QGraphicsItem):
         a concrete type, check node parameters, or fall back to 'any'.
         This makes the color resolution work for all nodes universally.
 
+        Strategy priority differs for input vs output ports:
+        - Input ports: Connected type > Node parameters > Pass-through
+        - Output ports: Node parameters > Connected type > Pass-through
+
         Args:
             visited: Set of already visited connectors to prevent infinite loops
 
@@ -106,63 +110,90 @@ class PortGraphicsItem(QGraphicsItem):
         if data_type != 'any':
             return data_type
 
-        # For 'any' type, try multiple resolution strategies
+        # For 'any' type ports, use different strategies based on port direction
 
-        # Strategy 1: Check node parameters (works for any node with type-defining parameters)
-        if self.connector.node:
-            # Check common parameter names that define type
-            for param_name in ['type', 'output_type', 'data_type', 'value_type']:
-                param = self.connector.node.parameter(param_name)
-                if param:
-                    param_value = param.value()
-                    # For output ports, be more selective about which parameters to use
-                    if param_name == 'output_type' and not self.is_output:
-                        continue
-                    if param_value in self.TYPE_COLORS:
-                        return param_value
+        if self.is_output:
+            # OUTPUT PORT: Parameters take priority (e.g., Math node type determines output)
 
-        # Strategy 2: Recursively check connected ports
-        if self.connector.is_connected():
-            connections = self.connector.connections()
-            for connected_connector in connections:
-                connected_type = connected_connector.data_type
+            # Strategy 1: Check node parameters first for outputs
+            if self.connector.node:
+                for param_name in ['type', 'output_type', 'data_type', 'value_type']:
+                    param = self.connector.node.parameter(param_name)
+                    if param:
+                        param_value = param.value()
+                        if param_value in self.TYPE_COLORS:
+                            return param_value
 
-                # If connected port has concrete type, use it
-                if connected_type != 'any':
-                    return connected_type
+            # Strategy 2: Check connected ports (only if no parameter defines the type)
+            if self.connector.is_connected():
+                connections = self.connector.connections()
+                for connected_connector in connections:
+                    connected_type = connected_connector.data_type
 
-                # If connected port is also 'any', recursively resolve its type
-                # Find the port graphics item for this connector
-                if hasattr(connected_connector, 'node') and connected_connector.node:
-                    scene = self.scene()
-                    if scene and hasattr(scene, '_node_items'):
-                        node_item = scene._node_items.get(connected_connector.node.id)
-                        if node_item:
-                            # Determine if it's an output or input connector
-                            is_output = connected_connector.is_output()
-                            port = node_item.get_port(connected_connector.name, is_output=is_output)
-                            if port and port != self:
-                                # Recursively resolve the connected port's type
-                                resolved = port._resolve_data_type(visited)
+                    if connected_type != 'any':
+                        return connected_type
+
+                    # Recursively resolve
+                    if hasattr(connected_connector, 'node') and connected_connector.node:
+                        scene = self.scene()
+                        if scene and hasattr(scene, '_node_items'):
+                            node_item = scene._node_items.get(connected_connector.node.id)
+                            if node_item:
+                                is_output = connected_connector.is_output()
+                                port = node_item.get_port(connected_connector.name, is_output=is_output)
+                                if port and port != self:
+                                    resolved = port._resolve_data_type(visited)
+                                    if resolved != 'any':
+                                        return resolved
+        else:
+            # INPUT PORT: Connected type takes priority (what's actually coming in)
+
+            # Strategy 1: Check connected ports FIRST for inputs
+            if self.connector.is_connected():
+                connections = self.connector.connections()
+                for connected_connector in connections:
+                    connected_type = connected_connector.data_type
+
+                    if connected_type != 'any':
+                        return connected_type
+
+                    # Recursively resolve the connected output's type
+                    if hasattr(connected_connector, 'node') and connected_connector.node:
+                        scene = self.scene()
+                        if scene and hasattr(scene, '_node_items'):
+                            node_item = scene._node_items.get(connected_connector.node.id)
+                            if node_item:
+                                is_output = connected_connector.is_output()
+                                port = node_item.get_port(connected_connector.name, is_output=is_output)
+                                if port and port != self:
+                                    resolved = port._resolve_data_type(visited)
+                                    if resolved != 'any':
+                                        return resolved
+
+            # Strategy 2: Check node parameters (only if not connected or connection is also 'any')
+            if self.connector.node:
+                for param_name in ['type', 'data_type', 'value_type']:
+                    param = self.connector.node.parameter(param_name)
+                    if param:
+                        param_value = param.value()
+                        if param_value in self.TYPE_COLORS:
+                            return param_value
+
+            # Strategy 3: Check pass-through from output ports (for Display-like nodes)
+            if self.connector.node:
+                scene = self.scene()
+                if scene and hasattr(scene, '_node_items'):
+                    node_item = scene._node_items.get(self.connector.node.id)
+                    if node_item:
+                        for output_name, output_connector in self.connector.node.outputs().items():
+                            if output_connector.data_type != 'any':
+                                return output_connector.data_type
+
+                            output_port = node_item.get_port(output_name, is_output=True)
+                            if output_port and output_port != self:
+                                resolved = output_port._resolve_data_type(visited)
                                 if resolved != 'any':
                                     return resolved
-
-        # Strategy 3: For input ports, check if any of the node's output ports have resolved types
-        # This handles pass-through nodes like Display
-        if not self.is_output and self.connector.node:
-            scene = self.scene()
-            if scene and hasattr(scene, '_node_items'):
-                node_item = scene._node_items.get(self.connector.node.id)
-                if node_item:
-                    for output_name, output_connector in self.connector.node.outputs().items():
-                        if output_connector.data_type != 'any':
-                            return output_connector.data_type
-                        # Check if output has a resolved type through its connections
-                        output_port = node_item.get_port(output_name, is_output=True)
-                        if output_port and output_port != self:
-                            resolved = output_port._resolve_data_type(visited)
-                            if resolved != 'any':
-                                return resolved
 
         # Default: return 'any'
         return 'any'
