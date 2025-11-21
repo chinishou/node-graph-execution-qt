@@ -39,6 +39,9 @@ class SubnetNode(BaseNode):
         # Initialize internal network if not already set
         if self._internal_network is None:
             self._internal_network = NetworkModel(name=f"{self.name}_network")
+            # Connect signals to auto-sync connectors
+            self._internal_network.node_added.connect(self._on_internal_node_added)
+            self._internal_network.node_removed.connect(self._on_internal_node_removed)
 
         # Parameters will be created dynamically based on I/O nodes
 
@@ -51,6 +54,9 @@ class SubnetNode(BaseNode):
     def set_internal_network(self, network: NetworkModel):
         """Set the internal network."""
         self._internal_network = network
+        # Connect signals to auto-sync connectors
+        self._internal_network.node_added.connect(self._on_internal_node_added)
+        self._internal_network.node_removed.connect(self._on_internal_node_removed)
         self._sync_connectors()
 
     def _sync_connectors(self):
@@ -75,8 +81,14 @@ class SubnetNode(BaseNode):
         for node in self._internal_network.nodes():
             if isinstance(node, SubnetInputNode):
                 input_nodes.append(node)
+                # Connect to parameter changes if not already connected
+                if not node.parameter_changed.is_connected(self._on_io_node_parameter_changed):
+                    node.parameter_changed.connect(self._on_io_node_parameter_changed)
             elif isinstance(node, SubnetOutputNode):
                 output_nodes.append(node)
+                # Connect to parameter changes if not already connected
+                if not node.parameter_changed.is_connected(self._on_io_node_parameter_changed):
+                    node.parameter_changed.connect(self._on_io_node_parameter_changed)
 
         # Create/update input connectors
         new_inputs = set()
@@ -119,6 +131,25 @@ class SubnetNode(BaseNode):
         for output_name in existing_outputs:
             if output_name not in new_outputs:
                 self.remove_output(output_name)
+
+    def _on_internal_node_added(self, node):
+        """Handle when a node is added to the internal network."""
+        # If it's a subnet I/O node, sync connectors
+        if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+            self._sync_connectors()
+            # Also connect to parameter changes to re-sync when name/type changes
+            node.parameter_changed.connect(self._on_io_node_parameter_changed)
+
+    def _on_internal_node_removed(self, node):
+        """Handle when a node is removed from the internal network."""
+        # If it's a subnet I/O node, sync connectors
+        if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+            self._sync_connectors()
+
+    def _on_io_node_parameter_changed(self):
+        """Handle when a subnet I/O node's parameter changes."""
+        # Re-sync connectors when connector name or data type changes
+        self._sync_connectors()
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """
