@@ -58,8 +58,20 @@ class PortGraphicsItem(QGraphicsItem):
         if self._is_hovered:
             color = self.HOVER_COLOR
         else:
-            # Get color based on data type
+            # Get the actual data type to use for coloring
             data_type = self.connector.data_type
+
+            # If this is 'any' type and connected, use the connected type's color
+            if data_type == 'any' and self.connector.is_connected():
+                connections = self.connector.connections()
+                if connections:
+                    # Get the data type from the first connected port
+                    connected_type = connections[0].data_type
+                    # If the connected port is also 'any', keep it gray
+                    if connected_type != 'any':
+                        data_type = connected_type
+
+            # Get color based on data type
             if data_type in self.TYPE_COLORS:
                 color = self.TYPE_COLORS[data_type]
             else:
