@@ -143,71 +143,13 @@ class ConnectionItem(QGraphicsPathItem):
         if not self.source_port or not self.target_port:
             return self.NORMAL_COLOR
 
-        # Get data types from both ports
-        source_type = self.source_port.connector.data_type
-        target_type = self.target_port.connector.data_type
+        # Use the recursive type resolution from the source port
+        # This handles all cases: concrete types, Math/Convert nodes, pass-through nodes, etc.
+        data_type = self.source_port._resolve_data_type()
 
-        # Determine the actual data type being transmitted
-        data_type = None
-
-        if source_type != 'any' and target_type != 'any':
-            # Both are typed, use source type (they should match due to validation)
-            data_type = source_type
-        elif source_type != 'any':
-            # Source is typed, target is 'any'
-            data_type = source_type
-        elif target_type != 'any':
-            # Target is typed, source is 'any'
-            data_type = target_type
-        else:
-            # Both are 'any' - try to determine from node parameters or connections
-            source_connector = self.source_port.connector
-            target_connector = self.target_port.connector
-
-            # Check if source node has type parameters (for Math/Convert nodes)
-            if source_connector.node:
-                # For Math nodes, check 'type' parameter
-                type_param = source_connector.node.parameter('type')
-                if type_param:
-                    param_value = type_param.value()
-                    if param_value in PortGraphicsItem.TYPE_COLORS:
-                        data_type = param_value
-
-                # For Convert node output, check 'output_type' parameter
-                if data_type is None and self.source_port.is_output:
-                    output_type_param = source_connector.node.parameter('output_type')
-                    if output_type_param:
-                        param_value = output_type_param.value()
-                        if param_value in PortGraphicsItem.TYPE_COLORS:
-                            data_type = param_value
-
-            # Check if target node has type parameters
-            if data_type is None and target_connector.node:
-                type_param = target_connector.node.parameter('type')
-                if type_param:
-                    param_value = type_param.value()
-                    if param_value in PortGraphicsItem.TYPE_COLORS:
-                        data_type = param_value
-
-            # Check if source has other connections that might determine its type
-            if data_type is None and source_connector.is_connected():
-                connections = source_connector.connections()
-                for conn in connections:
-                    if conn.data_type != 'any':
-                        data_type = conn.data_type
-                        break
-
-            # Check if target has other connections that might determine its type
-            if data_type is None and target_connector.is_connected():
-                connections = target_connector.connections()
-                for conn in connections:
-                    if conn.data_type != 'any':
-                        data_type = conn.data_type
-                        break
-
-            # If still 'any', just use gray
-            if data_type is None:
-                data_type = 'any'
+        # If source is still 'any', try target port
+        if data_type == 'any':
+            data_type = self.target_port._resolve_data_type()
 
         # Get color based on data type
         if data_type in PortGraphicsItem.TYPE_COLORS:

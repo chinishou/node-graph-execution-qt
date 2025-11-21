@@ -59,35 +59,7 @@ class PortGraphicsItem(QGraphicsItem):
             color = self.HOVER_COLOR
         else:
             # Get the actual data type to use for coloring
-            data_type = self.connector.data_type
-
-            # If this is 'any' type, try to determine actual type
-            if data_type == 'any':
-                # First, check if connected and use connected type
-                if self.connector.is_connected():
-                    connections = self.connector.connections()
-                    if connections:
-                        # Get the data type from the first connected port
-                        connected_type = connections[0].data_type
-                        # If the connected port is also 'any', keep checking
-                        if connected_type != 'any':
-                            data_type = connected_type
-
-                # If still 'any', check if node has a 'type' parameter (for Math/Convert nodes)
-                if data_type == 'any' and self.connector.node:
-                    type_param = self.connector.node.parameter('type')
-                    if type_param:
-                        param_value = type_param.value()
-                        # Use the parameter value as the data type
-                        if param_value in self.TYPE_COLORS:
-                            data_type = param_value
-
-                    # For Convert node, check 'output_type' parameter
-                    output_type_param = self.connector.node.parameter('output_type')
-                    if output_type_param and self.is_output:
-                        param_value = output_type_param.value()
-                        if param_value in self.TYPE_COLORS:
-                            data_type = param_value
+            data_type = self._resolve_data_type()
 
             # Get color based on data type
             if data_type in self.TYPE_COLORS:
@@ -104,6 +76,96 @@ class PortGraphicsItem(QGraphicsItem):
         painter.setBrush(QBrush(color))
         painter.setPen(QPen(QColor(30, 30, 30), 1))
         painter.drawEllipse(QPointF(0, 0), self.PORT_RADIUS, self.PORT_RADIUS)
+
+    def _resolve_data_type(self, visited=None) -> str:
+        """
+        Recursively resolve the actual data type for this port.
+
+        For 'any' type ports, this will traverse the connection graph to find
+        a concrete type, check node parameters, or fall back to 'any'.
+        This makes the color resolution work for all nodes universally.
+
+        Args:
+            visited: Set of already visited connectors to prevent infinite loops
+
+        Returns:
+            The resolved data type string
+        """
+        if visited is None:
+            visited = set()
+
+        # Prevent infinite loops
+        connector_id = id(self.connector)
+        if connector_id in visited:
+            return 'any'
+        visited.add(connector_id)
+
+        data_type = self.connector.data_type
+
+        # If not 'any', return the concrete type immediately
+        if data_type != 'any':
+            return data_type
+
+        # For 'any' type, try multiple resolution strategies
+
+        # Strategy 1: Check node parameters (works for any node with type-defining parameters)
+        if self.connector.node:
+            # Check common parameter names that define type
+            for param_name in ['type', 'output_type', 'data_type', 'value_type']:
+                param = self.connector.node.parameter(param_name)
+                if param:
+                    param_value = param.value()
+                    # For output ports, be more selective about which parameters to use
+                    if param_name == 'output_type' and not self.is_output:
+                        continue
+                    if param_value in self.TYPE_COLORS:
+                        return param_value
+
+        # Strategy 2: Recursively check connected ports
+        if self.connector.is_connected():
+            connections = self.connector.connections()
+            for connected_connector in connections:
+                connected_type = connected_connector.data_type
+
+                # If connected port has concrete type, use it
+                if connected_type != 'any':
+                    return connected_type
+
+                # If connected port is also 'any', recursively resolve its type
+                # Find the port graphics item for this connector
+                if hasattr(connected_connector, 'node') and connected_connector.node:
+                    scene = self.scene()
+                    if scene and hasattr(scene, '_node_items'):
+                        node_item = scene._node_items.get(connected_connector.node.id)
+                        if node_item:
+                            # Determine if it's an output or input connector
+                            is_output = connected_connector.is_output()
+                            port = node_item.get_port(connected_connector.name, is_output=is_output)
+                            if port and port != self:
+                                # Recursively resolve the connected port's type
+                                resolved = port._resolve_data_type(visited)
+                                if resolved != 'any':
+                                    return resolved
+
+        # Strategy 3: For input ports, check if any of the node's output ports have resolved types
+        # This handles pass-through nodes like Display
+        if not self.is_output and self.connector.node:
+            scene = self.scene()
+            if scene and hasattr(scene, '_node_items'):
+                node_item = scene._node_items.get(self.connector.node.id)
+                if node_item:
+                    for output_name, output_connector in self.connector.node.outputs().items():
+                        if output_connector.data_type != 'any':
+                            return output_connector.data_type
+                        # Check if output has a resolved type through its connections
+                        output_port = node_item.get_port(output_name, is_output=True)
+                        if output_port and output_port != self:
+                            resolved = output_port._resolve_data_type(visited)
+                            if resolved != 'any':
+                                return resolved
+
+        # Default: return 'any'
+        return 'any'
 
     def hoverEnterEvent(self, event):
         """Handle hover enter."""

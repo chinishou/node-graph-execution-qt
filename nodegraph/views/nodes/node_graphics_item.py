@@ -157,28 +157,12 @@ class NodeGraphicsItem(QGraphicsItem):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
 
-            # Set color based on data type
-            data_type = connector.data_type
-
-            # If this is 'any' type, try to determine actual type
-            if data_type == 'any':
-                # First, check if connected and use connected type
-                if connector.is_connected():
-                    connections = connector.connections()
-                    if connections:
-                        # Get the data type from the first connected port
-                        connected_type = connections[0].data_type
-                        # If the connected port is also 'any', keep checking
-                        if connected_type != 'any':
-                            data_type = connected_type
-
-                # If still 'any', check if node has a 'type' parameter (for Math nodes)
-                if data_type == 'any' and connector.node:
-                    type_param = connector.node.parameter('type')
-                    if type_param:
-                        param_value = type_param.value()
-                        if param_value in PortGraphicsItem.TYPE_COLORS:
-                            data_type = param_value
+            # Get resolved data type from the port (uses recursive resolution)
+            port = self.get_port(name, is_output=False)
+            if port:
+                data_type = port._resolve_data_type()
+            else:
+                data_type = connector.data_type
 
             if data_type in PortGraphicsItem.TYPE_COLORS:
                 label_color = PortGraphicsItem.TYPE_COLORS[data_type]
@@ -194,36 +178,12 @@ class NodeGraphicsItem(QGraphicsItem):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
 
-            # Set color based on data type
-            data_type = connector.data_type
-
-            # If this is 'any' type, try to determine actual type
-            if data_type == 'any':
-                # First, check if connected and use connected type
-                if connector.is_connected():
-                    connections = connector.connections()
-                    if connections:
-                        # Get the data type from the first connected port
-                        connected_type = connections[0].data_type
-                        # If the connected port is also 'any', keep checking
-                        if connected_type != 'any':
-                            data_type = connected_type
-
-                # If still 'any', check node parameters
-                if data_type == 'any' and connector.node:
-                    # For Math nodes, check 'type' parameter
-                    type_param = connector.node.parameter('type')
-                    if type_param:
-                        param_value = type_param.value()
-                        if param_value in PortGraphicsItem.TYPE_COLORS:
-                            data_type = param_value
-
-                    # For Convert node, check 'output_type' parameter
-                    output_type_param = connector.node.parameter('output_type')
-                    if output_type_param:
-                        param_value = output_type_param.value()
-                        if param_value in PortGraphicsItem.TYPE_COLORS:
-                            data_type = param_value
+            # Get resolved data type from the port (uses recursive resolution)
+            port = self.get_port(name, is_output=True)
+            if port:
+                data_type = port._resolve_data_type()
+            else:
+                data_type = connector.data_type
 
             if data_type in PortGraphicsItem.TYPE_COLORS:
                 label_color = PortGraphicsItem.TYPE_COLORS[data_type]
