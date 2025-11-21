@@ -51,6 +51,7 @@ class NetworkView(QGraphicsView):
         self._press_pos = QPointF()  # Track initial press position
         self._drag_threshold = 5  # Pixels to move before considering it a drag
         self._copied_nodes = []  # Store copied node data for paste
+        self._navigation_controller = None  # Will be set by MainWindow
 
         # Setup view
         self.setRenderHint(QPainter.Antialiasing)
@@ -241,6 +242,19 @@ class NetworkView(QGraphicsView):
         if event.key() == Qt.Key_F:
             # Frame selected or all
             self.frame_selection()
+            event.accept()
+            return
+
+        if event.key() == Qt.Key_U:
+            # Go up one level (back to parent network)
+            if hasattr(self, '_navigation_controller') and self._navigation_controller:
+                self._navigation_controller.go_up()
+            event.accept()
+            return
+
+        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+            # Enter selected subnet
+            self._enter_selected_subnet()
             event.accept()
             return
 
@@ -553,3 +567,51 @@ class NetworkView(QGraphicsView):
                         node_item.setSelected(True)
 
             print(f"Pasted {len(new_nodes)} node(s)")
+
+    def set_navigation_controller(self, controller):
+        """Set the navigation controller."""
+        self._navigation_controller = controller
+
+    def _enter_selected_subnet(self):
+        """Enter the selected subnet node (if any)."""
+        if not self._scene or not self._navigation_controller:
+            return
+
+        from ..nodes.node_graphics_item import NodeGraphicsItem
+        from ...nodes.subnet import SubnetNode
+
+        # Get selected items
+        selected = self._scene.selectedItems()
+
+        # Find first selected subnet node
+        for item in selected:
+            if isinstance(item, NodeGraphicsItem):
+                node = item.node_model
+                if isinstance(node, SubnetNode):
+                    # Navigate into this subnet
+                    self._navigation_controller.navigate_to_subnet(node)
+                    return
+
+    def mouseDoubleClickEvent(self, event):
+        """Handle double-click to enter subnet."""
+        # Check if double-clicking on a node
+        item = self.itemAt(event.pos())
+
+        if item:
+            from ..nodes.node_graphics_item import NodeGraphicsItem
+            from ...nodes.subnet import SubnetNode
+
+            # Find the node item
+            while item and not isinstance(item, NodeGraphicsItem):
+                item = item.parentItem()
+
+            if isinstance(item, NodeGraphicsItem):
+                node = item.node_model
+                if isinstance(node, SubnetNode):
+                    # Enter the subnet
+                    if self._navigation_controller:
+                        self._navigation_controller.navigate_to_subnet(node)
+                    event.accept()
+                    return
+
+        super().mouseDoubleClickEvent(event)
