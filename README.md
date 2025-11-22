@@ -5,13 +5,15 @@ Houdini-style node-based programming framework built with PySide6/PyQt6.
 ## Features
 
 - **Horizontal Layout** - Houdini-style node network editor
-- **Property Panel** - Real-time node parameter editing
-- **Subnet Nodes** - Support for modularization and encapsulation
+- **Property Panel** - Real-time node parameter editing with automatic type conversion
+- **Subnet Nodes** - Support for modularization and encapsulation with recursive type resolution
 - **Python Nodes** - Write Python code directly in nodes
-- **Custom Nodes** - Simple API for creating your own nodes
-- **JSON Serialization** - Save and load node networks
+- **Custom Nodes** - Simple API for creating your own nodes with polymorphic design
+- **JSON Serialization** - Save and load node networks with complete state preservation
 - **Python Export** - Export node networks as pure Python scripts
 - **Undo/Redo** - Complete operation history
+- **Polymorphic Type System** - Extensible type resolution without hardcoded checks
+- **Automatic Type Conversion** - Smart conversion for connector default values
 
 ## Use Cases
 
@@ -19,6 +21,7 @@ Houdini-style node-based programming framework built with PySide6/PyQt6.
 2. **Rapid Prototyping** - Junior developers quickly understand and modify through nodes
 3. **Code Reuse** - Encapsulate common functions as nodes, maximize reusability
 4. **Senior Developer Optimization** - Focus on underlying node implementation, provide high-quality components
+5. **Data Processing Pipelines** - Visual data flow with type safety and automatic conversion
 
 ## Installation
 
@@ -109,15 +112,28 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ## Development Status
 
-Current Version: **0.1.0-alpha**
+Current Version: **0.2.0-beta**
 
 - [x] Architecture design
 - [x] Core Model layer
-- [ ] View layer implementation
-- [ ] Property panel
-- [x] Custom node system
-- [x] JSON serialization
+- [x] View layer implementation
+- [x] Property panel with automatic type conversion
+- [x] Custom node system with polymorphic design
+- [x] JSON serialization with connector default values
 - [x] Python export
+- [x] SubnetNode with recursive type resolution
+- [x] Automatic type conversion system
+- [x] Qt-based visual editor
+- [x] Node palette with Tab/Right-click
+- [x] Connection visualization with Bezier curves
+- [x] Output display panel
+
+## Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and design patterns
+- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) - Developer documentation for extending the system
+- [USER_GUIDE.md](USER_GUIDE.md) - User manual for using the node editor
+- [@forLLM@/](for LLM@/) - Context documentation for AI assistants
 
 ## License
 

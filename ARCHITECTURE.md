@@ -357,6 +357,96 @@ except ImportError:
 - Nodes only cook when needed
 - Supports caching and dirty marking
 
+### Polymorphic Design Pattern
+
+**Problem**: Avoiding hardcoded type checks in UI layer
+
+Previously, the UI layer had hardcoded checks for specific node types:
+```python
+# Anti-pattern (before)
+if node_type == 'SubnetNode' and is_output:
+    # Special handling for SubnetNode
+elif node_type == 'ConvertNode':
+    # Special handling for ConvertNode
+```
+
+This violates the Open-Closed Principle and makes the system fragile.
+
+**Solution**: Polymorphic methods in BaseNode
+
+```python
+class BaseNode:
+    def resolve_connector_display_type(
+        self,
+        connector_name: str,
+        is_output: bool,
+        visited: Optional[set] = None
+    ) -> Optional[str]:
+        """Override for custom type resolution logic."""
+        return None  # Default behavior
+
+    def transforms_data_type(self) -> bool:
+        """Indicate if node transforms data types."""
+        return False  # Default behavior
+```
+
+**Benefits**:
+- New node types don't require UI changes
+- Each node encapsulates its own logic
+- System is extensible without modification
+- Follows SOLID principles
+
+### Automatic Type Conversion
+
+**Problem**: UI input fields return strings, causing type errors
+
+When users input values in parameter fields, they're stored as strings but need to be converted based on the connector's `data_type`.
+
+**Solution**: `ConnectorModel._convert_value()` method
+
+Automatically converts values in `get_value()`:
+```python
+def get_value(self) -> Any:
+    if self.is_connected():
+        return source.get_value()
+    else:
+        # Automatic conversion
+        return self._convert_value(self.default_value, self.data_type)
+```
+
+**Conversion rules**:
+- `int`: Converts "3" → 3, "3.14" → 3
+- `float`: Converts "3" → 3.0, "3.14" → 3.14
+- `any`: Intelligently detects numbers in strings
+- Handles edge cases (empty strings, invalid input)
+
+### Recursive Type Resolution
+
+**Problem**: Type information lost across subnet boundaries
+
+When SubnetNodes chain together, type information needs to propagate through multiple levels:
+```
+float(1) -> subnet1(input->convert(int)->output) -> subnet2(input->...)
+```
+
+**Solution**: Recursive `resolve_connector_display_type()` calls
+
+```python
+# SubnetInputNode checks parent's connection
+parent_input = parent_subnet.input(connector_name)
+connected_node = parent_input.connections()[0].node
+
+# Recursively resolve if connected node supports it
+if hasattr(connected_node, 'resolve_connector_display_type'):
+    custom_type = connected_node.resolve_connector_display_type(
+        connector_name,
+        True,
+        visited  # Prevent infinite loops
+    )
+```
+
+**Cycle prevention**: Uses `visited` set to track traversed connectors
+
 ### Parameter Change Propagation
 
 ```python
