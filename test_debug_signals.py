@@ -148,7 +148,6 @@ def patch_connector_model():
 
     original_disconnect_from = connector_model.ConnectorModel.disconnect_from
     original_connect_to = connector_model.ConnectorModel.connect_to
-    original_emit_connected_changed = connector_model.ConnectorModel._connected_changed.emit
 
     def debug_disconnect_from(self, other):
         self_node = self.node.name if self.node else "None"
