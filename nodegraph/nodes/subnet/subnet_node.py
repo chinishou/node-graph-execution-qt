@@ -57,7 +57,19 @@ class SubnetNode(BaseNode):
         # Connect signals to auto-sync connectors
         self._internal_network.node_added.connect(self._on_internal_node_added)
         self._internal_network.node_removed.connect(self._on_internal_node_removed)
+        # Set parent subnet reference on all I/O nodes
+        self._update_io_node_references()
         self._sync_connectors()
+
+    def _update_io_node_references(self):
+        """Update _parent_subnet reference on all I/O nodes in the internal network."""
+        if not self._internal_network:
+            return
+
+        for node in self._internal_network.nodes():
+            if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+                # Set a private attribute to reference the parent subnet
+                node._parent_subnet = self
 
     def _sync_connectors(self):
         """
@@ -81,11 +93,15 @@ class SubnetNode(BaseNode):
         for node in self._internal_network.nodes():
             if isinstance(node, SubnetInputNode):
                 input_nodes.append(node)
+                # Set parent subnet reference
+                node._parent_subnet = self
                 # Connect to parameter changes if not already connected
                 if not node.parameter_changed.is_connected(self._on_io_node_parameter_changed):
                     node.parameter_changed.connect(self._on_io_node_parameter_changed)
             elif isinstance(node, SubnetOutputNode):
                 output_nodes.append(node)
+                # Set parent subnet reference
+                node._parent_subnet = self
                 # Connect to parameter changes if not already connected
                 if not node.parameter_changed.is_connected(self._on_io_node_parameter_changed):
                     node.parameter_changed.connect(self._on_io_node_parameter_changed)
@@ -136,6 +152,8 @@ class SubnetNode(BaseNode):
         """Handle when a node is added to the internal network."""
         # If it's a subnet I/O node, sync connectors
         if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+            # Set parent subnet reference
+            node._parent_subnet = self
             self._sync_connectors()
             # Also connect to parameter changes to re-sync when name/type changes
             node.parameter_changed.connect(self._on_io_node_parameter_changed)

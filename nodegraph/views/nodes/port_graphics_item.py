@@ -110,6 +110,72 @@ class PortGraphicsItem(QGraphicsItem):
         if data_type != 'any':
             return data_type
 
+        # Special handling for SubnetNode and SubnetInputNode/SubnetOutputNode
+        if self.connector.node:
+            node = self.connector.node
+            node_type = getattr(node, 'node_type', None)
+
+            # SubnetNode external output: Check internal SubnetOutputNode
+            if node_type == 'SubnetNode' and self.is_output:
+                try:
+                    from ...nodes.subnet.subnet_node import SubnetNode
+                    from ...nodes.subnet.subnet_io_nodes import SubnetOutputNode
+
+                    if isinstance(node, SubnetNode):
+                        internal_network = node.get_internal_network()
+                        # Find the SubnetOutputNode with matching connector name
+                        for internal_node in internal_network.nodes():
+                            if isinstance(internal_node, SubnetOutputNode):
+                                if internal_node.get_connector_name() == self.connector.name:
+                                    # Get the input connector on the SubnetOutputNode
+                                    internal_input = internal_node.input(self.connector.name)
+                                    if internal_input and internal_input.is_connected():
+                                        # Recursively resolve the type of what's connected to it
+                                        connections = internal_input.connections()
+                                        if connections:
+                                            connected_connector = connections[0]
+                                            scene = self.scene()
+                                            if scene and hasattr(scene, '_node_items'):
+                                                if hasattr(connected_connector, 'node') and connected_connector.node:
+                                                    node_item = scene._node_items.get(connected_connector.node.id)
+                                                    if node_item:
+                                                        port = node_item.get_port(connected_connector.name, is_output=True)
+                                                        if port:
+                                                            resolved = port._resolve_data_type(visited)
+                                                            if resolved != 'any':
+                                                                return resolved
+                except ImportError:
+                    pass
+
+            # SubnetInputNode internal output: Check external connection to parent SubnetNode
+            if node_type == 'SubnetInputNode' and self.is_output:
+                try:
+                    from ...nodes.subnet.subnet_io_nodes import SubnetInputNode
+
+                    if isinstance(node, SubnetInputNode):
+                        # Check if the node has a reference to parent subnet
+                        if hasattr(node, '_parent_subnet') and node._parent_subnet:
+                            parent_subnet = node._parent_subnet
+                            connector_name = node.get_connector_name()
+                            external_input = parent_subnet.input(connector_name)
+                            if external_input and external_input.is_connected():
+                                # Get what's connected to the external input
+                                connections = external_input.connections()
+                                if connections:
+                                    connected_connector = connections[0]
+                                    if hasattr(connected_connector, 'node') and connected_connector.node:
+                                        scene = self.scene()
+                                        if scene and hasattr(scene, '_node_items'):
+                                            node_item = scene._node_items.get(connected_connector.node.id)
+                                            if node_item:
+                                                port = node_item.get_port(connected_connector.name, is_output=True)
+                                                if port:
+                                                    resolved = port._resolve_data_type(visited)
+                                                    if resolved != 'any':
+                                                        return resolved
+                except ImportError:
+                    pass
+
         # For 'any' type ports, use different strategies based on port direction
 
         if self.is_output:
