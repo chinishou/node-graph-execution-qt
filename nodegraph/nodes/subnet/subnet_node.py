@@ -177,15 +177,7 @@ class SubnetNode(BaseNode):
 
         # Execute nodes in order
         for node in execution_order:
-            if isinstance(node, SubnetInputNode):
-                # For input nodes, use the injected value
-                if hasattr(node, '_injected_input'):
-                    connector_name = node.get_connector_name()
-                    node._cached_outputs = {connector_name: node._injected_input}
-                else:
-                    node.execute()
-            else:
-                node.execute()
+            node.execute()
 
         # Step 3: Collect outputs from SubnetOutputNodes
         outputs = {}

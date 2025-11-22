@@ -62,9 +62,13 @@ class SubnetInputNode(BaseNode):
 
         The actual value is injected by the subnet execution system.
         """
-        # This will be overridden during subnet execution
-        # The subnet node will inject the actual input value
         connector_name = self.parameter("connector_name").value()
+
+        # Check if there's an injected input value (from subnet execution)
+        if hasattr(self, '_injected_input'):
+            return {connector_name: self._injected_input}
+
+        # Otherwise, return the default value
         return {connector_name: self._setup_default_value}
 
     def get_connector_name(self) -> str:
