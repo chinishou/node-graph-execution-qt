@@ -2,7 +2,18 @@
 Debug test to trace signal flow and find recursion cause.
 
 Uses pytest-qt for Qt testing.
+
+Run with: pytest tests/ui/test_debug_signals.py -v
+Or standalone: python tests/ui/test_debug_signals.py
 """
+import sys
+from pathlib import Path
+
+# Add project root to path for standalone execution
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 import pytest
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QPointF
