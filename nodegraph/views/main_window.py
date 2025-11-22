@@ -18,10 +18,12 @@ from typing import Optional
 from ..core.models import NetworkModel
 from ..core.registry import NodeRegistry
 from ..core.serialization import JSONSerializer
+from ..core.navigation import NavigationController
 from .network.network_scene import NetworkScene
 from .network.network_view import NetworkView
 from .widgets.parameters_pane import ParametersPane
 from .widgets.output_pane import OutputPane
+from .widgets.navigation_bar import NavigationBar
 
 
 class MainWindow(QMainWindow):
@@ -40,6 +42,7 @@ class MainWindow(QMainWindow):
 
         self._network_model: Optional[NetworkModel] = None
         self._current_file: Optional[str] = None
+        self._navigation_controller: Optional[NavigationController] = None
 
         self._setup_ui()
         self._setup_menus()
@@ -64,6 +67,10 @@ class MainWindow(QMainWindow):
         main_layout = QVBoxLayout(central)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
+
+        # Navigation bar
+        self._navigation_bar = NavigationBar()
+        main_layout.addWidget(self._navigation_bar)
 
         # Main splitter (horizontal)
         self._main_splitter = QSplitter(Qt.Horizontal)
@@ -216,6 +223,7 @@ class MainWindow(QMainWindow):
         from ..nodes.base import (
             IntVariable, FloatVariable, StringVariable, BoolVariable
         )
+        from ..nodes.subnet import SubnetNode, SubnetInputNode, SubnetOutputNode
 
         # Math nodes
         NodeRegistry.register(AddNode)
@@ -236,6 +244,11 @@ class MainWindow(QMainWindow):
         NodeRegistry.register(StringVariable)
         NodeRegistry.register(BoolVariable)
 
+        # Subnet nodes
+        NodeRegistry.register(SubnetNode)
+        NodeRegistry.register(SubnetInputNode)
+        NodeRegistry.register(SubnetOutputNode)
+
     def _on_node_selected(self, node):
         """Handle node selection."""
         self._parameters_pane.set_node(node)
@@ -249,9 +262,17 @@ class MainWindow(QMainWindow):
         self._network_model = NetworkModel("Untitled")
         self._current_file = None
 
-        # Create scene
+        # Create navigation controller
+        self._navigation_controller = NavigationController(self._network_model)
+        self._navigation_controller.location_changed.connect(self._on_location_changed)
+
+        # Create scene for root network
         scene = NetworkScene(self._network_model)
         self._network_view.set_scene(scene)
+
+        # Set navigation controller in view and navigation bar
+        self._network_view.set_navigation_controller(self._navigation_controller)
+        self._navigation_bar.set_navigation_controller(self._navigation_controller)
 
         # Clear output
         self._output_pane.clear()
@@ -280,9 +301,17 @@ class MainWindow(QMainWindow):
             self._network_model, sticky_notes_data = JSONSerializer.load(file_path)
             self._current_file = file_path
 
+            # Create navigation controller
+            self._navigation_controller = NavigationController(self._network_model)
+            self._navigation_controller.location_changed.connect(self._on_location_changed)
+
             # Create scene
             scene = NetworkScene(self._network_model)
             self._network_view.set_scene(scene)
+
+            # Set navigation controller in view and navigation bar
+            self._network_view.set_navigation_controller(self._navigation_controller)
+            self._navigation_bar.set_navigation_controller(self._navigation_controller)
 
             # Load sticky notes
             from ..views.notes.sticky_note_item import StickyNoteItem
@@ -341,6 +370,19 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save file: {e}")
+
+    def _on_location_changed(self, location):
+        """Handle navigation location change."""
+        # Get the network at this location
+        current_network = location.network
+
+        # Create a new scene for this network
+        scene = NetworkScene(current_network)
+        self._network_view.set_scene(scene)
+
+        # Log navigation
+        path = location.get_path_string()
+        self._output_pane.append_info(f"Navigated to: {path}")
 
     def _update_title(self):
         """Update window title."""

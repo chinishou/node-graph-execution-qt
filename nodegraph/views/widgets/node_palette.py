@@ -28,10 +28,11 @@ class NodePaletteDialog(QWidget):
     node_selected = Signal(str, QPointF)  # node_type, position
     cancelled = Signal()
 
-    def __init__(self, scene_pos: QPointF, parent=None):
+    def __init__(self, scene_pos: QPointF, parent=None, is_inside_subnet: bool = False):
         super().__init__(parent)
 
         self.scene_pos = scene_pos
+        self.is_inside_subnet = is_inside_subnet
         self.all_nodes: Dict[str, str] = {}  # {display_name: node_type}
         self.categories: Dict[str, List[tuple]] = {}  # {category: [(node_type, node_class)]}
 
@@ -157,11 +158,22 @@ class NodePaletteDialog(QWidget):
 
         for category in sorted(categories):
             nodes = NodeRegistry.get_nodes_by_category(category)
-            self.categories[category] = sorted(nodes.items())
 
+            # Filter out SubnetInputNode and SubnetOutputNode if not inside a subnet
+            filtered_nodes = {}
             for node_type, node_class in nodes.items():
-                display_name = f"{node_type}"
-                self.all_nodes[display_name] = node_type
+                # Skip subnet I/O nodes if not inside a subnet
+                if not self.is_inside_subnet and node_type in ("SubnetInputNode", "SubnetOutputNode"):
+                    continue
+                filtered_nodes[node_type] = node_class
+
+            # Only add category if it has nodes after filtering
+            if filtered_nodes:
+                self.categories[category] = sorted(filtered_nodes.items())
+
+                for node_type, node_class in filtered_nodes.items():
+                    display_name = f"{node_type}"
+                    self.all_nodes[display_name] = node_type
 
     def _create_category_menu(self):
         """Create hierarchical menu structure for categories."""

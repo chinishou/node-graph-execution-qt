@@ -43,6 +43,22 @@ class Signal:
                 self._slots.pop(i)
                 break
 
+    def is_connected(self, slot: Callable) -> bool:
+        """Check if a callable is connected to this signal."""
+        # Clean up dead weak references first
+        self._slots = [s for s in self._slots if self._is_alive(s)]
+
+        for weak_slot in self._slots:
+            # Handle both weak and strong references
+            if isinstance(weak_slot, (WeakMethod, ref)):
+                actual_slot = weak_slot()
+            else:
+                actual_slot = weak_slot
+
+            if actual_slot == slot:
+                return True
+        return False
+
     def emit(self, *args, **kwargs) -> None:
         """Emit the signal, calling all connected slots."""
         # Clean up dead weak references
