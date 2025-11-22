@@ -57,7 +57,19 @@ class SubnetNode(BaseNode):
         # Connect signals to auto-sync connectors
         self._internal_network.node_added.connect(self._on_internal_node_added)
         self._internal_network.node_removed.connect(self._on_internal_node_removed)
+        # Set parent subnet reference on all I/O nodes
+        self._update_io_node_references()
         self._sync_connectors()
+
+    def _update_io_node_references(self):
+        """Update _parent_subnet reference on all I/O nodes in the internal network."""
+        if not self._internal_network:
+            return
+
+        for node in self._internal_network.nodes():
+            if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+                # Set a private attribute to reference the parent subnet
+                node._parent_subnet = self
 
     def _sync_connectors(self):
         """
@@ -81,11 +93,15 @@ class SubnetNode(BaseNode):
         for node in self._internal_network.nodes():
             if isinstance(node, SubnetInputNode):
                 input_nodes.append(node)
+                # Set parent subnet reference
+                node._parent_subnet = self
                 # Connect to parameter changes if not already connected
                 if not node.parameter_changed.is_connected(self._on_io_node_parameter_changed):
                     node.parameter_changed.connect(self._on_io_node_parameter_changed)
             elif isinstance(node, SubnetOutputNode):
                 output_nodes.append(node)
+                # Set parent subnet reference
+                node._parent_subnet = self
                 # Connect to parameter changes if not already connected
                 if not node.parameter_changed.is_connected(self._on_io_node_parameter_changed):
                     node.parameter_changed.connect(self._on_io_node_parameter_changed)
@@ -136,6 +152,8 @@ class SubnetNode(BaseNode):
         """Handle when a node is added to the internal network."""
         # If it's a subnet I/O node, sync connectors
         if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+            # Set parent subnet reference
+            node._parent_subnet = self
             self._sync_connectors()
             # Also connect to parameter changes to re-sync when name/type changes
             node.parameter_changed.connect(self._on_io_node_parameter_changed)
@@ -177,15 +195,7 @@ class SubnetNode(BaseNode):
 
         # Execute nodes in order
         for node in execution_order:
-            if isinstance(node, SubnetInputNode):
-                # For input nodes, use the injected value
-                if hasattr(node, '_injected_input'):
-                    connector_name = node.get_connector_name()
-                    node._cached_outputs = {connector_name: node._injected_input}
-                else:
-                    node.execute()
-            else:
-                node.execute()
+            node.execute()
 
         # Step 3: Collect outputs from SubnetOutputNodes
         outputs = {}
@@ -231,6 +241,49 @@ class SubnetNode(BaseNode):
         self._sync_connectors()
 
         return output_node
+
+    def resolve_connector_display_type(
+        self,
+        connector_name: str,
+        is_output: bool,
+        visited: Optional[set] = None
+    ) -> Optional[str]:
+        """
+        Resolve display type for subnet connectors by looking into internal network.
+
+        For output connectors: look at the corresponding SubnetOutputNode's input type.
+        """
+        if not is_output or not self._internal_network:
+            return None  # Use default resolution for inputs
+
+        # For output connectors, check internal SubnetOutputNode
+        from .subnet_io_nodes import SubnetOutputNode
+
+        for node in self._internal_network.nodes():
+            if isinstance(node, SubnetOutputNode):
+                if node.get_connector_name() == connector_name:
+                    # Get the input connector on SubnetOutputNode
+                    internal_input = node.input(connector_name)
+                    if internal_input and internal_input.is_connected():
+                        # Get what's connected to it
+                        connections = internal_input.connections()
+                        if connections:
+                            connected_connector = connections[0]
+                            # Return concrete type if available
+                            if connected_connector.data_type != 'any':
+                                return connected_connector.data_type
+                            # Otherwise, try to resolve from the connected node
+                            if hasattr(connected_connector, 'node') and connected_connector.node:
+                                connected_node = connected_connector.node
+                                # Check for type parameters
+                                for param_name in ['type', 'output_type', 'data_type', 'value_type']:
+                                    param = connected_node.parameter(param_name)
+                                    if param:
+                                        param_value = param.value()
+                                        # Basic type checking
+                                        if param_value in ['int', 'float', 'str', 'bool']:
+                                            return param_value
+        return None
 
     def serialize(self) -> Dict[str, Any]:
         """Serialize the subnet node including its internal network."""

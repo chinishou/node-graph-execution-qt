@@ -171,6 +171,12 @@ class JSONSerializer:
                         if param:
                             param.set_value(param_data.get("value"), emit_signal=False)
 
+                    # Deserialize connector default values
+                    for input_name, input_data in node_data.get("inputs", {}).items():
+                        connector = node.input(input_name)
+                        if connector and "default_value" in input_data:
+                            connector.default_value = input_data["default_value"]
+
                     # Special handling for SubnetNode
                     if node_type == "SubnetNode" and "internal_network" in node_data:
                         # Recursively deserialize internal network

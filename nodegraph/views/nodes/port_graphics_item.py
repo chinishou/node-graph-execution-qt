@@ -110,6 +110,16 @@ class PortGraphicsItem(QGraphicsItem):
         if data_type != 'any':
             return data_type
 
+        # Try node-specific type resolution first (for cross-boundary scenarios)
+        if self.connector.node:
+            custom_type = self.connector.node.resolve_connector_display_type(
+                self.connector.name,
+                self.is_output,
+                visited
+            )
+            if custom_type:
+                return custom_type
+
         # For 'any' type ports, use different strategies based on port direction
 
         if self.is_output:
@@ -180,20 +190,23 @@ class PortGraphicsItem(QGraphicsItem):
                             return param_value
 
             # Strategy 3: Check pass-through from output ports (for Display-like nodes)
+            # Skip this for nodes that transform types (use transforms_data_type method)
             if self.connector.node:
-                scene = self.scene()
-                if scene and hasattr(scene, '_node_items'):
-                    node_item = scene._node_items.get(self.connector.node.id)
-                    if node_item:
-                        for output_name, output_connector in self.connector.node.outputs().items():
-                            if output_connector.data_type != 'any':
-                                return output_connector.data_type
+                # Don't use pass-through for type-converting nodes
+                if not self.connector.node.transforms_data_type():
+                    scene = self.scene()
+                    if scene and hasattr(scene, '_node_items'):
+                        node_item = scene._node_items.get(self.connector.node.id)
+                        if node_item:
+                            for output_name, output_connector in self.connector.node.outputs().items():
+                                if output_connector.data_type != 'any':
+                                    return output_connector.data_type
 
-                            output_port = node_item.get_port(output_name, is_output=True)
-                            if output_port and output_port != self:
-                                resolved = output_port._resolve_data_type(visited)
-                                if resolved != 'any':
-                                    return resolved
+                                output_port = node_item.get_port(output_name, is_output=True)
+                                if output_port and output_port != self:
+                                    resolved = output_port._resolve_data_type(visited)
+                                    if resolved != 'any':
+                                        return resolved
 
         # Default: return 'any'
         return 'any'

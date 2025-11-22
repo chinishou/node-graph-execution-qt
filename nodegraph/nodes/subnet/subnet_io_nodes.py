@@ -62,9 +62,20 @@ class SubnetInputNode(BaseNode):
 
         The actual value is injected by the subnet execution system.
         """
-        # This will be overridden during subnet execution
-        # The subnet node will inject the actual input value
         connector_name = self.parameter("connector_name").value()
+
+        # Check if there's an injected input value (from subnet execution)
+        if hasattr(self, '_injected_input'):
+            return {connector_name: self._injected_input}
+
+        # Try to get value from parent subnet (for direct execution in UI)
+        if hasattr(self, '_parent_subnet') and self._parent_subnet:
+            parent_input = self._parent_subnet.input(connector_name)
+            if parent_input:
+                value = parent_input.get_value()
+                return {connector_name: value}
+
+        # Otherwise, return the default value
         return {connector_name: self._setup_default_value}
 
     def get_connector_name(self) -> str:
@@ -74,6 +85,70 @@ class SubnetInputNode(BaseNode):
     def get_data_type(self) -> str:
         """Get the data type."""
         return self.parameter("data_type").value()
+
+    def resolve_connector_display_type(
+        self,
+        connector_name: str,
+        is_output: bool,
+        visited: Optional[set] = None
+    ) -> Optional[str]:
+        """
+        Resolve display type for SubnetInputNode output by checking parent subnet's input.
+
+        For output connectors: look at what's connected to the parent SubnetNode's input.
+        Recursively resolves through SubnetNode chains.
+        """
+        if not is_output:
+            return None  # Use default resolution for inputs
+
+        # Check if we have a parent subnet reference
+        if not hasattr(self, '_parent_subnet') or not self._parent_subnet:
+            return None
+
+        parent_subnet = self._parent_subnet
+        external_input = parent_subnet.input(connector_name)
+
+        if external_input and external_input.is_connected():
+            # Get what's connected to the external input
+            connections = external_input.connections()
+            if connections:
+                connected_connector = connections[0]
+
+                # Prevent infinite recursion
+                if visited is None:
+                    visited = set()
+                connector_id = id(connected_connector)
+                if connector_id in visited:
+                    return None
+                visited.add(connector_id)
+
+                # Return concrete type if available
+                if connected_connector.data_type != 'any':
+                    return connected_connector.data_type
+
+                # Try to resolve from connected node
+                if hasattr(connected_connector, 'node') and connected_connector.node:
+                    connected_node = connected_connector.node
+
+                    # Recursively resolve if connected node supports it (e.g., SubnetNode chains)
+                    if hasattr(connected_node, 'resolve_connector_display_type'):
+                        custom_type = connected_node.resolve_connector_display_type(
+                            connected_connector.name,
+                            True,  # is_output
+                            visited
+                        )
+                        if custom_type:
+                            return custom_type
+
+                    # Fallback to parameter checking
+                    for param_name in ['type', 'output_type', 'data_type', 'value_type']:
+                        param = connected_node.parameter(param_name)
+                        if param:
+                            param_value = param.value()
+                            if param_value in ['int', 'float', 'str', 'bool']:
+                                return param_value
+
+        return None
 
 
 class SubnetOutputNode(BaseNode):
