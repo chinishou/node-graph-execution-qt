@@ -150,14 +150,20 @@ def test_variable_node_chain():
 def test_generic_variable_node():
     """Test generic VariableNode with custom type."""
     from nodegraph.core import DataTypeRegistry
+    import tempfile
+    import os
 
     # Register custom type
     DataTypeRegistry.register("Path", Path)
 
+    # Use a cross-platform temp path
+    temp_dir = tempfile.gettempdir()
+    test_path = Path(temp_dir) / "test.txt"
+
     # Create path variable
     path_var = VariableNode(
         data_type="Path",
-        default_value=Path("/tmp/test.txt"),
+        default_value=test_path,
         name="FilePath"
     )
 
@@ -165,7 +171,8 @@ def test_generic_variable_node():
     path_var.cook()
     result = path_var.get_output_value("out")
     assert isinstance(result, Path)
-    assert str(result) == "/tmp/test.txt"
+    # Verify the path matches
+    assert result == test_path
 
     print("✓ Generic VariableNode with custom type works")
 

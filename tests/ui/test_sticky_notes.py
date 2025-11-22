@@ -96,12 +96,14 @@ class TestStickyNoteCreation:
 
     def test_note_flags(self, scene):
         """Test that sticky notes have correct flags."""
+        from PySide6.QtWidgets import QGraphicsItem
+
         note = StickyNoteItem()
         scene.addItem(note)
 
-        assert note.flags() & note.ItemIsMovable
-        assert note.flags() & note.ItemIsSelectable
-        assert note.flags() & note.ItemSendsGeometryChanges
+        assert note.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsMovable
+        assert note.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
+        assert note.flags() & QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges
 
 
 class TestStickyNoteText:
@@ -284,8 +286,9 @@ class TestStickyNoteResizing:
             Qt.NoModifier
         )
 
-        # Set scene position for event
-        event.scenePos = lambda: scene.views()[0].mapToScene(handle_pos.toPoint())
+        # Create a simple lambda that returns the scene position
+        # (in item coordinates, scenePos equals the pos since item is at origin)
+        event.scenePos = lambda: handle_pos
 
         note.mousePressEvent(event)
 
