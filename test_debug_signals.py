@@ -6,10 +6,9 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QPointF
 
 from nodegraph.core.models import NetworkModel
-from nodegraph.nodes.math.int_node import IntNode
-from nodegraph.nodes.math.add_node import AddNode
-from nodegraph.nodes.io.print_node import PrintNode
-from nodegraph.nodes.io.display_node import DisplayNode
+from nodegraph.nodes.base.variable_node import IntVariable
+from nodegraph.nodes.operators.math_nodes import AddNode
+from nodegraph.nodes.utils.output_nodes import PrintNode, DisplayNode
 from nodegraph.views.network import NetworkScene, NetworkView
 
 # Global counter to track recursion depth
@@ -245,7 +244,7 @@ def main():
         network = NetworkModel()
 
         # Create nodes
-        int_node = IntNode(name="Int")
+        int_node = IntVariable(name="Int")
         int_node.parameter('value').set_value(42)
         int_node.set_position(0, 0)
 
@@ -278,7 +277,7 @@ def main():
         print("="*80)
         network.connect(int_node.id, 'out', add_node.id, 'a')
         app.processEvents()
-        network.connect(add_node.id, 'result', print_node.id, 'input')
+        network.connect(add_node.id, 'result', print_node.id, 'value')
         app.processEvents()
 
         print("\n" + "="*80)
@@ -290,7 +289,7 @@ def main():
         print("\n" + "="*80)
         print("STEP 3: int->print (THIS SHOULD TRIGGER THE BUG)")
         print("="*80)
-        network.connect(int_node.id, 'out', print_node.id, 'input')
+        network.connect(int_node.id, 'out', print_node.id, 'value')
         app.processEvents()
 
         print("\n" + "="*80)
