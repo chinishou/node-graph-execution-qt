@@ -110,79 +110,15 @@ class PortGraphicsItem(QGraphicsItem):
         if data_type != 'any':
             return data_type
 
-        # Special handling for SubnetNode and SubnetInputNode/SubnetOutputNode
+        # Try node-specific type resolution first (for cross-boundary scenarios)
         if self.connector.node:
-            node = self.connector.node
-            node_type = getattr(node, 'node_type', None)
-
-            # SubnetNode external output: Check internal SubnetOutputNode
-            if node_type == 'SubnetNode' and self.is_output:
-                try:
-                    from ...nodes.subnet.subnet_node import SubnetNode
-                    from ...nodes.subnet.subnet_io_nodes import SubnetOutputNode
-
-                    if isinstance(node, SubnetNode):
-                        internal_network = node.get_internal_network()
-                        # Find the SubnetOutputNode with matching connector name
-                        for internal_node in internal_network.nodes():
-                            if isinstance(internal_node, SubnetOutputNode):
-                                if internal_node.get_connector_name() == self.connector.name:
-                                    # Get the input connector on the SubnetOutputNode
-                                    internal_input = internal_node.input(self.connector.name)
-                                    if internal_input and internal_input.is_connected():
-                                        # Recursively resolve the type of what's connected to it
-                                        connections = internal_input.connections()
-                                        if connections:
-                                            connected_connector = connections[0]
-                                            scene = self.scene()
-                                            if scene and hasattr(scene, '_node_items'):
-                                                if hasattr(connected_connector, 'node') and connected_connector.node:
-                                                    node_item = scene._node_items.get(connected_connector.node.id)
-                                                    if node_item:
-                                                        port = node_item.get_port(connected_connector.name, is_output=True)
-                                                        if port:
-                                                            resolved = port._resolve_data_type(visited)
-                                                            if resolved != 'any':
-                                                                return resolved
-                except ImportError:
-                    pass
-
-            # SubnetInputNode internal output: Check external connection to parent SubnetNode
-            if node_type == 'SubnetInputNode' and self.is_output:
-                try:
-                    from ...nodes.subnet.subnet_io_nodes import SubnetInputNode
-
-                    if isinstance(node, SubnetInputNode):
-                        # Check if the node has a reference to parent subnet
-                        if hasattr(node, '_parent_subnet') and node._parent_subnet:
-                            parent_subnet = node._parent_subnet
-                            connector_name = node.get_connector_name()
-                            external_input = parent_subnet.input(connector_name)
-                            if external_input and external_input.is_connected():
-                                # Get what's connected to the external input
-                                connections = external_input.connections()
-                                if connections:
-                                    connected_connector = connections[0]
-                                    # Don't use scene - directly resolve from connector
-                                    # The connected node is in a different scene (parent network)
-                                    connected_id = id(connected_connector)
-                                    if connected_id not in visited:
-                                        visited.add(connected_id)
-                                        # Check concrete type first
-                                        if connected_connector.data_type != 'any':
-                                            return connected_connector.data_type
-                                        # Try to resolve recursively through the node's parameter/type
-                                        if hasattr(connected_connector, 'node') and connected_connector.node:
-                                            connected_node = connected_connector.node
-                                            # Check if the output node has type parameters
-                                            for param_name in ['type', 'output_type', 'data_type', 'value_type']:
-                                                param = connected_node.parameter(param_name)
-                                                if param:
-                                                    param_value = param.value()
-                                                    if param_value in self.TYPE_COLORS:
-                                                        return param_value
-                except ImportError:
-                    pass
+            custom_type = self.connector.node.resolve_connector_display_type(
+                self.connector.name,
+                self.is_output,
+                visited
+            )
+            if custom_type:
+                return custom_type
 
         # For 'any' type ports, use different strategies based on port direction
 
@@ -254,11 +190,10 @@ class PortGraphicsItem(QGraphicsItem):
                             return param_value
 
             # Strategy 3: Check pass-through from output ports (for Display-like nodes)
-            # Skip this for nodes that transform types (like ConvertNode)
+            # Skip this for nodes that transform types (use transforms_data_type method)
             if self.connector.node:
-                node_type = getattr(self.connector.node, 'node_type', None)
                 # Don't use pass-through for type-converting nodes
-                if node_type not in ['ConvertNode']:
+                if not self.connector.node.transforms_data_type():
                     scene = self.scene()
                     if scene and hasattr(scene, '_node_items'):
                         node_item = scene._node_items.get(self.connector.node.id)

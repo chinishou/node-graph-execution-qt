@@ -242,6 +242,49 @@ class SubnetNode(BaseNode):
 
         return output_node
 
+    def resolve_connector_display_type(
+        self,
+        connector_name: str,
+        is_output: bool,
+        visited: Optional[set] = None
+    ) -> Optional[str]:
+        """
+        Resolve display type for subnet connectors by looking into internal network.
+
+        For output connectors: look at the corresponding SubnetOutputNode's input type.
+        """
+        if not is_output or not self._internal_network:
+            return None  # Use default resolution for inputs
+
+        # For output connectors, check internal SubnetOutputNode
+        from .subnet_io_nodes import SubnetOutputNode
+
+        for node in self._internal_network.nodes():
+            if isinstance(node, SubnetOutputNode):
+                if node.get_connector_name() == connector_name:
+                    # Get the input connector on SubnetOutputNode
+                    internal_input = node.input(connector_name)
+                    if internal_input and internal_input.is_connected():
+                        # Get what's connected to it
+                        connections = internal_input.connections()
+                        if connections:
+                            connected_connector = connections[0]
+                            # Return concrete type if available
+                            if connected_connector.data_type != 'any':
+                                return connected_connector.data_type
+                            # Otherwise, try to resolve from the connected node
+                            if hasattr(connected_connector, 'node') and connected_connector.node:
+                                connected_node = connected_connector.node
+                                # Check for type parameters
+                                for param_name in ['type', 'output_type', 'data_type', 'value_type']:
+                                    param = connected_node.parameter(param_name)
+                                    if param:
+                                        param_value = param.value()
+                                        # Basic type checking
+                                        if param_value in ['int', 'float', 'str', 'bool']:
+                                            return param_value
+        return None
+
     def serialize(self) -> Dict[str, Any]:
         """Serialize the subnet node including its internal network."""
         data = super().serialize()

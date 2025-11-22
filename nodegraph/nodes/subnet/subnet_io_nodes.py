@@ -86,6 +86,49 @@ class SubnetInputNode(BaseNode):
         """Get the data type."""
         return self.parameter("data_type").value()
 
+    def resolve_connector_display_type(
+        self,
+        connector_name: str,
+        is_output: bool,
+        visited: Optional[set] = None
+    ) -> Optional[str]:
+        """
+        Resolve display type for SubnetInputNode output by checking parent subnet's input.
+
+        For output connectors: look at what's connected to the parent SubnetNode's input.
+        """
+        if not is_output:
+            return None  # Use default resolution for inputs
+
+        # Check if we have a parent subnet reference
+        if not hasattr(self, '_parent_subnet') or not self._parent_subnet:
+            return None
+
+        parent_subnet = self._parent_subnet
+        external_input = parent_subnet.input(connector_name)
+
+        if external_input and external_input.is_connected():
+            # Get what's connected to the external input
+            connections = external_input.connections()
+            if connections:
+                connected_connector = connections[0]
+
+                # Return concrete type if available
+                if connected_connector.data_type != 'any':
+                    return connected_connector.data_type
+
+                # Try to resolve from connected node's parameters
+                if hasattr(connected_connector, 'node') and connected_connector.node:
+                    connected_node = connected_connector.node
+                    for param_name in ['type', 'output_type', 'data_type', 'value_type']:
+                        param = connected_node.parameter(param_name)
+                        if param:
+                            param_value = param.value()
+                            if param_value in ['int', 'float', 'str', 'bool']:
+                                return param_value
+
+        return None
+
 
 class SubnetOutputNode(BaseNode):
     """

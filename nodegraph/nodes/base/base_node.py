@@ -129,5 +129,50 @@ class BaseNode(NodeModel, ABC):
         """
         pass
 
+    def resolve_connector_display_type(
+        self,
+        connector_name: str,
+        is_output: bool,
+        visited: Optional[set] = None
+    ) -> Optional[str]:
+        """
+        Resolve the display type for a connector (for UI color coding).
+
+        This method can be overridden by subclasses to provide custom type
+        resolution logic for special cases (e.g., cross-network-boundary
+        scenarios, type-transforming nodes).
+
+        Args:
+            connector_name: Name of the connector
+            is_output: True if output connector, False if input connector
+            visited: Set of already visited connector IDs (to prevent loops)
+
+        Returns:
+            Resolved type string (e.g., 'int', 'float', 'str'),
+            or None to use default resolution logic
+
+        Example::
+
+            # In a SubnetNode subclass:
+            def resolve_connector_display_type(self, connector_name, is_output, visited):
+                if is_output:
+                    # Look inside internal network for type
+                    return self._resolve_internal_output_type(connector_name)
+                return None  # Use default for inputs
+        """
+        return None  # Default: use standard resolution
+
+    def transforms_data_type(self) -> bool:
+        """
+        Indicate whether this node transforms data types.
+
+        Override this to return True for nodes that convert between types
+        (e.g., ConvertNode). This affects how the UI resolves connector colors.
+
+        Returns:
+            True if node transforms types, False otherwise
+        """
+        return False
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name='{self.name}')"

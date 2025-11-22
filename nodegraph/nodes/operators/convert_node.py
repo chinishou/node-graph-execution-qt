@@ -60,3 +60,7 @@ class ConvertNode(BaseNode):
             print(f"Warning: Conversion failed in node '{self.name}': {e}")
             # Return original value if conversion fails
             return {"result": value}
+
+    def transforms_data_type(self) -> bool:
+        """ConvertNode transforms data types between input and output."""
+        return True
