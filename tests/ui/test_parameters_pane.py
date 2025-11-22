@@ -157,7 +157,7 @@ class TestParametersPaneEditing:
         # Check parameter was updated
         assert node.parameter("value").value() == 3.14
 
-    def test_edit_bool_parameter(self, params_pane, qtbot):
+    def test_edit_bool_parameter(self, params_pane, qtbot, qapp):
         """Test editing a bool parameter."""
         node = BoolVariable(default_value=False)
         params_pane.set_node(node)
@@ -165,9 +165,9 @@ class TestParametersPaneEditing:
         widget = params_pane._widgets.get("param_value")
         assert isinstance(widget, QCheckBox)
 
-        # Change value - manually trigger the callback since signal might be delayed
+        # Change value and process events to ensure signal is handled
         widget.setChecked(True)
-        widget.stateChanged.emit(Qt.Checked)
+        qapp.processEvents()
         qtbot.wait(10)
 
         # Check parameter was updated
@@ -237,7 +237,7 @@ class TestParametersPaneEditing:
 class TestParametersPaneConnections:
     """Tests for connection state handling."""
 
-    def test_input_disabled_when_connected(self, params_pane, qtbot):
+    def test_input_disabled_when_connected(self, params_pane, qtbot, qapp):
         """Test that input widgets are disabled when connected."""
         var = FloatVariable(default_value=10.0)
         add_node = AddNode()
@@ -251,6 +251,7 @@ class TestParametersPaneConnections:
 
         # Connect variable to add node
         var.output("out").connect_to(add_node.input("a"))
+        qapp.processEvents()
         qtbot.wait(10)
 
         # Input 'a' widget should now be disabled (connected)
@@ -260,7 +261,7 @@ class TestParametersPaneConnections:
         widget_b = params_pane._widgets.get("input_b")
         assert widget_b.isEnabled()
 
-    def test_input_enabled_when_disconnected(self, params_pane, qtbot):
+    def test_input_enabled_when_disconnected(self, params_pane, qtbot, qapp):
         """Test that input widgets are enabled when disconnected."""
         var = FloatVariable(default_value=10.0)
         add_node = AddNode()
@@ -274,6 +275,7 @@ class TestParametersPaneConnections:
 
         # Connect
         var.output("out").connect_to(add_node.input("a"))
+        qapp.processEvents()
         qtbot.wait(10)
 
         # Should be disabled now
@@ -281,12 +283,13 @@ class TestParametersPaneConnections:
 
         # Disconnect
         var.output("out").disconnect_from(add_node.input("a"))
+        qapp.processEvents()
         qtbot.wait(10)
 
         # Should be enabled again
         assert widget_a.isEnabled()
 
-    def test_input_styling_when_connected(self, params_pane, qtbot):
+    def test_input_styling_when_connected(self, params_pane, qtbot, qapp):
         """Test that input widgets are styled differently when connected."""
         var = FloatVariable(default_value=10.0)
         add_node = AddNode()
@@ -302,6 +305,7 @@ class TestParametersPaneConnections:
 
         # Connect
         var.output("out").connect_to(add_node.input("a"))
+        qapp.processEvents()
         qtbot.wait(10)
 
         # Should have different styling - disabled and styled
@@ -356,7 +360,7 @@ class TestParametersPaneExecution:
         # Output display should show value
         assert "42" in output_widget.text()
 
-    def test_execute_with_connected_nodes(self, params_pane, qtbot):
+    def test_execute_with_connected_nodes(self, params_pane, qtbot, qapp):
         """Test executing a node with connections."""
         var_a = FloatVariable(default_value=10.0)
         var_b = FloatVariable(default_value=5.0)
@@ -373,6 +377,7 @@ class TestParametersPaneExecution:
 
         # Execute (should execute dependencies too)
         params_pane._execute_btn.click()
+        qapp.processEvents()
         qtbot.wait(10)
 
         # Output should show sum (15.0 because AddNode defaults to float type)
