@@ -1,0 +1,249 @@
+Context Summary for LLM Handoff
+Project Overview
+Project: node-graph-execution-qt - A Python node-based programming framework similar to Houdini/Unreal Blueprints
+Language: Python with Pydantic V2
+Repository: chinishou/node-graph-execution-qt
+Current Branch: claude/explore-ryven-projects-011CUxY15aMMwKhdnHW1nv44
+Latest Commit: 4ce3ebc - Optimize get_execution_order() with deque and defaultdict
+
+Session History & Work Completed
+Previous Session Summary
+Started with 62% test coverage
+Added comprehensive tests (increased to 86% coverage)
+Implemented optional caching with dirty state tracking
+Implemented topological sorting for network execution (Kahn's algorithm)
+Added cycle detection with proper error handling
+Current Session Work
+1. Major Refactoring: From network.cook_all() to node.execute()
+User Request (Chinese):
+
+"實際上cook_all()的scope並不是整個network，而是先選某個節點execute，然後那個節點的所有upstream才是要cook_all的scope"
+Translation: cook_all() scope isn't the entire network, but rather execute a selected node and cook all its upstream dependencies
+Design Decision:
+
+Removed NetworkModel.cook_all() method
+Added NodeModel.execute() method
+Execute pattern: User calls target_node.execute() → system automatically cooks all parent dependencies in topological order
+Implementation:
+
+# Old pattern (removed):
+network.cook_all()  # Cooks ALL nodes
+
+# New pattern:
+target_node.execute()  # Only cooks necessary parent chain
+2. Terminology Update: upstream/downstream → parent/child
+User Request: Clearer terminology for node relationships
+
+Changes:
+
+NetworkModel.find_upstream_nodes() → find_parent_nodes()
+NetworkModel.find_downstream_nodes() → find_child_nodes()
+Added NodeModel.get_parent_nodes() and get_child_nodes() helper methods
+3. Cycle Detection at Connection Time
+User Requirement:
+
+"connect時立即檢測cycle，return False + warning，不用整個報錯"
+Translation: Detect cycles immediately at connect time, return False with warning instead of throwing errors
+Implementation:
+
+def connect(...) -> bool:
+    success = source_connector.connect_to(target_connector)
+    if success:
+        if self.has_cycle():
+            source_connector.disconnect_from(target_connector)
+            print(f"Warning: Connection from {source_node.name}.{source_output} to {target_node.name}.{target_input} would create a cycle")
+            return False
+    return success
+Benefit: Prevents invalid graph states from being created
+
+4. Performance Optimization
+User Question: "get_execution_order可以用defaultdict跟deque優化嗎?"
+
+Optimization Applied:
+
+Replaced list.pop(0) (O(n)) with deque.popleft() (O(1))
+Used defaultdict(int) and defaultdict(list) for cleaner initialization
+Significant performance improvement for 100-node networks (user's expected scale)
+Code Change:
+
+# Before:
+queue = [node.id for node in nodes if in_degree[node.id] == 0]
+while queue:
+    node_id = queue.pop(0)  # O(n) operation
+
+# After:
+queue = deque([node.id for node in nodes if in_degree[node.id] == 0])
+while queue:
+    node_id = queue.popleft()  # O(1) operation
+Technical Architecture
+Core Models
+NodeModel (nodegraph/core/models/node_model.py):
+
+cook() - Execute single node computation
+execute() - NEW: Execute node with all parent dependencies
+get_parent_nodes() - NEW: Get nodes feeding into this node
+get_child_nodes() - NEW: Get nodes fed by this node
+_get_all_ancestors() - NEW: Recursive parent traversal for execution planning
+mark_dirty() - Mark node as needing recomputation
+enable_caching - Flag to enable/disable output caching
+NetworkModel (nodegraph/core/models/network_model.py):
+
+add_node(), remove_node() - Node management
+connect(), disconnect() - Connection management with cycle detection
+find_parent_nodes() - Get immediate parents (renamed from find_upstream_nodes)
+find_child_nodes() - Get immediate children (renamed from find_downstream_nodes)
+get_execution_order() - Kahn's algorithm for topological sort (optimized with deque)
+has_cycle() - DFS-based cycle detection
+cook_all() - REMOVED
+ConnectorModel (nodegraph/core/models/connector_model.py):
+
+Handles input/output ports
+Manages connections between nodes
+Propagates dirty state downstream
+Execution Flow
+User calls: target_node.execute()
+    ↓
+1. Get all ancestor node IDs (_get_all_ancestors)
+    ↓
+2. Get full network execution order (get_execution_order)
+    ↓
+3. Filter to ancestors + self
+    ↓
+4. Cook each node in topological order
+    - If caching enabled: only cook dirty nodes
+    - If caching disabled: cook all nodes
+Dirty State Propagation
+Downstream propagation: When node becomes dirty → all child nodes marked dirty
+Upstream dependencies: execute() checks dirty state before cooking
+Caching behavior:
+enable_caching=True: Nodes track dirty state, skip clean nodes
+enable_caching=False: All nodes always dirty, always recompute
+Key Design Decisions & User Preferences
+Expected Network Scale: ~100 nodes
+Execution Pattern: User selects specific node to execute, not entire network
+Cycle Detection: Proactive (at connect time) rather than reactive (at execution time)
+Error Handling: Return False with warning instead of raising exceptions for cycles
+Performance: O(V+E) topological sort is acceptable, no incremental caching needed yet
+Terminology: parent/child preferred over upstream/downstream
+Files Modified (3 commits pushed to remote)
+Commit 1: 99b6ebc - Improve cycle detection
+Modified network_model.py: Changed cycle detection to raise ValueError with clear messages
+Commit 2: 7cc5f83 - Refactor to node.execute() pattern
+Modified files:
+
+nodegraph/core/models/network_model.py:
+
+Added cycle check in connect()
+Renamed find_upstream_nodes() → find_parent_nodes()
+Renamed find_downstream_nodes() → find_child_nodes()
+Updated has_cycle() to use new method names
+Removed cook_all() method
+nodegraph/core/models/node_model.py:
+
+Added execute() method
+Added get_parent_nodes() method
+Added get_child_nodes() method
+Added _get_all_ancestors() helper method
+tests/test_network.py:
+
+Renamed test_upstream_downstream_nodes() → test_parent_child_nodes()
+Changed network.cook_all() → mul.execute()
+Updated all variable names (upstream→parents, downstream→children)
+tests/test_topological_execution.py:
+
+Renamed tests: cook_all → execute
+Updated all test methods to use node.execute() instead of network.cook_all()
+Modified cycle detection tests to verify connect() prevention behavior
+Updated test_has_cycle_method() to bypass connect() for testing
+Commit 3: 4ce3ebc - Optimize with deque and defaultdict
+Modified files:
+
+nodegraph/core/models/network_model.py:
+Added imports: from collections import defaultdict, deque
+Replaced queue.pop(0) with deque.popleft() in get_execution_order()
+Used defaultdict(int) and defaultdict(list) for initialization
+Test Coverage
+Total: 128+ tests passing
+Coverage: 86% (up from 62%)
+
+Test files:
+
+test_data_types.py - Type system tests
+test_variable_nodes.py - Variable node tests
+test_models.py - Core model tests
+test_serialization.py - Serialization tests
+test_network.py - Network operations (9 tests, includes parent/child tests)
+test_operators.py - Math operators (14 tests, 100% coverage)
+test_signals.py - Signal system (17 tests, 82% coverage)
+test_node_registry.py - Registry (15 tests, 94% coverage)
+test_json_serializer.py - JSON I/O (12 tests, 88% coverage)
+test_python_exporter.py - Code generation (14 tests, 99% coverage)
+test_topological_execution.py - Execution order and cycles (11 tests)
+Current State
+What's Working
+✅ All 128+ tests passing
+✅ Topological execution with cycle prevention
+✅ Node-centric execution pattern (node.execute())
+✅ Optimized performance (deque + defaultdict)
+✅ Comprehensive test coverage
+✅ All commits pushed to remote branch
+
+What's NOT Implemented
+❌ Incremental execution order caching (not needed for 100-node scale)
+❌ PythonExporter doesn't generate executable code (only skeleton)
+❌ No PR created (user will create manually)
+
+Code Examples Provided to User
+PythonExporter Output Example
+User requested example - provided generated code for (A + B) * C network showing:
+
+Correct topological order
+Variable naming scheme
+Input tracking
+Placeholder comments (not executable)
+Manual Code Update Document
+Created comprehensive guide (/tmp/code_changes.md) with:
+
+4 files to modify
+Line-by-line instructions
+Before/after code snippets
+All modifications needed for manual application
+Important Notes for Next Session
+No incremental caching implemented - User asked about it, but for 100 nodes it's not necessary
+All code is pushed but NO PR created - User needs to create PR manually (no gh CLI available)
+User's language: Communicates in Chinese, expects code/docs in English
+User's development style: Prefers clear explanations, appreciates optimization suggestions
+Testing philosophy: User values comprehensive tests (requested coverage increases multiple times)
+Potential Future Work (Not Requested)
+Implement execution order caching if network scale grows beyond 100 nodes
+Enhance PythonExporter to generate executable code
+Add more node types (currently has: Variable, Math operators, Python node, Subnet)
+Qt UI integration (project name suggests Qt, but no UI code in session)
+Additional serialization formats beyond JSON
+Repository Structure
+node-graph-execution-qt/
+├── nodegraph/
+│   ├── core/
+│   │   ├── models/
+│   │   │   ├── node_model.py
+│   │   │   ├── network_model.py
+│   │   │   ├── connector_model.py
+│   │   │   └── parameter_model.py
+│   │   ├── serialization/
+│   │   │   ├── json_serializer.py
+│   │   │   └── python_exporter.py
+│   │   ├── registry/
+│   │   │   └── node_registry.py
+│   │   └── signals.py
+│   └── nodes/
+│       ├── base/
+│       │   ├── base_node.py
+│       │   ├── variable_node.py
+│       │   ├── python_node.py
+│       │   └── subnet_node.py
+│       └── operators/
+│           └── math_nodes.py (Add, Subtract, Multiply, Divide)
+└── tests/
+    └── [11 test files - all passing]
+Session End Status: All work completed and pushed. User has manual update guide for applying changes to their local repository.
+

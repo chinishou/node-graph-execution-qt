@@ -1,0 +1,210 @@
+Context Summary for LLM Handoff
+Project Overview
+Project Name: node-graph-execution-qt
+Repository: chinishou/node-graph-execution-qt
+Current Branch: claude/node-based-programming-qtpy-011CUx8kpJ215rscQT3hRcBX
+Language: All code/docs in English, user conversations in Traditional Chinese (繁體中文)
+
+Goal: Develop a Houdini-style node-based programming framework using PySide6/PyQt6 with QtPy compatibility layer.
+
+Key Requirements
+Horizontal layout with Houdini-style naming/terminology
+JSON serialization (import/export graphs)
+Undo/redo system
+Property panel (ParametersPane)
+Subnet nodes (nested networks)
+Python nodes (direct code execution)
+Custom node API
+Export networks as standalone Python scripts
+Use Cases
+Node-based Qt Designer alternative
+Development tool: junior developers use visual nodes (easy to understand/modify), senior developers optimize underlying code
+Architecture Philosophy
+Model-View-Application separation (inspired by QtNodes)
+Pure Python Model layer (Qt-independent, supports headless execution)
+Strong decoupling (business logic will eventually move to separate node-graph-core repo)
+Lazy evaluation (pull-based, cook-on-demand pattern)
+Current Status: Phase 1 - Core Foundation (Mostly Complete)
+✅ Completed Features
+ Architecture design (3-layer: Model-View-Application)
+ Core Model layer (NetworkModel, NodeModel, ConnectorModel, ParameterModel)
+ Custom Signal system (Qt-independent)
+ Node system (BaseNode, PythonNode, SubnetNode framework)
+ User custom node API
+ JSON serialization (JSONSerializer)
+ Python code export (PythonExporter)
+ Math operator nodes (Add, Subtract, Multiply, Divide)
+ Node registry system
+ Examples and tests
+ Documentation (README.md, ARCHITECTURE.md, IMPLEMENTATION_SUMMARY.md)
+⏳ Phase 1 Remaining
+ Property panel UI (ParametersPane)
+ Network view (QGraphicsView-based)
+ Node graphics rendering (NodeGraphicsItem)
+ Undo/Redo system
+🔮 Future Phases
+Phase 2: Execution Flow system (Ryven/Blueprint-inspired), Variable system, Subnet completion, CLI
+Phase 3: Core package separation, performance optimization, plugin system, themes
+Critical Architecture Decisions
+1. Method Naming: cook() vs compute()
+Problem: BaseNode user method conflicted with NodeModel.cook()
+Solution:
+
+NodeModel.cook() - Public execution method (no parameters), called by framework
+BaseNode.compute(**inputs) - Abstract method for user implementation (receives input values)
+This separation prevents recursive calls and parameter mismatches
+2. Signal System
+Custom Signal class in nodegraph/core/signals.py
+Uses weak references to prevent memory leaks
+Handles parameter mismatch gracefully (tries with/without args)
+Why: Keep Model layer Qt-independent for headless execution
+3. Dirty Flag Propagation
+Parameter changes mark node as dirty
+Dirty propagates downstream through connections
+Cook checks dirty flag and uses cached results when clean
+Enables efficient lazy evaluation
+4. Houdini Terminology
+Network instead of "Graph"
+Node instead of "Operator"
+Connector instead of "Port" or "Pin"
+Parameter instead of "Property"
+Cook instead of "Execute" or "Evaluate"
+File Structure
+node-graph-execution-qt/
+├── README.md                    # Project overview, roadmap, quick start
+├── ARCHITECTURE.md              # Architecture principles, design patterns
+├── IMPLEMENTATION_SUMMARY.md   # Complete implementation details
+├── pyproject.toml              # Project metadata, build config
+├── requirements.txt            # Dependencies (QtPy, PySide6)
+├── nodegraph/
+│   ├── core/
+│   │   ├── signals.py                      # Custom Signal system
+│   │   ├── models/
+│   │   │   ├── parameter_model.py         # Parameter data model
+│   │   │   ├── connector_model.py         # Input/output connector
+│   │   │   ├── node_model.py              # Node base data model
+│   │   │   └── network_model.py           # Network graph management
+│   │   ├── registry/
+│   │   │   └── node_registry.py           # Singleton node type registry
+│   │   └── serialization/
+│   │       ├── json_serializer.py         # JSON save/load
+│   │       └── python_exporter.py         # Export as Python script
+│   ├── nodes/
+│   │   ├── base/
+│   │   │   ├── base_node.py               # Abstract BaseNode class
+│   │   │   ├── python_node.py             # Execute Python code
+│   │   │   └── subnet_node.py             # Nested network (incomplete)
+│   │   └── operators/
+│   │       └── math_nodes.py              # Add, Subtract, Multiply, Divide
+│   └── views/                              # (Empty - future UI layer)
+├── examples/
+│   ├── basic_network.py        # Network creation, execution, serialization
+│   └── custom_node.py          # Custom node examples (Square, Clamp, MinMax)
+└── tests/
+    └── test_cook_debug.py      # Node cooking and connection tests
+Key Implementation Details
+BaseNode Usage Pattern
+from nodegraph.nodes.base import BaseNode
+
+class MyNode(BaseNode):
+    category = "Custom"
+    
+    def setup(self):
+        """Define inputs, outputs, parameters"""
+        self.add_input("a", data_type="float", default_value=0.0)
+        self.add_output("result", data_type="float")
+        self.add_parameter("multiplier", data_type="float", default_value=2.0)
+    
+    def compute(self, **inputs):
+        """Implement node logic - DO NOT name this 'cook'!"""
+        a = inputs.get("a", 0.0)
+        mult = self.parameter("multiplier").value()
+        return {"result": a * mult}
+Execution Flow
+User calls node.cook() or network.cook_all()
+NodeModel.cook() checks dirty flag
+If dirty, gathers input values from connected nodes
+Calls _cook_internal(**input_values) → BaseNode.compute(**inputs)
+Caches results and clears dirty flag
+Returns success status
+Topological Sorting
+NetworkModel implements topological sort for execution order
+Detects cycles and raises exceptions
+Used by both cook_all() and PythonExporter
+Git Workflow & Branch Status
+Branches
+main - Protected branch, requires PR
+claude/node-based-programming-qtpy-011CUx8kpJ215rscQT3hRcBX - Feature branch (current)
+Current State
+Feature branch fully synced with remote: f50f0a9
+Local main is 9 commits ahead of origin/main (expected - main is protected)
+All work is safely pushed to feature branch
+Next step: Create PR from claude branch → main
+Recent Commits
+f50f0a9 - Fix README.md UTF-16 encoding issue
+c7e9465 - Merge updated documentation from main
+2d19fc9 - Update documentation: Add roadmap and candidate features
+fe98c8f - Merge feature branch: Initial implementation
+8761ecc - update project overview
+Git Push Retry Policy
+Always use: git push -u origin <branch-name>
+Branch must start with claude/ and end with session ID
+On network failure: retry up to 4 times with exponential backoff (2s, 4s, 8s, 16s)
+Recent Work (Last Session)
+1. Fixed README.md Encoding Issue
+Problem: File had UTF-16 encoding with null bytes between characters
+Solution: Rewrote entire file with proper UTF-8 encoding
+Result: File size reduced from 8304 → 4152 bytes, displays correctly
+Commit: f50f0a9
+2. Updated Documentation Structure
+Changed "Development Status" → "Roadmap" (Phase 1-3) + "Candidate Features"
+Added Ryven/ryvencore-inspired features (Execution Flow, Variables)
+Excluded WebAssembly per user request
+All docs in English as required
+3. Verified Implementation
+All tests pass: python tests/test_cook_debug.py
+Node cooking works correctly
+Node connections work correctly
+Reference Projects
+User asked to research these projects (findings incorporated into architecture):
+
+QtNodes - C++ Model-View architecture pattern
+NodeGraphQt - Qt implementation reference, horizontal layout
+PyFlow - Plugin system and custom node API
+Nodezator - Python function as nodes concept
+Ryven/ryvencore - Execution Flow system, core separation strategy
+Important User Preferences
+Language: Code/docs in English, conversations in 繁體中文
+Architecture Priority: Property panel, subnet nodes, Python nodes, custom nodes
+UX optimizations: Can use placeholders initially
+Decoupling: Critical - prepare for node-graph-core separation
+No WebAssembly: Explicitly excluded from roadmap
+Testing: Always run tests after changes
+Known Issues & Solutions
+Issue: Method Name Conflict (RESOLVED)
+Error: TypeError: NodeModel.cook() got an unexpected keyword argument
+Cause: User method cook() conflicted with framework method
+Fix: Renamed user method to compute(), updated all nodes
+Issue: Signal Parameter Mismatch (RESOLVED)
+Error: WeakMethod.__call__() takes 1 positional argument but 2 were given
+Fix: Added fallback in Signal.emit() to try calling without args
+Issue: Git 403 on Main Push (RESOLVED)
+Error: Branch protection prevents direct push to main
+Solution: Use feature branch → PR workflow
+Next Steps for Continuation
+Immediate Options
+Create Pull Request - Merge claude branch → main on GitHub
+Begin Phase 1 UI - Implement NetworkView (QGraphicsView-based)
+Implement Property Panel - ParametersPane for node parameter editing
+Add Undo/Redo - QUndoStack-based command pattern
+User Should Decide
+Which Phase 1 feature to tackle next
+Whether to complete Phase 1 before moving to Phase 2
+Priorities among remaining features
+Testing & Validation
+Always run before committing:
+
+python tests/test_cook_debug.py
+python examples/basic_network.py
+python examples/custom_node.py
+Expected output: All tests pass, no exceptions
