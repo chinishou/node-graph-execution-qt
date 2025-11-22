@@ -352,34 +352,8 @@ def test_signal_in_node_system():
     print("✓ Signal in node system works")
 
 
-def test_signal_dirty_changed():
-    """Test dirty_changed signal in nodes."""
-    from nodegraph.nodes.base import FloatVariable
-
-    var = FloatVariable(default_value=5.0)
-    var.enable_caching = True  # Enable caching to trigger dirty state
-
-    dirty_states = []
-
-    def on_dirty_changed(is_dirty):
-        dirty_states.append(is_dirty)
-
-    var.dirty_changed.connect(on_dirty_changed)
-
-    # Cook the node to make it clean (nodes start dirty)
-    var.cook()
-
-    # Should have emitted False (clean)
-    assert len(dirty_states) == 1
-    assert dirty_states[0] == False
-
-    # Now mark dirty - should emit True
-    var.mark_dirty()
-
-    assert len(dirty_states) == 2
-    assert dirty_states[1] == True
-
-    print("✓ Signal dirty_changed works")
+# NOTE: test_signal_dirty_changed removed - dirty_changed signal and caching
+# functionality was removed in favor of always-execute-from-scratch design
 
 
 def run_all_tests():
@@ -404,7 +378,6 @@ def run_all_tests():
     test_signal_same_slot_multiple_times()
     test_signal_disconnect_nonexistent()
     test_signal_in_node_system()
-    test_signal_dirty_changed()
 
     print("=" * 60)
     print("All signal tests passed!")

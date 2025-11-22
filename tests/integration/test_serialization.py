@@ -133,7 +133,7 @@ def test_variable_node_serialization():
 
     # Check data
     assert data["name"] == "Pi"
-    assert data["node_type"] == "VariableNode"
+    assert data["node_type"] == "FloatVariable"
     assert data["category"] == "Variables"
 
     # Check parameter

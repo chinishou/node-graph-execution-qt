@@ -28,6 +28,7 @@ def test_add_node():
     add.input("b").default_value = 3.0
 
     # Compute
+    add.cook()
     result = add.get_output_value("result")
     assert result == 8.0
 
@@ -44,7 +45,10 @@ def test_add_node_with_connections():
     var_a.output("out").connect_to(add.input("a"))
     var_b.output("out").connect_to(add.input("b"))
 
-    # Compute
+    # Compute - cook upstream nodes first (no network context for execute)
+    var_a.cook()
+    var_b.cook()
+    add.cook()
     result = add.get_output_value("result")
     assert result == 17.5
 
@@ -60,6 +64,7 @@ def test_subtract_node():
     sub.input("b").default_value = 3.0
 
     # Compute
+    sub.cook()
     result = sub.get_output_value("result")
     assert result == 7.0
 
@@ -73,6 +78,7 @@ def test_subtract_node_negative():
     sub.input("a").default_value = 3.0
     sub.input("b").default_value = 10.0
 
+    sub.cook()
     result = sub.get_output_value("result")
     assert result == -7.0
 
@@ -89,7 +95,10 @@ def test_subtract_node_with_connections():
     var_a.output("out").connect_to(sub.input("a"))
     var_b.output("out").connect_to(sub.input("b"))
 
-    # Compute
+    # Compute - cook upstream nodes first
+    var_a.cook()
+    var_b.cook()
+    sub.cook()
     result = sub.get_output_value("result")
     assert result == 12.0
 
@@ -105,6 +114,7 @@ def test_multiply_node():
     mul.input("b").default_value = 5.0
 
     # Compute
+    mul.cook()
     result = mul.get_output_value("result")
     assert result == 20.0
 
@@ -118,6 +128,7 @@ def test_multiply_node_with_zero():
     mul.input("a").default_value = 100.0
     mul.input("b").default_value = 0.0
 
+    mul.cook()
     result = mul.get_output_value("result")
     assert result == 0.0
 
@@ -134,7 +145,10 @@ def test_multiply_node_with_connections():
     var_a.output("out").connect_to(mul.input("a"))
     var_b.output("out").connect_to(mul.input("b"))
 
-    # Compute
+    # Compute - cook upstream nodes first
+    var_a.cook()
+    var_b.cook()
+    mul.cook()
     result = mul.get_output_value("result")
     assert result == 7.0
 
@@ -150,6 +164,7 @@ def test_divide_node():
     div.input("b").default_value = 4.0
 
     # Compute
+    div.cook()
     result = div.get_output_value("result")
     assert result == 5.0
 
@@ -163,6 +178,7 @@ def test_divide_node_decimal():
     div.input("a").default_value = 7.0
     div.input("b").default_value = 2.0
 
+    div.cook()
     result = div.get_output_value("result")
     assert result == 3.5
 
@@ -178,6 +194,7 @@ def test_divide_by_zero():
 
     # Division by zero should raise error or return special value
     try:
+        div.cook()
         result = div.get_output_value("result")
         # If it returns a value, it should be inf or handle gracefully
         assert result is not None
@@ -196,7 +213,10 @@ def test_divide_node_with_connections():
     var_a.output("out").connect_to(div.input("a"))
     var_b.output("out").connect_to(div.input("b"))
 
-    # Compute
+    # Compute - cook upstream nodes first
+    var_a.cook()
+    var_b.cook()
+    div.cook()
     result = div.get_output_value("result")
     assert result == 20.0
 
@@ -234,7 +254,16 @@ def test_chained_operations():
     mul.output("result").connect_to(sub.input("a"))
     div.output("result").connect_to(sub.input("b"))
 
-    # Compute final result
+    # Compute final result - cook in topological order
+    var_10.cook()
+    var_5.cook()
+    var_2.cook()
+    var_6.cook()
+    var_3.cook()
+    add.cook()    # 10 + 5 = 15
+    mul.cook()    # 15 * 2 = 30
+    div.cook()    # 6 / 3 = 2
+    sub.cook()    # 30 - 2 = 28
     result = sub.get_output_value("result")
     assert result == 28.0
 

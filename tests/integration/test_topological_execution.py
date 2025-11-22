@@ -91,61 +91,9 @@ def test_execution_order_diamond():
     print("✓ Diamond execution order correct")
 
 
-def test_execute_no_redundant_computation():
-    """Test that execute doesn't cause redundant computation with caching enabled."""
-    network = NetworkModel(name="RedundantTest")
-
-    # Track compute calls
-    compute_calls = {}
-
-    class TrackedAddNode(AddNode):
-        def compute(self, **inputs):
-            if self.name not in compute_calls:
-                compute_calls[self.name] = 0
-            compute_calls[self.name] += 1
-            return super().compute(**inputs)
-
-    #   Var ──┬──> Add1 ──┐
-    #         │           ├──> Add3
-    #         └──> Add2 ──┘
-
-    var = FloatVariable(default_value=1.0, name="Var")
-    add1 = TrackedAddNode()
-    add1.name = "Add1"
-    add2 = TrackedAddNode()
-    add2.name = "Add2"
-    add3 = TrackedAddNode()
-    add3.name = "Add3"
-
-    # Add in worst possible order
-    network.add_node(add3)
-    network.add_node(add2)
-    network.add_node(add1)
-    network.add_node(var)
-
-    network.connect(var.id, "out", add1.id, "a")
-    network.connect(var.id, "out", add2.id, "a")
-    network.connect(add1.id, "result", add3.id, "a")
-    network.connect(add2.id, "result", add3.id, "b")
-
-    # Enable caching to avoid redundant computation
-    # (When caching is disabled, nodes are always dirty and will recompute)
-    for node in network.nodes():
-        node.enable_caching = True
-
-    # Execute the final node (Add3)
-    compute_calls.clear()
-    add3.execute()
-
-    # Each node should be computed exactly once
-    assert compute_calls.get("Add1", 0) == 1, f"Add1 computed {compute_calls.get('Add1', 0)} times"
-    assert compute_calls.get("Add2", 0) == 1, f"Add2 computed {compute_calls.get('Add2', 0)} times"
-    assert compute_calls.get("Add3", 0) == 1, f"Add3 computed {compute_calls.get('Add3', 0)} times"
-
-    total = sum(compute_calls.values())
-    assert total == 3, f"Total computes: {total}, expected 3"
-
-    print("✓ No redundant computation in execute (with caching)")
+# NOTE: test_execute_no_redundant_computation removed - caching functionality
+# was removed in favor of always-execute-from-scratch design. Redundant computation
+# is now expected and intentional.
 
 
 def test_execute_result_correctness():
@@ -231,38 +179,8 @@ def test_execution_order_empty_network():
     print("✓ Empty network execution order correct")
 
 
-def test_execute_with_caching():
-    """Test execute with caching enabled."""
-    network = NetworkModel(name="CachingTest")
-
-    var = FloatVariable(default_value=5.0, name="Var")
-    add = AddNode()
-    add.name = "Add"
-
-    network.add_node(add)
-    network.add_node(var)
-
-    network.connect(var.id, "out", add.id, "a")
-
-    # Enable caching
-    for node in network.nodes():
-        node.enable_caching = True
-
-    # First execute
-    add.execute()
-    result1 = add.get_output_value("result")
-
-    # All nodes should be clean now
-    assert not var.is_dirty()
-    assert not add.is_dirty()
-
-    # Second execute (should use cache)
-    add.execute()
-    result2 = add.get_output_value("result")
-
-    assert result1 == result2
-
-    print("✓ execute with caching works")
+# NOTE: test_execute_with_caching removed - caching and dirty state functionality
+# was removed in favor of always-execute-from-scratch design
 
 
 def test_cycle_detection_simple():
