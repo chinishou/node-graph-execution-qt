@@ -1,7 +1,9 @@
 """
 Debug test to trace signal flow and find recursion cause.
+
+Uses pytest-qt for Qt testing.
 """
-import sys
+import pytest
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QPointF
 
@@ -208,99 +210,71 @@ def patch_network_model():
     network_model.NetworkModel.connect = debug_connect
     network_model.NetworkModel.disconnect = debug_disconnect
 
-def main():
-    """Run the debug test."""
-    print("Installing debug patches...")
+def test_signal_flow_with_debug_tracing(qtbot):
+    """
+    Test signal flow and detect potential recursion issues.
+
+    This test creates a network with connections and traces the signal flow
+    to ensure there are no infinite recursion issues.
+    """
+    # Install debug patches
     patch_connector_model()
     patch_connection_item()
     patch_node_graphics_item()
     patch_port_graphics_item()
     patch_network_model()
-    print("Debug patches installed.\n")
 
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
+    # Clear global counters
+    call_stack.clear()
+    call_counts.clear()
 
-    try:
-        print("="*80)
-        print("Creating network and nodes...")
-        print("="*80)
+    # Create network
+    network = NetworkModel()
 
-        # Create network
-        network = NetworkModel()
+    # Create nodes (don't pass name - they have defaults)
+    int_node = IntVariable()
+    int_node.parameter('value').set_value(42)
+    int_node.set_position(0, 0)
 
-        # Create nodes (don't pass name - they have defaults)
-        int_node = IntVariable()
-        int_node.parameter('value').set_value(42)
-        int_node.set_position(0, 0)
+    add_node = AddNode()
+    add_node.set_position(200, 0)
 
-        add_node = AddNode()
-        add_node.set_position(200, 0)
+    print_node = PrintNode()
+    print_node.set_position(400, 100)
 
-        print_node = PrintNode()
-        print_node.set_position(400, 100)
+    display_node = DisplayNode()
+    display_node.set_position(400, -100)
 
-        display_node = DisplayNode()
-        display_node.set_position(400, -100)
+    # Add nodes to network
+    network.add_node(int_node)
+    network.add_node(add_node)
+    network.add_node(print_node)
+    network.add_node(display_node)
 
-        # Add nodes to network
-        network.add_node(int_node)
-        network.add_node(add_node)
-        network.add_node(print_node)
-        network.add_node(display_node)
+    # Create scene and view
+    scene = NetworkScene(network)
+    view = NetworkView()
+    view.set_scene(scene)
+    qtbot.addWidget(view)
+    view.show()
+    qtbot.waitExposed(view)
 
-        # Create scene and view
-        scene = NetworkScene(network)
-        view = NetworkView(scene)
-        view.setGeometry(100, 100, 800, 600)
-        view.show()
+    # STEP 1: int->add->print
+    network.connect(int_node.id, 'out', add_node.id, 'a')
+    qtbot.wait(10)
+    network.connect(add_node.id, 'result', print_node.id, 'value')
+    qtbot.wait(10)
 
-        # Process events to ensure UI is set up
-        app.processEvents()
+    # STEP 2: add->display
+    network.connect(add_node.id, 'result', display_node.id, 'value')
+    qtbot.wait(10)
 
-        print("\n" + "="*80)
-        print("STEP 1: int->add->print")
-        print("="*80)
-        network.connect(int_node.id, 'out', add_node.id, 'a')
-        app.processEvents()
-        network.connect(add_node.id, 'result', print_node.id, 'value')
-        app.processEvents()
+    # STEP 3: int->print (potential recursion trigger)
+    network.connect(int_node.id, 'out', print_node.id, 'value')
+    qtbot.wait(10)
 
-        print("\n" + "="*80)
-        print("STEP 2: add->display")
-        print("="*80)
-        network.connect(add_node.id, 'result', display_node.id, 'value')
-        app.processEvents()
+    # Verify no excessive recursion occurred
+    for func, count in call_counts.items():
+        assert count < 50, f"Potential recursion: {func} called {count} times"
 
-        print("\n" + "="*80)
-        print("STEP 3: int->print (THIS SHOULD TRIGGER THE BUG)")
-        print("="*80)
-        network.connect(int_node.id, 'out', print_node.id, 'value')
-        app.processEvents()
-
-        print("\n" + "="*80)
-        print("✅ TEST PASSED - No recursion error!")
-        print("="*80)
-
-    except RecursionError as e:
-        print("\n" + "="*80)
-        print(f"❌ RECURSION ERROR CAUGHT: {e}")
-        print("="*80)
-        print("\nFinal call counts:")
-        for func, count in sorted(call_counts.items(), key=lambda x: -x[1]):
-            if count > 5:
-                print(f"  {func}: {count} calls")
-        return 1
-    except Exception as e:
-        print("\n" + "="*80)
-        print(f"❌ ERROR: {e}")
-        print("="*80)
-        import traceback
-        traceback.print_exc()
-        return 1
-
-    return 0
-
-if __name__ == "__main__":
-    sys.exit(main())
+    # Test passes if we reach here without RecursionError
