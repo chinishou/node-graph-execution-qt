@@ -26,6 +26,10 @@ class NodeModel(BaseModel):
     Nodes are the processing units in a network. They have inputs, outputs,
     and parameters that control their behavior. Similar to Houdini's nodes.
 
+    **No Caching Design**: Nodes always recompute from scratch when executed.
+    This ensures correctness and simplicity. If performance is an issue, users
+    should optimize their node implementations.
+
     Attributes:
         id: Unique node identifier (UUID)
         name: Node display name
@@ -36,8 +40,8 @@ class NodeModel(BaseModel):
         parameters: Dictionary of parameters
         inputs: Dictionary of input connectors
         outputs: Dictionary of output connectors
-        dirty_changed: Signal emitted when dirty state changes
         position_changed: Signal emitted when position changes
+        parameter_changed: Signal emitted when parameter values change
     """
 
     id: UUID = Field(default_factory=uuid4)
@@ -46,18 +50,15 @@ class NodeModel(BaseModel):
     category: str = "General"
     network: Optional["NetworkModel"] = Field(default=None, exclude=True)
     color: Optional[str] = None
-    enable_caching: bool = False
 
     # Private attributes
     _position: Tuple[float, float] = PrivateAttr(default=(0.0, 0.0))
     _parameters: Dict[str, ParameterModel] = PrivateAttr(default_factory=dict)
     _inputs: Dict[str, ConnectorModel] = PrivateAttr(default_factory=dict)
     _outputs: Dict[str, ConnectorModel] = PrivateAttr(default_factory=dict)
-    _is_dirty: bool = PrivateAttr(default=True)
     _is_cooking: bool = PrivateAttr(default=False)
-    _cached_outputs: Dict[str, Any] = PrivateAttr(default_factory=dict)
+    _last_outputs: Dict[str, Any] = PrivateAttr(default_factory=dict)
     _cook_error: Optional[str] = PrivateAttr(default=None)
-    _dirty_changed: Signal = PrivateAttr(default=None)
     _position_changed: Signal = PrivateAttr(default=None)
     _parameter_changed: Signal = PrivateAttr(default=None)
 
@@ -67,14 +68,8 @@ class NodeModel(BaseModel):
 
     def model_post_init(self, __context) -> None:
         """Initialize fields after Pydantic validation."""
-        self._dirty_changed = Signal()
         self._position_changed = Signal()
         self._parameter_changed = Signal()
-
-    @property
-    def dirty_changed(self) -> Signal:
-        """Get dirty_changed signal."""
-        return self._dirty_changed
 
     @property
     def position_changed(self) -> Signal:
@@ -131,7 +126,6 @@ class NodeModel(BaseModel):
 
     def _on_parameter_changed(self, value: Any) -> None:
         """Handle parameter value changes."""
-        self.mark_dirty()
         self._parameter_changed.emit()
 
     # Connector management
@@ -153,9 +147,6 @@ class NodeModel(BaseModel):
             **kwargs
         )
         self._inputs[name] = connector
-
-        # Connect to mark node dirty when connection changes
-        connector.connected_changed.connect(self.mark_dirty)
 
         return connector
 
@@ -207,40 +198,15 @@ class NodeModel(BaseModel):
 
     # Execution (cooking)
 
-    def mark_dirty(self) -> None:
-        """Mark this node as dirty (needs recomputation)."""
-        if not self.enable_caching:
-            return  # Skip dirty state tracking when caching is disabled
-
-        if not self._is_dirty:
-            self._is_dirty = True
-            self._cached_outputs.clear()
-            self._cook_error = None
-
-            # Propagate dirty state to outputs
-            for output in self._outputs.values():
-                output.mark_dirty()
-
-            self._dirty_changed.emit(True)
-
-    def is_dirty(self) -> bool:
-        """Check if node needs recomputation."""
-        if not self.enable_caching:
-            return True  # Always dirty when caching is disabled
-        return self._is_dirty
-
     def cook(self) -> bool:
         """
         Execute this node.
 
+        Always recomputes from scratch (no caching).
+
         Returns:
             True if cooking was successful, False if error occurred
         """
-        # Skip cache check if caching is disabled (always recompute)
-        if self.enable_caching:
-            if not self._is_dirty and self._cached_outputs:
-                return True  # Already up-to-date
-
         if self._is_cooking:
             return False  # Prevent recursion
 
@@ -257,14 +223,9 @@ class NodeModel(BaseModel):
 
             # Store outputs (even if empty dict)
             if output_values is not None:
-                self._cached_outputs = output_values
+                self._last_outputs = output_values
             else:
-                self._cached_outputs = {}
-
-            # Mark as clean (only if caching is enabled)
-            if self.enable_caching:
-                self._is_dirty = False
-                self._dirty_changed.emit(False)
+                self._last_outputs = {}
 
             return True
 
@@ -293,8 +254,8 @@ class NodeModel(BaseModel):
         """
         Execute this node by cooking all parent nodes first, then cooking this node.
 
-        This ensures all dependencies are up-to-date before cooking this node.
-        Uses local topological sorting on ancestors only.
+        Always executes from scratch (no caching) - every node in the dependency
+        chain is recomputed.
 
         Returns:
             True if execution was successful, False if error occurred
@@ -309,11 +270,10 @@ class NodeModel(BaseModel):
             print(f"Error: Cannot execute node {self.name}: {e}")
             return False
 
-        # Cook nodes in order
+        # Cook all nodes in order (always from scratch)
         for node in nodes_to_cook:
-            if not self.enable_caching or node.is_dirty():
-                if not node.cook():
-                    return False
+            if not node.cook():
+                return False
 
         return True
 
@@ -395,11 +355,12 @@ class NodeModel(BaseModel):
         return sorted_nodes
 
     def get_output_value(self, output_name: str) -> Any:
-        """Get the value of an output connector."""
-        if self._is_dirty:
-            self.cook()
+        """
+        Get the value of an output connector.
 
-        return self._cached_outputs.get(output_name)
+        Returns the last computed value (from most recent cook).
+        """
+        return self._last_outputs.get(output_name)
 
     # Serialization
 
@@ -461,7 +422,6 @@ class NodeModel(BaseModel):
         for name, conn_data in data.get("inputs", {}).items():
             conn = ConnectorModel.deserialize(conn_data, node)
             node._inputs[name] = conn
-            conn.connected_changed.connect(node.mark_dirty)
 
         for name, conn_data in data.get("outputs", {}).items():
             conn = ConnectorModel.deserialize(conn_data, node)
