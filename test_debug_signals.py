@@ -230,18 +230,18 @@ def main():
         # Create network
         network = NetworkModel()
 
-        # Create nodes
-        int_node = IntVariable(name="Int")
+        # Create nodes (don't pass name - they have defaults)
+        int_node = IntVariable()
         int_node.parameter('value').set_value(42)
         int_node.set_position(0, 0)
 
-        add_node = AddNode(name="Add")
+        add_node = AddNode()
         add_node.set_position(200, 0)
 
-        print_node = PrintNode(name="Print")
+        print_node = PrintNode()
         print_node.set_position(400, 100)
 
-        display_node = DisplayNode(name="Display")
+        display_node = DisplayNode()
         display_node.set_position(400, -100)
 
         # Add nodes to network
