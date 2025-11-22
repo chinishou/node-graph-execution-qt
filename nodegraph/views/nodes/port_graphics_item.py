@@ -41,14 +41,25 @@ class PortGraphicsItem(QGraphicsItem):
         self.connector = connector
         self.is_output = is_output
         self._is_hovered = False
+        self._cached_type = None  # Cache resolved type to avoid repeated resolution in paint()
+        self._resolution_depth = 0  # Track recursion depth
 
         self.setAcceptHoverEvents(True)
         self.setFlag(QGraphicsItem.ItemIsSelectable, False)
+
+        # Connect to signals to invalidate cache
+        if connector:
+            connector.connected_changed.connect(self._invalidate_type_cache)
 
     def boundingRect(self) -> QRectF:
         """Return the bounding rectangle."""
         r = self.PORT_RADIUS + 2
         return QRectF(-r, -r, 2 * r, 2 * r)
+
+    def _invalidate_type_cache(self):
+        """Invalidate the cached type when connections change."""
+        self._cached_type = None
+        self.update()
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None):
         """Paint the port."""
@@ -58,8 +69,10 @@ class PortGraphicsItem(QGraphicsItem):
         if self._is_hovered:
             color = self.HOVER_COLOR
         else:
-            # Get the actual data type to use for coloring
-            data_type = self._resolve_data_type()
+            # Get the actual data type to use for coloring (with caching)
+            if self._cached_type is None:
+                self._cached_type = self._resolve_data_type()
+            data_type = self._cached_type
 
             # Get color based on data type
             if data_type in self.TYPE_COLORS:
@@ -77,7 +90,7 @@ class PortGraphicsItem(QGraphicsItem):
         painter.setPen(QPen(QColor(30, 30, 30), 1))
         painter.drawEllipse(QPointF(0, 0), self.PORT_RADIUS, self.PORT_RADIUS)
 
-    def _resolve_data_type(self, visited=None) -> str:
+    def _resolve_data_type(self, visited=None, depth=0) -> str:
         """
         Recursively resolve the actual data type for this port.
 
@@ -91,14 +104,19 @@ class PortGraphicsItem(QGraphicsItem):
 
         Args:
             visited: Set of already visited connectors to prevent infinite loops
+            depth: Current recursion depth (safety limit)
 
         Returns:
             The resolved data type string
         """
+        # Safety: prevent excessive recursion
+        if depth > 10:
+            return 'any'
+
         if visited is None:
             visited = set()
 
-        # Prevent infinite loops
+        # Prevent infinite loops by tracking connectors we've already visited
         connector_id = id(self.connector)
         if connector_id in visited:
             return 'any'
@@ -152,7 +170,7 @@ class PortGraphicsItem(QGraphicsItem):
                                 is_output = connected_connector.is_output()
                                 port = node_item.get_port(connected_connector.name, is_output=is_output)
                                 if port and port != self:
-                                    resolved = port._resolve_data_type(visited)
+                                    resolved = port._resolve_data_type(visited, depth + 1)
                                     if resolved != 'any':
                                         return resolved
         else:
@@ -176,7 +194,7 @@ class PortGraphicsItem(QGraphicsItem):
                                 is_output = connected_connector.is_output()
                                 port = node_item.get_port(connected_connector.name, is_output=is_output)
                                 if port and port != self:
-                                    resolved = port._resolve_data_type(visited)
+                                    resolved = port._resolve_data_type(visited, depth + 1)
                                     if resolved != 'any':
                                         return resolved
 
@@ -204,7 +222,7 @@ class PortGraphicsItem(QGraphicsItem):
 
                                 output_port = node_item.get_port(output_name, is_output=True)
                                 if output_port and output_port != self:
-                                    resolved = output_port._resolve_data_type(visited)
+                                    resolved = output_port._resolve_data_type(visited, depth + 1)
                                     if resolved != 'any':
                                         return resolved
 
