@@ -127,7 +127,7 @@ def patch_port_graphics_item():
 
     original_resolve_data_type = port_graphics_item.PortGraphicsItem._resolve_data_type
 
-    def debug_resolve_data_type(self, visited=None):
+    def debug_resolve_data_type(self, visited=None, depth=0):
         node_name = self.connector.node.name if self.connector.node else "None"
         port_name = self.connector.name
         direction = "out" if self.is_output else "in"
@@ -135,7 +135,7 @@ def patch_port_graphics_item():
                   f"{node_name}.{port_name}[{direction}]")
         call_stack.append(f"PortGraphicsItem._resolve_data_type[{node_name}.{port_name}]")
         try:
-            result = original_resolve_data_type(self, visited)
+            result = original_resolve_data_type(self, visited, depth)
             return result
         finally:
             call_stack.pop()
