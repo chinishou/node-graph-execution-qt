@@ -160,7 +160,7 @@ class NodeGraphicsItem(QGraphicsItem):
             # Get resolved data type from the port (uses recursive resolution)
             port = self.get_port(name, is_output=False)
             if port:
-                data_type = port._resolve_data_type()
+                data_type = port._resolve_data_type(visited=None, depth=0)
             else:
                 data_type = connector.data_type
 
@@ -181,7 +181,7 @@ class NodeGraphicsItem(QGraphicsItem):
             # Get resolved data type from the port (uses recursive resolution)
             port = self.get_port(name, is_output=True)
             if port:
-                data_type = port._resolve_data_type()
+                data_type = port._resolve_data_type(visited=None, depth=0)
             else:
                 data_type = connector.data_type
 
