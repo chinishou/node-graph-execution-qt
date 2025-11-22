@@ -68,6 +68,13 @@ class SubnetInputNode(BaseNode):
         if hasattr(self, '_injected_input'):
             return {connector_name: self._injected_input}
 
+        # Try to get value from parent subnet (for direct execution in UI)
+        if hasattr(self, '_parent_subnet') and self._parent_subnet:
+            parent_input = self._parent_subnet.input(connector_name)
+            if parent_input:
+                value = parent_input.get_value()
+                return {connector_name: value}
+
         # Otherwise, return the default value
         return {connector_name: self._setup_default_value}
 
