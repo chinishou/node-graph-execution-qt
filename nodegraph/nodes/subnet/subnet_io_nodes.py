@@ -96,6 +96,7 @@ class SubnetInputNode(BaseNode):
         Resolve display type for SubnetInputNode output by checking parent subnet's input.
 
         For output connectors: look at what's connected to the parent SubnetNode's input.
+        Recursively resolves through SubnetNode chains.
         """
         if not is_output:
             return None  # Use default resolution for inputs
@@ -113,13 +114,33 @@ class SubnetInputNode(BaseNode):
             if connections:
                 connected_connector = connections[0]
 
+                # Prevent infinite recursion
+                if visited is None:
+                    visited = set()
+                connector_id = id(connected_connector)
+                if connector_id in visited:
+                    return None
+                visited.add(connector_id)
+
                 # Return concrete type if available
                 if connected_connector.data_type != 'any':
                     return connected_connector.data_type
 
-                # Try to resolve from connected node's parameters
+                # Try to resolve from connected node
                 if hasattr(connected_connector, 'node') and connected_connector.node:
                     connected_node = connected_connector.node
+
+                    # Recursively resolve if connected node supports it (e.g., SubnetNode chains)
+                    if hasattr(connected_node, 'resolve_connector_display_type'):
+                        custom_type = connected_node.resolve_connector_display_type(
+                            connected_connector.name,
+                            True,  # is_output
+                            visited
+                        )
+                        if custom_type:
+                            return custom_type
+
+                    # Fallback to parameter checking
                     for param_name in ['type', 'output_type', 'data_type', 'value_type']:
                         param = connected_node.parameter(param_name)
                         if param:
