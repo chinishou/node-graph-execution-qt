@@ -6,10 +6,9 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QPointF
 
 from nodegraph.core.models import NetworkModel
-from nodegraph.nodes.math.int_node import IntNode
-from nodegraph.nodes.math.add_node import AddNode
-from nodegraph.nodes.io.print_node import PrintNode
-from nodegraph.nodes.io.display_node import DisplayNode
+from nodegraph.nodes.base.variable_node import IntVariable
+from nodegraph.nodes.operators.math_nodes import AddNode
+from nodegraph.nodes.utils.output_nodes import PrintNode, DisplayNode
 from nodegraph.views.network import NetworkScene, NetworkView
 
 # Global counter to track recursion depth
@@ -44,38 +43,14 @@ def patch_connection_item():
     """Add debug logging to ConnectionItem."""
     from nodegraph.views.connectors import connection_item
 
-    original_on_connector_changed = connection_item.ConnectionItem._on_connector_changed
-    original_update = connection_item.ConnectionItem.update
     original_update_path = connection_item.ConnectionItem.update_path
-
-    def debug_on_connector_changed(self):
-        trace_call("ConnectionItem._on_connector_changed",
-                  f"source={self.source_port.connector.node.name if self.source_port else None} "
-                  f"target={self.target_port.connector.node.name if self.target_port else None}")
-        call_stack.append("ConnectionItem._on_connector_changed")
-        try:
-            result = original_on_connector_changed(self)
-            return result
-        finally:
-            call_stack.pop()
-            trace_return("ConnectionItem._on_connector_changed")
-
-    def debug_update(self, *args, **kwargs):
-        if len(call_stack) > 0:  # Only trace if we're in a call
-            trace_call("ConnectionItem.update")
-            call_stack.append("ConnectionItem.update")
-            try:
-                result = original_update(self, *args, **kwargs)
-                return result
-            finally:
-                call_stack.pop()
-                trace_return("ConnectionItem.update")
-        else:
-            return original_update(self, *args, **kwargs)
+    original_get_connection_color = connection_item.ConnectionItem._get_connection_color
 
     def debug_update_path(self):
         if len(call_stack) > 0:  # Only trace if we're in a call
-            trace_call("ConnectionItem.update_path")
+            source_name = self.source_port.connector.node.name if self.source_port and self.source_port.connector else "None"
+            target_name = self.target_port.connector.node.name if self.target_port and self.target_port.connector else "None"
+            trace_call("ConnectionItem.update_path", f"{source_name} -> {target_name}")
             call_stack.append("ConnectionItem.update_path")
             try:
                 result = original_update_path(self)
@@ -86,9 +61,21 @@ def patch_connection_item():
         else:
             return original_update_path(self)
 
-    connection_item.ConnectionItem._on_connector_changed = debug_on_connector_changed
-    connection_item.ConnectionItem.update = debug_update
+    def debug_get_connection_color(self):
+        if len(call_stack) > 0:  # Only trace if we're in a call
+            trace_call("ConnectionItem._get_connection_color")
+            call_stack.append("ConnectionItem._get_connection_color")
+            try:
+                result = original_get_connection_color(self)
+                return result
+            finally:
+                call_stack.pop()
+                trace_return("ConnectionItem._get_connection_color")
+        else:
+            return original_get_connection_color(self)
+
     connection_item.ConnectionItem.update_path = debug_update_path
+    connection_item.ConnectionItem._get_connection_color = debug_get_connection_color
 
 def patch_node_graphics_item():
     """Add debug logging to NodeGraphicsItem."""
@@ -107,12 +94,12 @@ def patch_node_graphics_item():
             call_stack.pop()
             trace_return(f"NodeGraphicsItem._on_connection_changed[{self.node_model.name}]")
 
-    def debug_on_parameter_changed(self, param_name, value):
+    def debug_on_parameter_changed(self):
         trace_call("NodeGraphicsItem._on_parameter_changed",
-                  f"node={self.node_model.name} param={param_name}")
+                  f"node={self.node_model.name}")
         call_stack.append(f"NodeGraphicsItem._on_parameter_changed[{self.node_model.name}]")
         try:
-            result = original_on_parameter_changed(self, param_name, value)
+            result = original_on_parameter_changed(self)
             return result
         finally:
             call_stack.pop()
@@ -149,7 +136,6 @@ def patch_connector_model():
 
     original_disconnect_from = connector_model.ConnectorModel.disconnect_from
     original_connect_to = connector_model.ConnectorModel.connect_to
-    original_emit_connected_changed = connector_model.ConnectorModel._connected_changed.emit
 
     def debug_disconnect_from(self, other):
         self_node = self.node.name if self.node else "None"
@@ -244,18 +230,18 @@ def main():
         # Create network
         network = NetworkModel()
 
-        # Create nodes
-        int_node = IntNode(name="Int")
+        # Create nodes (don't pass name - they have defaults)
+        int_node = IntVariable()
         int_node.parameter('value').set_value(42)
         int_node.set_position(0, 0)
 
-        add_node = AddNode(name="Add")
+        add_node = AddNode()
         add_node.set_position(200, 0)
 
-        print_node = PrintNode(name="Print")
+        print_node = PrintNode()
         print_node.set_position(400, 100)
 
-        display_node = DisplayNode(name="Display")
+        display_node = DisplayNode()
         display_node.set_position(400, -100)
 
         # Add nodes to network
@@ -278,7 +264,7 @@ def main():
         print("="*80)
         network.connect(int_node.id, 'out', add_node.id, 'a')
         app.processEvents()
-        network.connect(add_node.id, 'result', print_node.id, 'input')
+        network.connect(add_node.id, 'result', print_node.id, 'value')
         app.processEvents()
 
         print("\n" + "="*80)
@@ -290,7 +276,7 @@ def main():
         print("\n" + "="*80)
         print("STEP 3: int->print (THIS SHOULD TRIGGER THE BUG)")
         print("="*80)
-        network.connect(int_node.id, 'out', print_node.id, 'input')
+        network.connect(int_node.id, 'out', print_node.id, 'value')
         app.processEvents()
 
         print("\n" + "="*80)
