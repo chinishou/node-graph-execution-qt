@@ -192,6 +192,89 @@ class ConnectorModel(BaseModel):
                 if conn.node:
                     conn.node.mark_dirty()
 
+    @staticmethod
+    def _convert_value(value: Any, data_type: str) -> Any:
+        """
+        Convert a value to the appropriate type based on data_type.
+
+        This handles type conversion for default values that may be stored as strings
+        (from UI input) but need to be converted to the correct type for computation.
+
+        Args:
+            value: The value to convert
+            data_type: The target data type ('int', 'float', 'bool', 'str', 'any')
+
+        Returns:
+            Converted value
+        """
+        if value is None:
+            return None
+
+        # If already the correct type, return as-is
+        if data_type == "int":
+            try:
+                if isinstance(value, bool):
+                    return int(value)
+                if isinstance(value, str):
+                    # Handle empty strings
+                    if not value.strip():
+                        return 0
+                    # Try to parse as int or float first, then convert
+                    try:
+                        return int(value)
+                    except ValueError:
+                        return int(float(value))
+                return int(value)
+            except (ValueError, TypeError):
+                return 0
+
+        elif data_type == "float":
+            try:
+                if isinstance(value, bool):
+                    return float(value)
+                if isinstance(value, str):
+                    # Handle empty strings
+                    if not value.strip():
+                        return 0.0
+                    return float(value)
+                return float(value)
+            except (ValueError, TypeError):
+                return 0.0
+
+        elif data_type == "bool":
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                return value.lower() in ('true', '1', 'yes', 'on')
+            return bool(value)
+
+        elif data_type == "str":
+            return str(value)
+
+        elif data_type == "any":
+            # For "any" type, try to intelligently convert strings to numbers
+            if isinstance(value, str):
+                # Empty string -> None or keep as empty string
+                if not value.strip():
+                    return value
+
+                # Try to convert to number
+                try:
+                    # Try int first
+                    if '.' not in value and 'e' not in value.lower():
+                        return int(value)
+                    else:
+                        return float(value)
+                except ValueError:
+                    # If conversion fails, keep as string
+                    return value
+
+            # Non-string values, return as-is
+            return value
+
+        # Unknown data type, return as-is
+        return value
+
     def get_value(self) -> Any:
         """
         Get the value from this connector.
@@ -213,7 +296,8 @@ class ConnectorModel(BaseModel):
                 source = self._connections[0]
                 return source.get_value()
             else:
-                return self.default_value
+                # Convert default_value based on data_type
+                return self._convert_value(self.default_value, self.data_type)
 
     def serialize(self) -> dict:
         """
