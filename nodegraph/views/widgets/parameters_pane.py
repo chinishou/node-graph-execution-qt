@@ -246,12 +246,16 @@ class ParametersPane(QWidget):
         label.setMinimumWidth(80)
         layout.addWidget(label)
 
-        # Editor
-        editor = self._create_value_editor(
+        # Editor - use partial to avoid garbage collection
+        handler = partial(self._on_connector_value_changed, connector)
+        editor, extra_handler = self._create_value_editor(
             connector.data_type,
             connector.default_value,
-            lambda v: self._on_connector_value_changed(connector, v)
+            handler
         )
+        self._signal_handlers.append(handler)
+        if extra_handler:
+            self._signal_handlers.append(extra_handler)
         layout.addWidget(editor)
 
         # Store widgets for later updates
@@ -294,17 +298,21 @@ class ParametersPane(QWidget):
             if index >= 0:
                 editor.setCurrentIndex(index)
 
-            # Connect signal
-            editor.currentTextChanged.connect(
-                lambda v: self._on_parameter_value_changed(param, v)
-            )
+            # Connect signal - use partial to avoid garbage collection
+            handler = partial(self._on_parameter_value_changed, param)
+            editor.currentTextChanged.connect(handler)
+            self._signal_handlers.append(handler)
         else:
-            # Use standard value editor
-            editor = self._create_value_editor(
+            # Use standard value editor - use partial to avoid garbage collection
+            handler = partial(self._on_parameter_value_changed, param)
+            editor, extra_handler = self._create_value_editor(
                 param.data_type,
                 param.value(),
-                lambda v: self._on_parameter_value_changed(param, v)
+                handler
             )
+            self._signal_handlers.append(handler)
+            if extra_handler:
+                self._signal_handlers.append(extra_handler)
 
         layout.addWidget(editor)
         self._widgets[f"param_{param.name}"] = editor
@@ -331,14 +339,21 @@ class ParametersPane(QWidget):
 
         return widget
 
-    def _create_value_editor(self, data_type: str, value: Any, callback) -> QWidget:
-        """Create appropriate editor widget for data type."""
+    def _create_value_editor(self, data_type: str, value: Any, callback) -> tuple:
+        """
+        Create appropriate editor widget for data type.
+
+        Returns:
+            tuple: (editor_widget, handler_to_save or None)
+                   handler_to_save should be added to _signal_handlers to prevent garbage collection
+        """
         if data_type == "int":
             editor = QSpinBox()
             editor.setRange(-999999, 999999)
             editor.setValue(int(value) if value is not None else 0)
             editor.valueChanged.connect(callback)
             editor.setButtonSymbols(QSpinBox.NoButtons)  # Remove up/down buttons
+            return (editor, None)  # callback is already saved by caller
 
         elif data_type == "float":
             editor = QDoubleSpinBox()
@@ -347,18 +362,22 @@ class ParametersPane(QWidget):
             editor.setValue(float(value) if value is not None else 0.0)
             editor.valueChanged.connect(callback)
             editor.setButtonSymbols(QDoubleSpinBox.NoButtons)  # Remove up/down buttons
+            return (editor, None)  # callback is already saved by caller
 
         elif data_type == "bool":
             editor = QCheckBox()
             editor.setChecked(bool(value) if value is not None else False)
-            editor.stateChanged.connect(lambda s: callback(s == Qt.Checked))
+            # Use helper method to convert state to bool
+            # callback is fixed as first arg, state comes from Qt signal
+            bool_handler = partial(self._bool_state_to_value, callback)
+            editor.stateChanged.connect(bool_handler)
+            return (editor, bool_handler)  # Return handler to be saved
 
         else:  # string or any
             editor = QLineEdit()
             editor.setText(str(value) if value is not None else "")
             editor.textChanged.connect(callback)
-
-        return editor
+            return (editor, None)  # callback is already saved by caller
 
     def _on_connector_value_changed(self, connector: "ConnectorModel", value: Any):
         """Handle connector default value change."""
@@ -367,8 +386,26 @@ class ParametersPane(QWidget):
 
     def _on_parameter_value_changed(self, param: "ParameterModel", value: Any):
         """Handle parameter value change."""
+        print(f"[ParametersPane] _on_parameter_value_changed: {param.name} = {value}")
         param.set_value(value)
         self.parameter_changed.emit()
+
+    def _bool_state_to_value(self, callback, state: int):
+        """Convert Qt checkbox state to bool and call callback.
+
+        Args:
+            callback: Function to call with converted bool value
+            state: Qt checkbox state (Qt.CheckState.Checked or Qt.CheckState.Unchecked)
+
+        Note: callback is first parameter so it can be fixed with partial,
+              while state comes from the Qt signal.
+              In PySide6, Qt.CheckState.Checked is an enum, not an int,
+              so we compare the integer value (2 for Checked, 0 for Unchecked).
+        """
+        # Qt.CheckState.Checked.value == 2, Qt.CheckState.Unchecked.value == 0
+        bool_value = state == 2
+        print(f"[ParametersPane] _bool_state_to_value: state={state}, bool_value={bool_value}")
+        callback(bool_value)
 
     def _on_connector_connection_changed(self, connector: "ConnectorModel"):
         """Handle connector connection state change."""
@@ -408,22 +445,30 @@ class ParametersPane(QWidget):
     def _on_execute(self):
         """Execute the current node."""
         if self._node:
+            print(f"[ParametersPane] Executing node: {self._node.name}")
             success = self._node.execute()
+            print(f"[ParametersPane] Execute result: {success}")
 
             if success:
                 # Update output displays
                 self._update_output_displays()
+            else:
+                print(f"[ParametersPane] Execute failed!")
 
     def _update_output_displays(self):
         """Update output value displays."""
         if not self._node:
             return
 
+        print(f"[ParametersPane] Updating output displays for {self._node.name}")
         for name, connector in self._node.outputs().items():
             widget = self._widgets.get(f"output_{name}")
+            print(f"[ParametersPane]   Output '{name}': widget={widget is not None}, is_QLabel={isinstance(widget, QLabel) if widget else False}")
             if widget and isinstance(widget, QLabel):
                 value = self._node.get_output_value(name)
+                print(f"[ParametersPane]   Output '{name}': value={value}")
                 widget.setText(str(value) if value is not None else "--")
+                print(f"[ParametersPane]   Output '{name}': widget.text()={widget.text()}")
 
     def refresh(self):
         """Refresh the display."""

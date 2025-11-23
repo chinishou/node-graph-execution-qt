@@ -349,6 +349,18 @@ class SubnetNode(BaseNode):
 
         return output_node
 
+    def transforms_data_type(self) -> bool:
+        """
+        SubnetNode has independent input/output types.
+
+        Each input and output is defined by separate I/O nodes inside the subnet,
+        so they should not use pass-through type resolution.
+
+        Returns:
+            True to prevent input ports from inheriting output port colors
+        """
+        return True
+
     def resolve_connector_display_type(
         self,
         connector_name: str,
@@ -359,6 +371,7 @@ class SubnetNode(BaseNode):
         Resolve display type for subnet connectors by looking into internal network.
 
         For output connectors: look at the corresponding SubnetOutputNode's input type.
+        For input connectors: returns None to use default resolution (no pass-through).
         """
         if not is_output or not self._internal_network:
             return None  # Use default resolution for inputs

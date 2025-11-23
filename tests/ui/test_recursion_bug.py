@@ -58,14 +58,12 @@ def test_recursion_bug_simple(qtbot, show_ui, ui_delay):
     view.show()
     qtbot.waitExposed(view)
 
-    # Helper function for delays when UI is visible
+    # Helper function for event processing
     def maybe_wait(msg=""):
-        if show_ui:
-            if msg:
-                print(f"  {msg}")
-            qtbot.wait(ui_delay)
-        else:
-            qtbot.wait(10)
+        if show_ui and msg:
+            print(f"  {msg}")
+        # Always use minimal wait, just process events
+        qtbot.wait(10)
         QApplication.processEvents()
 
     # STEP 1: int->add->add_1
@@ -122,10 +120,9 @@ def test_recursion_bug_simple(qtbot, show_ui, ui_delay):
     assert add_1.input('a') not in connections
     print("✓ add connected to add_2 only")
 
-    # Final wait to see result if UI is visible
+    # Test completed
     if show_ui:
-        print("\nTest completed! Keeping window open for inspection...")
-        qtbot.wait(ui_delay * 2)
+        print("\nTest completed!")
 
 
 def test_recursion_bug_variant(qtbot, show_ui, ui_delay):
@@ -163,14 +160,12 @@ def test_recursion_bug_variant(qtbot, show_ui, ui_delay):
     view.show()
     qtbot.waitExposed(view)
 
-    # Helper function for delays when UI is visible
+    # Helper function for event processing
     def maybe_wait(msg=""):
-        if show_ui:
-            if msg:
-                print(f"  {msg}")
-            qtbot.wait(ui_delay)
-        else:
-            qtbot.wait(10)
+        if show_ui and msg:
+            print(f"  {msg}")
+        # Always use minimal wait, just process events
+        qtbot.wait(10)
         QApplication.processEvents()
 
     # STEP 1: int->add->add_1
@@ -208,10 +203,9 @@ def test_recursion_bug_variant(qtbot, show_ui, ui_delay):
     assert add_2_input._connections[0] == int_node.output('out')
     print("✓ add_2 connected to int")
 
-    # Final wait to see result if UI is visible
+    # Test completed
     if show_ui:
-        print("\nTest completed! Keeping window open for inspection...")
-        qtbot.wait(ui_delay * 2)
+        print("\nTest completed!")
 
 
 if __name__ == "__main__":

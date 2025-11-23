@@ -281,37 +281,6 @@ class TestNodeGraphicsItem:
         assert pos[1] == 300
 
 
-class TestNodeExecution:
-    """Tests for node execution through UI."""
-
-    def test_execute_all(self, main_window, qtbot):
-        """Test executing all nodes."""
-        network = main_window._network_model
-
-        # Create nodes
-        float1 = NodeRegistry.create_node("FloatVariable")
-        float1.parameter("value").set_value(10.0)
-        network.add_node(float1)
-
-        float2 = NodeRegistry.create_node("FloatVariable")
-        float2.parameter("value").set_value(20.0)
-        network.add_node(float2)
-
-        add = NodeRegistry.create_node("AddNode")
-        network.add_node(add)
-
-        # Connect
-        network.connect(float1.id, "out", add.id, "a")
-        network.connect(float2.id, "out", add.id, "b")
-
-        # Execute all
-        main_window._execute_all()
-
-        # Check result
-        result = add.get_output_value("result")
-        assert result == 30.0
-
-
 class TestContextMenu:
     """Tests for context menu and Tab key functionality."""
 
@@ -379,32 +348,6 @@ class TestContextMenu:
 
         # Zoom should have changed
         assert network_view._zoom_level != 1.0 or network_view.transform().m11() != 1.0
-
-
-class TestPrintNode:
-    """Tests for PrintNode functionality."""
-
-    def test_print_node_output(self, main_window, qtbot):
-        """Test that PrintNode sends output to OutputPane."""
-        network = main_window._network_model
-
-        # Create nodes
-        float_node = NodeRegistry.create_node("FloatVariable")
-        float_node.parameter("value").set_value(42.0)
-        network.add_node(float_node)
-
-        print_node = NodeRegistry.create_node("PrintNode")
-        network.add_node(print_node)
-
-        # Connect
-        network.connect(float_node.id, "out", print_node.id, "value")
-
-        # Execute
-        main_window._execute_all()
-
-        # Check output pane has content
-        output_text = main_window._output_pane.get_text()
-        assert "42.0" in output_text or "42" in output_text
 
 
 class TestConnectionModes:

@@ -362,9 +362,17 @@ class TestParametersPaneExecution:
 
     def test_execute_with_connected_nodes(self, params_pane, qtbot, qapp):
         """Test executing a node with connections."""
+        from nodegraph.core.models import NetworkModel
+
+        # Create network and add nodes
+        network = NetworkModel(name="TestNetwork")
         var_a = FloatVariable(default_value=10.0)
         var_b = FloatVariable(default_value=5.0)
         add_node = AddNode()
+
+        network.add_node(var_a)
+        network.add_node(var_b)
+        network.add_node(add_node)
 
         var_a.output("out").connect_to(add_node.input("a"))
         var_b.output("out").connect_to(add_node.input("b"))
@@ -379,6 +387,10 @@ class TestParametersPaneExecution:
         params_pane._execute_btn.click()
         qapp.processEvents()
         qtbot.wait(10)
+        qapp.processEvents()  # Extra event processing for UI update
+
+        # Re-fetch widget in case it was recreated during update
+        output_widget = params_pane._widgets.get("output_result")
 
         # Output should show sum (15.0 because AddNode defaults to float type)
         assert "15" in output_widget.text() or "15.0" in output_widget.text()
@@ -419,6 +431,116 @@ class TestParametersPaneRefresh:
         widget = params_pane._widgets.get("param_value")
         assert isinstance(widget, QSpinBox)
         assert widget.value() == 42
+
+
+class TestParametersPaneBasicFunctionality:
+    """Tests for basic ParametersPane functionality verification."""
+
+    def test_add_node_output_display(self, params_pane, qtbot, qapp):
+        """Test AddNode output display before and after execution."""
+        # Create AddNode
+        add_node = AddNode()
+
+        # Set input defaults: a=5, b=3
+        add_node.input("a").default_value = 5
+        add_node.input("b").default_value = 3
+
+        params_pane.set_node(add_node)
+
+        # Check initial output shows "--"
+        output_widget = params_pane._widgets.get("output_result")
+        assert output_widget is not None
+        assert output_widget.text() == "--", f"Expected '--', got '{output_widget.text()}'"
+
+        # Execute the node
+        params_pane._execute_btn.click()
+        qapp.processEvents()
+        qtbot.wait(10)
+        qapp.processEvents()
+
+        # Re-fetch widget after execution
+        output_widget = params_pane._widgets.get("output_result")
+
+        # Output should show "8" or "8.0" (5 + 3)
+        assert "8" in output_widget.text(), f"Expected '8', got '{output_widget.text()}'"
+
+    def test_add_to_print_execution(self, qtbot, qapp):
+        """Test AddNode connected to PrintNode."""
+        from nodegraph.nodes.utils.output_nodes import print_output_signal
+
+        # Create nodes
+        add_node = AddNode()
+        add_node.input("a").default_value = 10
+        add_node.input("b").default_value = 5
+
+        print_node = PrintNode()
+        print_node.name = "TestPrint"
+
+        # Capture print output
+        captured_output = []
+
+        def capture_print(node_path, output_text):
+            captured_output.append((node_path, output_text))
+
+        print_output_signal.connect(capture_print)
+
+        try:
+            # Connect nodes: add -> print
+            add_node.output("result").connect_to(print_node.input("value"))
+
+            # Execute both nodes
+            add_node.execute()
+            print_node.execute()
+
+            # Check print output
+            assert len(captured_output) > 0, "No print output captured"
+            node_path, output_text = captured_output[-1]
+            assert "15" in output_text, f"Expected '15' in output, got '{output_text}'"
+
+        finally:
+            print_output_signal.disconnect(capture_print)
+
+    def test_bool_parameter_persistence(self, params_pane, qtbot, qapp):
+        """Test BoolVariable parameter editing and persistence."""
+        # Create BoolVariable with value=False
+        bool_node = BoolVariable(default_value=False)
+        params_pane.set_node(bool_node)
+
+        # Get the checkbox widget
+        widget = params_pane._widgets.get("param_value")
+        assert isinstance(widget, QCheckBox)
+        assert widget.isChecked() is False
+
+        # Check the checkbox
+        widget.setChecked(True)
+        qapp.processEvents()
+        qtbot.wait(10)
+        qapp.processEvents()
+
+        # Parameter should be updated
+        param_value = bool_node.parameter("value").value()
+        assert param_value is True, f"Expected True, got {param_value}"
+
+        # Refresh pane (simulate switching to another node and back)
+        params_pane.refresh()
+        qapp.processEvents()
+
+        # Get widget again after refresh
+        widget = params_pane._widgets.get("param_value")
+        param_value = bool_node.parameter("value").value()
+
+        # Value should persist
+        assert param_value is True, f"Parameter value lost after refresh: {param_value}"
+        assert widget.isChecked() is True, f"Widget state lost after refresh: {widget.isChecked()}"
+
+        # Execute and check output
+        params_pane._execute_btn.click()
+        qapp.processEvents()
+        qtbot.wait(10)
+        qapp.processEvents()
+
+        output_value = bool_node.get_output_value("out")
+        assert output_value is True, f"Expected True output, got {output_value}"
 
 
 def run_all_tests():
