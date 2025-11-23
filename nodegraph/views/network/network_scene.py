@@ -134,11 +134,17 @@ class NetworkScene(QGraphicsScene):
 
     def _on_connection_added(self, source_conn: "ConnectorModel", target_conn: "ConnectorModel"):
         """Handle connection added to model."""
+        # Debug logging
+        if hasattr(source_conn, 'node') and hasattr(target_conn, 'node'):
+            print(f"[Scene] _on_connection_added called: {source_conn.node.name}.{source_conn.name} -> {target_conn.node.name}.{target_conn.name}")
+
         # Set flag to prevent type resolution during modification
         was_modifying = self._is_modifying_connections
         self._is_modifying_connections = True
         try:
+            print(f"[Scene] Before create: {len(self._connection_items)} items in list")
             self._create_connection_item(source_conn, target_conn)
+            print(f"[Scene] After create: {len(self._connection_items)} items in list")
         finally:
             # Only reset if we set it
             if not was_modifying:
@@ -154,20 +160,29 @@ class NetworkScene(QGraphicsScene):
         was_modifying = self._is_modifying_connections
         self._is_modifying_connections = True
         try:
+            # Debug: list all current connections
+            print(f"[Scene] Current connection items ({len(self._connection_items)}):")
+            for i, conn in enumerate(self._connection_items):
+                if conn.source_port and conn.target_port:
+                    src = conn.source_port.connector
+                    tgt = conn.target_port.connector
+                    print(f"  [{i}] {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
+                    print(f"      source_conn match: {src == source_conn} (id: {id(src)} vs {id(source_conn)})")
+                    print(f"      target_conn match: {tgt == target_conn} (id: {id(tgt)} vs {id(target_conn)})")
+
             # Find and remove the connection item
             found = False
             for conn in self._connection_items[:]:
                 if (conn.source_port and conn.target_port and
                     conn.source_port.connector == source_conn and
                     conn.target_port.connector == target_conn):
-                    print(f"[Scene] Removing connection item from scene")
+                    print(f"[Scene] ✓ Found! Removing connection item from scene")
                     self.removeItem(conn)
                     self._connection_items.remove(conn)
                     found = True
                     break
             if not found:
-                print(f"[Scene] WARNING: Connection item not found in _connection_items!")
-                print(f"[Scene] Current items: {len(self._connection_items)}")
+                print(f"[Scene] ✗ WARNING: Connection item not found in _connection_items!")
         finally:
             # Only reset if we set it
             if not was_modifying:
