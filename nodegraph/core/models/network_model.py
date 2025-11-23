@@ -445,13 +445,22 @@ class NetworkModel:
             original_id = node_data.get("id")
             if isinstance(original_id, str):
                 original_id = UUID(original_id)
-            node_map[original_id] = node
+            if original_id:
+                node_map[original_id] = node
+                print(f"[NetworkModel] Deserialized node: {node.name} (type={node.node_type}, saved_id={original_id}, new_id={node.id})")
+            else:
+                print(f"[NetworkModel] WARNING: Node {node.name} has no saved ID!")
 
         # Then, recreate connections
         for conn_data in data.get("connections", []):
             # Convert string IDs back to UUID
             source_id = conn_data["source_node"]
             target_id = conn_data["target_node"]
+
+            if source_id is None or target_id is None:
+                print(f"[NetworkModel] Skipping connection with None ID")
+                continue
+
             if isinstance(source_id, str):
                 source_id = UUID(source_id)
             if isinstance(target_id, str):
@@ -461,12 +470,17 @@ class NetworkModel:
             target_node = node_map.get(target_id)
 
             if source_node and target_node:
+                print(f"[NetworkModel] Restoring connection: {source_node.name}.{conn_data['source_output']} -> {target_node.name}.{conn_data['target_input']}")
                 network.connect(
                     source_node_id=source_node.id,
                     source_output=conn_data["source_output"],
                     target_node_id=target_node.id,
                     target_input=conn_data["target_input"],
                 )
+            else:
+                print(f"[NetworkModel] WARNING: Could not restore connection - source_node={source_node}, target_node={target_node}")
+                print(f"[NetworkModel]   Looking for source_id={source_id}, target_id={target_id}")
+                print(f"[NetworkModel]   Available IDs in node_map: {list(node_map.keys())}")
 
         return network
 
