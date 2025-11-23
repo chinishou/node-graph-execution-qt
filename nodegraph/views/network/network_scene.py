@@ -163,12 +163,17 @@ class NetworkScene(QGraphicsScene):
             # Debug: list all current connections
             print(f"[Scene] Current connection items ({len(self._connection_items)}):")
             for i, conn in enumerate(self._connection_items):
-                if conn.source_port and conn.target_port:
-                    src = conn.source_port.connector
-                    tgt = conn.target_port.connector
-                    print(f"  [{i}] {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
-                    print(f"      source_conn match: {src == source_conn} (id: {id(src)} vs {id(source_conn)})")
-                    print(f"      target_conn match: {tgt == target_conn} (id: {id(tgt)} vs {id(target_conn)})")
+                try:
+                    if conn.source_port and conn.target_port:
+                        src = conn.source_port.connector
+                        tgt = conn.target_port.connector
+                        print(f"  [{i}] {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
+                        print(f"      source_conn match: {src == source_conn} (id: {id(src)} vs {id(source_conn)})")
+                        print(f"      target_conn match: {tgt == target_conn} (id: {id(tgt)} vs {id(target_conn)})")
+                    else:
+                        print(f"  [{i}] <invalid connection: source_port={conn.source_port}, target_port={conn.target_port}>")
+                except Exception as e:
+                    print(f"  [{i}] <ERROR accessing connection: {type(e).__name__}: {e}>")
 
             # Find and remove the connection item
             found = False
