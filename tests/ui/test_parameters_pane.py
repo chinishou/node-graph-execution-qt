@@ -362,9 +362,17 @@ class TestParametersPaneExecution:
 
     def test_execute_with_connected_nodes(self, params_pane, qtbot, qapp):
         """Test executing a node with connections."""
+        from nodegraph.core.models import NetworkModel
+
+        # Create network and add nodes
+        network = NetworkModel(name="TestNetwork")
         var_a = FloatVariable(default_value=10.0)
         var_b = FloatVariable(default_value=5.0)
         add_node = AddNode()
+
+        network.add_node(var_a)
+        network.add_node(var_b)
+        network.add_node(add_node)
 
         var_a.output("out").connect_to(add_node.input("a"))
         var_b.output("out").connect_to(add_node.input("b"))

@@ -395,13 +395,16 @@ class ParametersPane(QWidget):
 
         Args:
             callback: Function to call with converted bool value
-            state: Qt checkbox state (Qt.Checked or Qt.Unchecked)
+            state: Qt checkbox state (Qt.CheckState.Checked or Qt.CheckState.Unchecked)
 
         Note: callback is first parameter so it can be fixed with partial,
               while state comes from the Qt signal.
+              In PySide6, Qt.CheckState.Checked is an enum, not an int,
+              so we compare the integer value (2 for Checked, 0 for Unchecked).
         """
-        bool_value = state == Qt.Checked
-        print(f"[ParametersPane] _bool_state_to_value: state={state}, Qt.Checked={Qt.Checked}, bool_value={bool_value}")
+        # Qt.CheckState.Checked.value == 2, Qt.CheckState.Unchecked.value == 0
+        bool_value = state == 2
+        print(f"[ParametersPane] _bool_state_to_value: state={state}, bool_value={bool_value}")
         callback(bool_value)
 
     def _on_connector_connection_changed(self, connector: "ConnectorModel"):
