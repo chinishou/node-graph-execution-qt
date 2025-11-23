@@ -50,22 +50,25 @@ def reset_debug_counters():
     measurement of optimization effectiveness.
     """
     # Import here to avoid circular dependencies and handle module not loaded yet
-    try:
-        from tests.ui import test_debug_signals
-        test_debug_signals.call_counts.clear()
-        test_debug_signals.call_stack.clear()
-    except (ImportError, AttributeError):
-        pass  # Module not loaded yet or not running UI tests
+    import sys
+
+    # Check if test_debug_signals module has been imported
+    if 'tests.ui.test_debug_signals' in sys.modules:
+        module = sys.modules['tests.ui.test_debug_signals']
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
 
     yield  # Run the test
 
     # Clear after test to prevent leaking into next test
-    try:
-        from tests.ui import test_debug_signals
-        test_debug_signals.call_counts.clear()
-        test_debug_signals.call_stack.clear()
-    except (ImportError, AttributeError):
-        pass
+    if 'tests.ui.test_debug_signals' in sys.modules:
+        module = sys.modules['tests.ui.test_debug_signals']
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
 
 
 def pytest_configure(config):

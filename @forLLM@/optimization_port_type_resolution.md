@@ -505,36 +505,52 @@ def reset_debug_counters():
     the full test suite (pytest tests/ui/), ensuring accurate per-test
     measurement of optimization effectiveness.
     """
-    # Import here to avoid circular dependencies
-    try:
-        from tests.ui import test_debug_signals
-        test_debug_signals.call_counts.clear()
-        test_debug_signals.call_stack.clear()
-    except (ImportError, AttributeError):
-        pass  # Module not loaded yet
+    import sys
+
+    # Check if test_debug_signals module has been imported
+    # (using sys.modules instead of try-except import to avoid silent failures)
+    if 'tests.ui.test_debug_signals' in sys.modules:
+        module = sys.modules['tests.ui.test_debug_signals']
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
 
     yield  # Run the test
 
     # Clear after test to prevent leaking
-    try:
-        from tests.ui import test_debug_signals
-        test_debug_signals.call_counts.clear()
-        test_debug_signals.call_stack.clear()
-    except (ImportError, AttributeError):
-        pass
+    if 'tests.ui.test_debug_signals' in sys.modules:
+        module = sys.modules['tests.ui.test_debug_signals']
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
 ```
 
 **How It Helps**:
+- Uses `sys.modules` instead of try-except import to avoid silent failures
 - Automatic reset before every test (no manual `call_counts.clear()` needed)
 - Accurate per-test measurement
 - Works across entire test suite
 - No test interdependencies
 
+**Important Note - Global Instrumentation**:
+⚠️ The `patch_port_graphics_item()` and related patch functions in `test_debug_signals.py` modify **global classes** (PortGraphicsItem, etc.). Once any test calls these patch functions:
+- All subsequent tests will use the instrumented versions
+- This is why `test_ui.py` shows recursion warnings even though it doesn't import test_debug_signals
+- The fixture ensures counters are reset between tests, but instrumentation remains active
+
+This is intentional for debugging purposes, but means:
+1. Running individual tests may show different behavior than running the full suite
+2. Test execution order matters if instrumentation is involved
+3. The fixture prevents counter accumulation, but can't prevent instrumentation propagation
+
 **Impact**:
-- ✅ Each test measures its own call count accurately
+- ✅ Each test measures its own call count accurately (counters reset)
 - ✅ Can verify 5-8 calls per operation across all tests
 - ✅ No false positives from accumulated counters
 - ✅ Tests can run in any order without affecting results
+- ⚠️ Instrumentation persists across tests (by design for debugging)
 
 ---
 
