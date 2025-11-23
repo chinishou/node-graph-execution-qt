@@ -515,19 +515,15 @@ class NetworkView(QGraphicsView):
             return
 
         from ..nodes.node_graphics_item import NodeGraphicsItem
-        from ...nodes.subnet.subnet_io_nodes import SubnetInputNode, SubnetOutputNode
         from ...nodes.subnet import SubnetNode
 
         selected = self._scene.selectedItems()
         selected_nodes = []
 
-        # Collect selected nodes
+        # Collect selected nodes (now including subnet I/O nodes)
         for item in selected:
             if isinstance(item, NodeGraphicsItem):
                 node = item.node_model
-                # Skip subnet I/O nodes - they shouldn't be copied outside their subnet
-                if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
-                    continue
                 selected_nodes.append(node)
 
         if not selected_nodes:
@@ -596,17 +592,45 @@ class NetworkView(QGraphicsView):
             return
 
         from ...core.registry import NodeRegistry
+        from ...nodes.subnet.subnet_io_nodes import SubnetInputNode, SubnetOutputNode
         from uuid import UUID
+
+        # Check if we're in a subnet context
+        is_in_subnet = hasattr(self._scene.network_model, '_parent_node') and \
+                       self._scene.network_model._parent_node is not None
+
+        # Filter nodes to paste based on context
+        nodes_to_paste = []
+        skipped_io_nodes = 0
+
+        for node_data in self._copied_nodes:
+            node_type = node_data.get('node_type')
+            # Check if this is a SubnetI/O node
+            is_io_node = node_type in ('SubnetInputNode', 'SubnetOutputNode')
+
+            if is_io_node and not is_in_subnet:
+                # Skip subnet I/O nodes when pasting outside a subnet
+                skipped_io_nodes += 1
+                continue
+
+            nodes_to_paste.append(node_data)
+
+        if skipped_io_nodes > 0:
+            print(f"Skipped {skipped_io_nodes} subnet I/O node(s) - can only paste within subnets")
+
+        if not nodes_to_paste:
+            print("No nodes to paste (subnet I/O nodes can only be pasted within subnets)")
+            return
 
         # Get cursor position in scene coords
         cursor_pos = self.mapFromGlobal(self.cursor().pos())
         scene_pos = self.mapToScene(cursor_pos)
 
         # Calculate offset for pasting
-        if self._copied_nodes:
+        if nodes_to_paste:
             # Calculate center of copied nodes
-            min_x = min(data['position'][0] for data in self._copied_nodes)
-            min_y = min(data['position'][1] for data in self._copied_nodes)
+            min_x = min(data['position'][0] for data in nodes_to_paste)
+            min_y = min(data['position'][1] for data in nodes_to_paste)
 
             offset_x = scene_pos.x() - min_x
             offset_y = scene_pos.y() - min_y
@@ -615,7 +639,7 @@ class NetworkView(QGraphicsView):
             id_mapping = {}  # Map old IDs to new nodes
 
             # First pass: Create all nodes
-            for node_data in self._copied_nodes:
+            for node_data in nodes_to_paste:
                 try:
                     from ...nodes.subnet import SubnetNode
 
