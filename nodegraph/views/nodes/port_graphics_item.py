@@ -92,10 +92,10 @@ class PortGraphicsItem(QGraphicsItem):
     def get_resolved_type(self) -> str:
         """Return the cached type if available, otherwise resolve and cache it."""
         if self._cached_type is None:
-            self._cached_type = self._resolve_data_type(visited=None, depth=0)
+            self._cached_type = self._resolve_data_type(visited=None, depth=0, cache=None)
         return self._cached_type
 
-    def _resolve_data_type(self, visited=None, depth=0) -> str:
+    def _resolve_data_type(self, visited=None, depth=0, cache=None) -> str:
         """
         Recursively resolve the actual data type for this port.
 
@@ -118,6 +118,16 @@ class PortGraphicsItem(QGraphicsItem):
         if visited is None:
             visited = set()
 
+        # Use a per-resolution memoization cache to avoid re-walking the same
+        # connectors during a single resolution pass (e.g., multiple inputs
+        # pulling from the same upstream node).
+        if cache is None:
+            cache = {}
+
+        connector_id = id(self.connector)
+        if connector_id in cache:
+            return cache[connector_id]
+
         # Return cached value when available for root calls
         if is_root_call and self._cached_type is not None:
             return self._cached_type
@@ -139,7 +149,6 @@ class PortGraphicsItem(QGraphicsItem):
         self._resolution_depth += 1
         try:
             # Prevent infinite loops by tracking connectors we've already visited
-            connector_id = id(self.connector)
             if connector_id in visited:
                 resolved = 'any'
             else:
@@ -166,21 +175,24 @@ class PortGraphicsItem(QGraphicsItem):
                     # For 'any' type ports, use different strategies based on port direction
                     if resolved is None:
                         if self.is_output:
-                            resolved = self._resolve_output_type(visited, depth)
+                            resolved = self._resolve_output_type(visited, depth, cache)
                         else:
-                            resolved = self._resolve_input_type(visited, depth)
+                            resolved = self._resolve_input_type(visited, depth, cache)
 
                     if resolved is None:
                         resolved = 'any'
         finally:
             self._resolution_depth -= 1
 
+        cache[connector_id] = resolved
+
         if is_root_call:
             self._cached_type = resolved
+            # Root calls update the long-lived cache used by painting code
 
         return resolved
 
-    def _resolve_output_type(self, visited, depth):
+    def _resolve_output_type(self, visited, depth, cache):
         """Resolution strategy for output ports."""
         # Strategy 1: Check node parameters first for outputs
         if self.connector.node:
@@ -209,13 +221,13 @@ class PortGraphicsItem(QGraphicsItem):
                             is_output = connected_connector.is_output()
                             port = node_item.get_port(connected_connector.name, is_output=is_output)
                             if port and port != self:
-                                resolved = port._resolve_data_type(visited, depth + 1)
+                                resolved = port._resolve_data_type(visited, depth + 1, cache)
                                 if resolved != 'any':
                                     return resolved
 
         return None
 
-    def _resolve_input_type(self, visited, depth):
+    def _resolve_input_type(self, visited, depth, cache):
         """Resolution strategy for input ports."""
         # Strategy 1: Check connected ports FIRST for inputs
         if self.connector.is_connected():
@@ -235,7 +247,7 @@ class PortGraphicsItem(QGraphicsItem):
                             is_output = connected_connector.is_output()
                             port = node_item.get_port(connected_connector.name, is_output=is_output)
                             if port and port != self:
-                                resolved = port._resolve_data_type(visited, depth + 1)
+                                resolved = port._resolve_data_type(visited, depth + 1, cache)
                                 if resolved != 'any':
                                     return resolved
 
@@ -263,7 +275,7 @@ class PortGraphicsItem(QGraphicsItem):
 
                             output_port = node_item.get_port(output_name, is_output=True)
                             if output_port and output_port != self:
-                                resolved = output_port._resolve_data_type(visited, depth + 1)
+                                resolved = output_port._resolve_data_type(visited, depth + 1, cache)
                                 if resolved != 'any':
                                     return resolved
 
