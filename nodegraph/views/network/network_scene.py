@@ -178,14 +178,19 @@ class NetworkScene(QGraphicsScene):
             # Find and remove the connection item
             found = False
             for conn in self._connection_items[:]:
-                if (conn.source_port and conn.target_port and
-                    conn.source_port.connector == source_conn and
-                    conn.target_port.connector == target_conn):
-                    print(f"[Scene] ✓ Found! Removing connection item from scene")
-                    self.removeItem(conn)
-                    self._connection_items.remove(conn)
-                    found = True
-                    break
+                try:
+                    if (conn.source_port and conn.target_port and
+                        conn.source_port.connector == source_conn and
+                        conn.target_port.connector == target_conn):
+                        print(f"[Scene] ✓ Found! Removing connection item from scene")
+                        self.removeItem(conn)
+                        self._connection_items.remove(conn)
+                        found = True
+                        break
+                except Exception as e:
+                    # Skip this connection if comparison fails (e.g., RecursionError during __eq__)
+                    print(f"[Scene] ! Skipping connection due to comparison error: {type(e).__name__}")
+                    continue
             if not found:
                 print(f"[Scene] ✗ WARNING: Connection item not found in _connection_items!")
         finally:
