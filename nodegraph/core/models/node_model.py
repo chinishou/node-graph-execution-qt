@@ -427,9 +427,11 @@ class NodeModel(BaseModel):
         """
         Serialize node to dictionary.
 
-        Uses Pydantic's model_dump() which automatically excludes non-serializable fields.
+        Note: UUID is excluded - it will be regenerated on deserialization.
+        This keeps JSON files cleaner and more portable.
         """
-        data = self.model_dump(mode="json")
+        # Exclude 'id' from serialization - it will be regenerated
+        data = self.model_dump(mode="json", exclude={"id"})
         data["position"] = self._position
 
         # Serialize parameters

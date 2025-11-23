@@ -10,6 +10,7 @@ from nodegraph.core.models import NetworkModel
 from nodegraph.nodes.base.variable_node import VariableNode
 from nodegraph.nodes.operators.math_nodes import AddNode
 from nodegraph.nodes.subnet import SubnetNode
+from nodegraph.nodes.subnet.subnet_io_nodes import SubnetInputNode, SubnetOutputNode
 from nodegraph.views.network.network_scene import NetworkScene
 from nodegraph.views.network.network_view import NetworkView
 
@@ -23,6 +24,8 @@ def network_view(qtbot):
     NodeRegistry.register(VariableNode)
     NodeRegistry.register(AddNode)
     NodeRegistry.register(SubnetNode)
+    NodeRegistry.register(SubnetInputNode)
+    NodeRegistry.register(SubnetOutputNode)
 
     network = NetworkModel("/")
     scene = NetworkScene(network)

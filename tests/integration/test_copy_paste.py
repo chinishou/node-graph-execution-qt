@@ -7,6 +7,7 @@ from nodegraph.core.models import NetworkModel
 from nodegraph.nodes.base.variable_node import VariableNode
 from nodegraph.nodes.operators.math_nodes import AddNode
 from nodegraph.nodes.subnet import SubnetNode
+from nodegraph.nodes.subnet.subnet_io_nodes import SubnetInputNode, SubnetOutputNode
 from nodegraph.core.registry import NodeRegistry
 
 
@@ -16,6 +17,8 @@ def register_nodes():
     NodeRegistry.register(VariableNode)
     NodeRegistry.register(AddNode)
     NodeRegistry.register(SubnetNode)
+    NodeRegistry.register(SubnetInputNode)
+    NodeRegistry.register(SubnetOutputNode)
     yield
     # No cleanup needed - registry persists across tests
 
