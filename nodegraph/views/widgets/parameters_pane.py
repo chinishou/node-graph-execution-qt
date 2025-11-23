@@ -386,6 +386,7 @@ class ParametersPane(QWidget):
 
     def _on_parameter_value_changed(self, param: "ParameterModel", value: Any):
         """Handle parameter value change."""
+        print(f"[ParametersPane] _on_parameter_value_changed: {param.name} = {value}")
         param.set_value(value)
         self.parameter_changed.emit()
 
@@ -399,7 +400,9 @@ class ParametersPane(QWidget):
         Note: callback is first parameter so it can be fixed with partial,
               while state comes from the Qt signal.
         """
-        callback(state == Qt.Checked)
+        bool_value = state == Qt.Checked
+        print(f"[ParametersPane] _bool_state_to_value: state={state}, Qt.Checked={Qt.Checked}, bool_value={bool_value}")
+        callback(bool_value)
 
     def _on_connector_connection_changed(self, connector: "ConnectorModel"):
         """Handle connector connection state change."""
@@ -439,22 +442,30 @@ class ParametersPane(QWidget):
     def _on_execute(self):
         """Execute the current node."""
         if self._node:
+            print(f"[ParametersPane] Executing node: {self._node.name}")
             success = self._node.execute()
+            print(f"[ParametersPane] Execute result: {success}")
 
             if success:
                 # Update output displays
                 self._update_output_displays()
+            else:
+                print(f"[ParametersPane] Execute failed!")
 
     def _update_output_displays(self):
         """Update output value displays."""
         if not self._node:
             return
 
+        print(f"[ParametersPane] Updating output displays for {self._node.name}")
         for name, connector in self._node.outputs().items():
             widget = self._widgets.get(f"output_{name}")
+            print(f"[ParametersPane]   Output '{name}': widget={widget is not None}, is_QLabel={isinstance(widget, QLabel) if widget else False}")
             if widget and isinstance(widget, QLabel):
                 value = self._node.get_output_value(name)
+                print(f"[ParametersPane]   Output '{name}': value={value}")
                 widget.setText(str(value) if value is not None else "--")
+                print(f"[ParametersPane]   Output '{name}': widget.text()={widget.text()}")
 
     def refresh(self):
         """Refresh the display."""
