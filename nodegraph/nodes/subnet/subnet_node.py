@@ -39,9 +39,20 @@ class SubnetNode(BaseNode):
         # Initialize internal network if not already set
         if self._internal_network is None:
             self._internal_network = NetworkModel(name=f"{self.name}_network")
+            # Set parent reference for path resolution
+            self._internal_network._parent_node = self
             # Connect signals to auto-sync connectors
             self._internal_network.node_added.connect(self._on_internal_node_added)
             self._internal_network.node_removed.connect(self._on_internal_node_removed)
+
+            # Auto-create default input and output nodes
+            input_node = SubnetInputNode(connector_name="input1", data_type="any")
+            input_node.set_position(100, 150)
+            self._internal_network.add_node(input_node)
+
+            output_node = SubnetOutputNode(connector_name="output1", data_type="any")
+            output_node.set_position(400, 150)
+            self._internal_network.add_node(output_node)
 
         # Parameters will be created dynamically based on I/O nodes
 
@@ -54,6 +65,8 @@ class SubnetNode(BaseNode):
     def set_internal_network(self, network: NetworkModel):
         """Set the internal network."""
         self._internal_network = network
+        # Set parent reference for path resolution
+        self._internal_network._parent_node = self
         # Connect signals to auto-sync connectors
         self._internal_network.node_added.connect(self._on_internal_node_added)
         self._internal_network.node_removed.connect(self._on_internal_node_removed)
@@ -107,51 +120,145 @@ class SubnetNode(BaseNode):
                     node.parameter_changed.connect(self._on_io_node_parameter_changed)
 
         # Create/update input connectors
-        new_inputs = set()
+        new_inputs = {}  # Maps connector_name to list of nodes with that name
         for input_node in input_nodes:
             connector_name = input_node.get_connector_name()
-            data_type = input_node.get_data_type()
-            new_inputs.add(connector_name)
+            if connector_name not in new_inputs:
+                new_inputs[connector_name] = []
+            new_inputs[connector_name].append(input_node)
 
-            # Add or update connector
-            if connector_name not in existing_inputs:
-                self.add_input(connector_name, data_type=data_type)
+        # Process each unique connector name
+        for connector_name, nodes in new_inputs.items():
+            data_type = nodes[0].get_data_type()
+
+            # If there are multiple nodes with the same connector_name, rename duplicates
+            if len(nodes) > 1:
+                print(f"[SubnetNode] Found {len(nodes)} nodes with connector_name '{connector_name}', auto-renaming duplicates")
+                for idx, node in enumerate(nodes):
+                    if idx == 0:
+                        # Keep the first one with original name
+                        unique_name = connector_name
+                    else:
+                        # Auto-generate unique names for duplicates
+                        base_name = connector_name.rstrip('0123456789')
+                        counter = 2
+                        while True:
+                            unique_name = f"{base_name}{counter}"
+                            # Check if this name is already used
+                            if unique_name not in new_inputs and not self.input(unique_name):
+                                break
+                            counter += 1
+
+                        # Update the node's parameter
+                        print(f"[SubnetNode] Renaming duplicate input node from '{connector_name}' to '{unique_name}'")
+                        node.parameter("connector_name").set_value(unique_name)
+                        node.name = f"Input ({unique_name})"
+
+                    # Add connector if it doesn't exist
+                    if not self.input(unique_name):
+                        self.add_input(unique_name, data_type=data_type)
             else:
-                # Update existing connector if needed
-                connector = self.input(connector_name)
-                if connector:
-                    connector.data_type = data_type
+                # Single node with this name
+                if not self.input(connector_name):
+                    self.add_input(connector_name, data_type=data_type)
+                else:
+                    # Update existing connector if needed
+                    connector = self.input(connector_name)
+                    if connector:
+                        connector.data_type = data_type
+
+        # Collect all active input connector names (including renamed ones)
+        all_input_names = set()
+        for connector_name, nodes in new_inputs.items():
+            if len(nodes) > 1:
+                # Include original and all renamed versions
+                base_name = connector_name.rstrip('0123456789')
+                for i in range(1, len(nodes) + 1):
+                    if i == 1:
+                        all_input_names.add(connector_name)
+                    else:
+                        all_input_names.add(f"{base_name}{i}")
+            else:
+                all_input_names.add(connector_name)
 
         # Remove old input connectors that no longer have corresponding nodes
         for input_name in existing_inputs:
-            if input_name not in new_inputs:
+            if input_name not in all_input_names:
                 self.remove_input(input_name)
 
         # Create/update output connectors
-        new_outputs = set()
+        new_outputs = {}  # Maps connector_name to list of nodes with that name
         for output_node in output_nodes:
             connector_name = output_node.get_connector_name()
-            data_type = output_node.get_data_type()
-            new_outputs.add(connector_name)
+            if connector_name not in new_outputs:
+                new_outputs[connector_name] = []
+            new_outputs[connector_name].append(output_node)
 
-            # Add or update connector
-            if connector_name not in existing_outputs:
-                self.add_output(connector_name, data_type=data_type)
+        # Process each unique connector name
+        for connector_name, nodes in new_outputs.items():
+            data_type = nodes[0].get_data_type()
+
+            # If there are multiple nodes with the same connector_name, rename duplicates
+            if len(nodes) > 1:
+                print(f"[SubnetNode] Found {len(nodes)} nodes with connector_name '{connector_name}', auto-renaming duplicates")
+                for idx, node in enumerate(nodes):
+                    if idx == 0:
+                        # Keep the first one with original name
+                        unique_name = connector_name
+                    else:
+                        # Auto-generate unique names for duplicates
+                        base_name = connector_name.rstrip('0123456789')
+                        counter = 2
+                        while True:
+                            unique_name = f"{base_name}{counter}"
+                            # Check if this name is already used
+                            if unique_name not in new_outputs and not self.output(unique_name):
+                                break
+                            counter += 1
+
+                        # Update the node's parameter
+                        print(f"[SubnetNode] Renaming duplicate output node from '{connector_name}' to '{unique_name}'")
+                        node.parameter("connector_name").set_value(unique_name)
+                        node.name = f"Output ({unique_name})"
+
+                    # Add connector if it doesn't exist
+                    if not self.output(unique_name):
+                        self.add_output(unique_name, data_type=data_type)
             else:
-                # Update existing connector if needed
-                connector = self.output(connector_name)
-                if connector:
-                    connector.data_type = data_type
+                # Single node with this name
+                if not self.output(connector_name):
+                    self.add_output(connector_name, data_type=data_type)
+                else:
+                    # Update existing connector if needed
+                    connector = self.output(connector_name)
+                    if connector:
+                        connector.data_type = data_type
+
+        # Collect all active output connector names (including renamed ones)
+        all_output_names = set()
+        for connector_name, nodes in new_outputs.items():
+            if len(nodes) > 1:
+                # Include original and all renamed versions
+                base_name = connector_name.rstrip('0123456789')
+                for i in range(1, len(nodes) + 1):
+                    if i == 1:
+                        all_output_names.add(connector_name)
+                    else:
+                        all_output_names.add(f"{base_name}{i}")
+            else:
+                all_output_names.add(connector_name)
 
         # Remove old output connectors that no longer have corresponding nodes
         for output_name in existing_outputs:
-            if output_name not in new_outputs:
+            if output_name not in all_output_names:
                 self.remove_output(output_name)
 
     def _on_internal_node_added(self, node):
         """Handle when a node is added to the internal network."""
+        print(f"[SubnetNode] Node added to internal network: {node.name} (type: {type(node).__name__})")
         # If it's a subnet I/O node, sync connectors
         if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+            print(f"[SubnetNode] Detected I/O node, syncing connectors for subnet: {self.name}")
             # Set parent subnet reference
             node._parent_subnet = self
             self._sync_connectors()

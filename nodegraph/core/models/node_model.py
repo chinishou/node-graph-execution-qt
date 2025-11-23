@@ -168,6 +168,26 @@ class NodeModel(BaseModel):
 
         return connector
 
+    def remove_input(self, name: str) -> bool:
+        """Remove an input connector from this node."""
+        if name in self._inputs:
+            connector = self._inputs[name]
+            # Disconnect all connections first
+            connector.disconnect_all()
+            del self._inputs[name]
+            return True
+        return False
+
+    def remove_output(self, name: str) -> bool:
+        """Remove an output connector from this node."""
+        if name in self._outputs:
+            connector = self._outputs[name]
+            # Disconnect all connections first
+            connector.disconnect_all()
+            del self._outputs[name]
+            return True
+        return False
+
     def input(self, name: str) -> Optional[ConnectorModel]:
         """Get input connector by name."""
         return self._inputs.get(name)
@@ -362,14 +382,49 @@ class NodeModel(BaseModel):
         """
         return self._last_outputs.get(output_name)
 
+    def get_path(self) -> str:
+        """
+        Get the full path of this node in the network hierarchy.
+
+        Returns:
+            Path string like "/subnet1/subnet2/nodename" or "/nodename" for root level
+        """
+        if not self.network:
+            return f"/{self.name}"
+
+        # Build path by traversing up the network hierarchy
+        path_parts = [self.name]
+        current_network = self.network
+
+        # Traverse up to find parent subnets
+        while current_network:
+            # Check if this network is inside a subnet
+            parent_subnet = None
+            if hasattr(current_network, '_parent_node'):
+                parent_subnet = current_network._parent_node
+            else:
+                # Search for a subnet that contains this network
+                # This is a fallback in case _parent_node is not set
+                for node in getattr(current_network, '_nodes', {}).values():
+                    if hasattr(node, 'get_internal_network'):
+                        internal = node.get_internal_network()
+                        if internal is current_network:
+                            parent_subnet = node
+                            break
+
+            if parent_subnet:
+                path_parts.insert(0, parent_subnet.name)
+                current_network = parent_subnet.network
+            else:
+                # Reached root network
+                break
+
+        return "/" + "/".join(path_parts)
+
     # Serialization
 
     def serialize(self) -> dict:
-        """
-        Serialize node to dictionary.
-
-        Uses Pydantic's model_dump() which automatically excludes non-serializable fields.
-        """
+        """Serialize node to dictionary."""
         data = self.model_dump(mode="json")
         data["position"] = self._position
 

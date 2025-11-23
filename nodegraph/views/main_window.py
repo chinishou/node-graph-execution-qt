@@ -184,13 +184,6 @@ class MainWindow(QMainWindow):
         delete_action.triggered.connect(self._delete_selected)
         edit_menu.addAction(delete_action)
 
-        edit_menu.addSeparator()
-
-        execute_all_action = QAction("Execute All", self)
-        execute_all_action.setShortcut("Ctrl+Shift+E")
-        execute_all_action.triggered.connect(self._execute_all)
-        edit_menu.addAction(execute_all_action)
-
         # View menu
         view_menu = menubar.addMenu("View")
 
@@ -259,7 +252,7 @@ class MainWindow(QMainWindow):
 
     def new_network(self):
         """Create a new network."""
-        self._network_model = NetworkModel("Untitled")
+        self._network_model = NetworkModel("/")
         self._current_file = None
 
         # Create navigation controller
@@ -396,28 +389,6 @@ class MainWindow(QMainWindow):
         scene = self._network_view.scene()
         if hasattr(scene, 'delete_selected'):
             scene.delete_selected()
-
-    def _execute_all(self):
-        """Execute all nodes in the network."""
-        if not self._network_model:
-            return
-
-        try:
-            # Get execution order
-            nodes = self._network_model.get_execution_order()
-
-            # Execute each node
-            for node in nodes:
-                node.cook()
-
-            # Log
-            self._output_pane.append_info(f"Executed {len(nodes)} nodes")
-
-            # Update parameters pane
-            self._parameters_pane.refresh()
-
-        except Exception as e:
-            self._output_pane.append_error(f"Execution error: {e}")
 
     def _restore_settings(self):
         """Restore window settings."""

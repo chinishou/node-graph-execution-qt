@@ -402,31 +402,85 @@ class NetworkModel:
     @classmethod
     def deserialize(cls, data: Dict[str, Any]) -> "NetworkModel":
         """Deserialize network from dictionary."""
+        from ..registry import NodeRegistry
+        from ...nodes.subnet import SubnetNode
+
         network = cls(name=data.get("name", "Network"))
 
         # First, create all nodes
         node_map = {}
         for node_data in data.get("nodes", []):
-            node = NodeModel.deserialize(node_data, network)
+            # Use NodeRegistry to create the correct node type
+            node_type = node_data.get("node_type")
+
+            # Special handling for SubnetNode
+            if node_type == "SubnetNode" and "internal_network" in node_data:
+                node = SubnetNode.deserialize(node_data)
+            else:
+                # Create node using registry
+                node = NodeRegistry.create_node(node_type)
+
+                # Set basic properties
+                node.name = node_data.get("name", node.name)
+                node._position = node_data.get("position", (0.0, 0.0))
+
+                # Restore parameter values
+                for param_name, param_data in node_data.get("parameters", {}).items():
+                    param = node.parameter(param_name)
+                    if param:
+                        # Handle both dict (full serialization) and direct value
+                        if isinstance(param_data, dict):
+                            param.set_value(param_data.get("value", param_data.get("_value")))
+                        else:
+                            param.set_value(param_data)
+
+                # Restore input default values
+                for input_name, default_value in node_data.get("input_defaults", {}).items():
+                    connector = node.input(input_name)
+                    if connector:
+                        connector.default_value = default_value
+
             network.add_node(node)
-            node_map[node.id] = node
+            # Map using the saved ID for connection restoration
+            original_id = node_data.get("id")
+            if isinstance(original_id, str):
+                original_id = UUID(original_id)
+            if original_id:
+                node_map[original_id] = node
+                print(f"[NetworkModel] Deserialized node: {node.name} (type={node.node_type}, saved_id={original_id}, new_id={node.id})")
+            else:
+                print(f"[NetworkModel] WARNING: Node {node.name} has no saved ID!")
 
         # Then, recreate connections
         for conn_data in data.get("connections", []):
             # Convert string IDs back to UUID
             source_id = conn_data["source_node"]
             target_id = conn_data["target_node"]
+
+            if source_id is None or target_id is None:
+                print(f"[NetworkModel] Skipping connection with None ID")
+                continue
+
             if isinstance(source_id, str):
                 source_id = UUID(source_id)
             if isinstance(target_id, str):
                 target_id = UUID(target_id)
 
-            network.connect(
-                source_node_id=source_id,
-                source_output=conn_data["source_output"],
-                target_node_id=target_id,
-                target_input=conn_data["target_input"],
-            )
+            source_node = node_map.get(source_id)
+            target_node = node_map.get(target_id)
+
+            if source_node and target_node:
+                print(f"[NetworkModel] Restoring connection: {source_node.name}.{conn_data['source_output']} -> {target_node.name}.{conn_data['target_input']}")
+                network.connect(
+                    source_node_id=source_node.id,
+                    source_output=conn_data["source_output"],
+                    target_node_id=target_node.id,
+                    target_input=conn_data["target_input"],
+                )
+            else:
+                print(f"[NetworkModel] WARNING: Could not restore connection - source_node={source_node}, target_node={target_node}")
+                print(f"[NetworkModel]   Looking for source_id={source_id}, target_id={target_id}")
+                print(f"[NetworkModel]   Available IDs in node_map: {list(node_map.keys())}")
 
         return network
 

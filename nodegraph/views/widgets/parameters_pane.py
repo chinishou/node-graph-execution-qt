@@ -8,11 +8,12 @@ Widget for displaying and editing node parameters.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QCheckBox, QScrollArea, QFrame,
-    QGroupBox, QPushButton, QComboBox
+    QGroupBox, QPushButton, QComboBox, QApplication
 )
 from PySide6.QtCore import Qt, Signal
 
 from typing import TYPE_CHECKING, Optional, Dict, Any
+from functools import partial
 
 if TYPE_CHECKING:
     from ...core.models import NodeModel, ParameterModel, ConnectorModel
@@ -37,6 +38,7 @@ class ParametersPane(QWidget):
         self._node: Optional["NodeModel"] = None
         self._widgets: Dict[str, QWidget] = {}
         self._labels: Dict[str, QLabel] = {}  # Store labels for styling updates
+        self._signal_handlers = []  # Store signal handlers to prevent garbage collection
 
         self._setup_ui()
 
@@ -168,6 +170,7 @@ class ParametersPane(QWidget):
         self._node = node
         self._widgets.clear()
         self._labels.clear()
+        self._signal_handlers.clear()  # Clear old signal handlers
 
         # Clear content
         while self._content_layout.count() > 1:
@@ -195,9 +198,10 @@ class ParametersPane(QWidget):
                 group_layout.addWidget(widget)
 
                 # Connect signal to update enabled state when connection changes
-                connector.connected_changed.connect(
-                    lambda c=connector: self._on_connector_connection_changed(c)
-                )
+                # Use partial instead of lambda for better Qt signal handling
+                handler = partial(self._on_connector_connection_changed, connector)
+                connector.connected_changed.connect(handler)
+                self._signal_handlers.append(handler)  # Store to prevent garbage collection
 
             self._content_layout.insertWidget(
                 self._content_layout.count() - 1, group
@@ -368,6 +372,8 @@ class ParametersPane(QWidget):
 
     def _on_connector_connection_changed(self, connector: "ConnectorModel"):
         """Handle connector connection state change."""
+        print(f"[ParametersPane] Connection changed for connector: {connector.name}, is_connected: {connector.is_connected()}")
+
         # Update the enabled state and appearance of the corresponding input widget
         widget_key = f"input_{connector.name}"
         if widget_key in self._widgets:
@@ -383,12 +389,21 @@ class ParametersPane(QWidget):
                 # Connected: gray out and italicize
                 if label:
                     label.setStyleSheet("color: #888888; font-style: italic;")
+                    label.update()
+                    label.repaint()
                 editor.setStyleSheet("background-color: #1a1a1a; color: #666666;")
             else:
                 # Disconnected: restore normal appearance
                 if label:
                     label.setStyleSheet("")
+                    label.update()
+                    label.repaint()
                 editor.setStyleSheet("")
+
+            # Force immediate UI update
+            editor.update()
+            editor.repaint()
+            QApplication.processEvents()
 
     def _on_execute(self):
         """Execute the current node."""
