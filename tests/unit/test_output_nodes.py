@@ -48,7 +48,8 @@ def test_print_node_simple():
 
     # Check signal was emitted
     assert len(signal_output) == 1
-    assert signal_output[0][0] == "Print"
+    # PrintNode emits full path (e.g., "/Print" for root-level nodes)
+    assert signal_output[0][0] == "/Print"
     assert "42" in signal_output[0][1]
 
     # Cleanup
@@ -78,7 +79,8 @@ def test_print_node_with_prefix():
 
     # Check output includes prefix
     assert len(signal_output) == 1
-    assert signal_output[0][0] == "TestPrint"
+    # PrintNode emits full path (e.g., "/TestPrint" for root-level nodes)
+    assert signal_output[0][0] == "/TestPrint"
     assert "Result:" in signal_output[0][1]
     assert "100" in signal_output[0][1]
 
