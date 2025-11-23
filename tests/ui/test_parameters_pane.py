@@ -379,6 +379,10 @@ class TestParametersPaneExecution:
         params_pane._execute_btn.click()
         qapp.processEvents()
         qtbot.wait(10)
+        qapp.processEvents()  # Extra event processing for UI update
+
+        # Re-fetch widget in case it was recreated during update
+        output_widget = params_pane._widgets.get("output_result")
 
         # Output should show sum (15.0 because AddNode defaults to float type)
         assert "15" in output_widget.text() or "15.0" in output_widget.text()
