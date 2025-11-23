@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
 
     def new_network(self):
         """Create a new network."""
-        self._network_model = NetworkModel("Untitled")
+        self._network_model = NetworkModel("/")
         self._current_file = None
 
         # Create navigation controller

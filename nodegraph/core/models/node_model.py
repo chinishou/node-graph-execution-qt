@@ -362,6 +362,45 @@ class NodeModel(BaseModel):
         """
         return self._last_outputs.get(output_name)
 
+    def get_path(self) -> str:
+        """
+        Get the full path of this node in the network hierarchy.
+
+        Returns:
+            Path string like "/subnet1/subnet2/nodename" or "/nodename" for root level
+        """
+        if not self.network:
+            return f"/{self.name}"
+
+        # Build path by traversing up the network hierarchy
+        path_parts = [self.name]
+        current_network = self.network
+
+        # Traverse up to find parent subnets
+        while current_network:
+            # Check if this network is inside a subnet
+            parent_subnet = None
+            if hasattr(current_network, '_parent_node'):
+                parent_subnet = current_network._parent_node
+            else:
+                # Search for a subnet that contains this network
+                # This is a fallback in case _parent_node is not set
+                for node in getattr(current_network, '_nodes', {}).values():
+                    if hasattr(node, 'get_internal_network'):
+                        internal = node.get_internal_network()
+                        if internal is current_network:
+                            parent_subnet = node
+                            break
+
+            if parent_subnet:
+                path_parts.insert(0, parent_subnet.name)
+                current_network = parent_subnet.network
+            else:
+                # Reached root network
+                break
+
+        return "/" + "/".join(path_parts)
+
     # Serialization
 
     def serialize(self) -> dict:

@@ -39,9 +39,20 @@ class SubnetNode(BaseNode):
         # Initialize internal network if not already set
         if self._internal_network is None:
             self._internal_network = NetworkModel(name=f"{self.name}_network")
+            # Set parent reference for path resolution
+            self._internal_network._parent_node = self
             # Connect signals to auto-sync connectors
             self._internal_network.node_added.connect(self._on_internal_node_added)
             self._internal_network.node_removed.connect(self._on_internal_node_removed)
+
+            # Auto-create default input and output nodes
+            input_node = SubnetInputNode(connector_name="input1", data_type="any")
+            input_node.set_position(100, 150)
+            self._internal_network.add_node(input_node)
+
+            output_node = SubnetOutputNode(connector_name="output1", data_type="any")
+            output_node.set_position(400, 150)
+            self._internal_network.add_node(output_node)
 
         # Parameters will be created dynamically based on I/O nodes
 
@@ -54,6 +65,8 @@ class SubnetNode(BaseNode):
     def set_internal_network(self, network: NetworkModel):
         """Set the internal network."""
         self._internal_network = network
+        # Set parent reference for path resolution
+        self._internal_network._parent_node = self
         # Connect signals to auto-sync connectors
         self._internal_network.node_added.connect(self._on_internal_node_added)
         self._internal_network.node_removed.connect(self._on_internal_node_removed)

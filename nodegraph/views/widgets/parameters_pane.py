@@ -8,11 +8,12 @@ Widget for displaying and editing node parameters.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QCheckBox, QScrollArea, QFrame,
-    QGroupBox, QPushButton, QComboBox
+    QGroupBox, QPushButton, QComboBox, QApplication
 )
 from PySide6.QtCore import Qt, Signal
 
 from typing import TYPE_CHECKING, Optional, Dict, Any
+from functools import partial
 
 if TYPE_CHECKING:
     from ...core.models import NodeModel, ParameterModel, ConnectorModel
@@ -195,9 +196,9 @@ class ParametersPane(QWidget):
                 group_layout.addWidget(widget)
 
                 # Connect signal to update enabled state when connection changes
-                connector.connected_changed.connect(
-                    lambda c=connector: self._on_connector_connection_changed(c)
-                )
+                # Use partial instead of lambda for better Qt signal handling
+                handler = partial(self._on_connector_connection_changed, connector)
+                connector.connected_changed.connect(handler)
 
             self._content_layout.insertWidget(
                 self._content_layout.count() - 1, group
@@ -389,6 +390,9 @@ class ParametersPane(QWidget):
                 if label:
                     label.setStyleSheet("")
                 editor.setStyleSheet("")
+
+            # Force immediate UI update
+            QApplication.processEvents()
 
     def _on_execute(self):
         """Execute the current node."""

@@ -33,13 +33,16 @@ class PrintNode(BaseNode):
         value = inputs.get("value")
         prefix = self.parameter("prefix").value()
 
+        # Get full node path
+        node_path = self.get_path()
+
         if prefix:
             output = f"{prefix}: {value}"
         else:
             output = str(value)
 
-        # Emit to global signal for UI capture
-        print_output_signal.emit(self.name, output)
+        # Emit to global signal for UI capture with full path
+        print_output_signal.emit(node_path, output)
 
         return {}
 

@@ -51,6 +51,7 @@ class NetworkView(QGraphicsView):
         self._press_pos = QPointF()  # Track initial press position
         self._drag_threshold = 5  # Pixels to move before considering it a drag
         self._copied_nodes = []  # Store copied node data for paste
+        self._copied_connections = []  # Store copied connection data for paste
         self._navigation_controller = None  # Will be set by MainWindow
 
         # Setup view
@@ -261,6 +262,12 @@ class NetworkView(QGraphicsView):
         # Copy selected nodes (Ctrl+C)
         if event.key() == Qt.Key_C and event.modifiers() & Qt.ControlModifier:
             self._copy_selected_nodes()
+            event.accept()
+            return
+
+        # Cut selected nodes (Ctrl+X)
+        if event.key() == Qt.Key_X and event.modifiers() & Qt.ControlModifier:
+            self._cut_selected_nodes()
             event.accept()
             return
 
@@ -481,23 +488,61 @@ class NetworkView(QGraphicsView):
             self._zoom_level /= self.ZOOM_STEP
             self.scale(1.0 / self.ZOOM_STEP, 1.0 / self.ZOOM_STEP)
 
+    def _cut_selected_nodes(self):
+        """Cut selected nodes (copy and delete)."""
+        if not self._scene:
+            return
+
+        # First copy the nodes
+        self._copy_selected_nodes()
+
+        # Then delete them if copy was successful
+        if self._copied_nodes:
+            self._scene.delete_selected()
+            print(f"Cut {len(self._copied_nodes)} node(s)")
+
     def _copy_selected_nodes(self):
         """Copy selected nodes to clipboard."""
         if not self._scene:
             return
 
         from ..nodes.node_graphics_item import NodeGraphicsItem
+        from ...nodes.subnet.subnet_io_nodes import SubnetInputNode, SubnetOutputNode
+        from ...nodes.subnet import SubnetNode
 
         selected = self._scene.selectedItems()
-        self._copied_nodes = []
+        selected_nodes = []
 
+        # Collect selected nodes
         for item in selected:
             if isinstance(item, NodeGraphicsItem):
                 node = item.node_model
-                # Get position using position() method
-                pos = node.position()
+                # Skip subnet I/O nodes - they shouldn't be copied outside their subnet
+                if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+                    continue
+                selected_nodes.append(node)
+
+        if not selected_nodes:
+            return
+
+        self._copied_nodes = []
+        copied_node_ids = {node.id for node in selected_nodes}
+
+        # Copy node data
+        for node in selected_nodes:
+            # Get position using position() method
+            pos = node.position()
+
+            # For SubnetNode, use full serialization to preserve internal network
+            if isinstance(node, SubnetNode):
+                node_data = node.serialize()
+                # Add position and original ID for pasting
+                node_data['id'] = str(node.id)
+                node_data['position'] = pos
+            else:
                 # Serialize node data
                 node_data = {
+                    'id': str(node.id),  # Store original ID for connection mapping
                     'node_type': node.node_type,
                     'position': pos,  # Use tuple from position() method
                     'parameters': {}
@@ -512,10 +557,30 @@ class NetworkView(QGraphicsView):
                 for name, connector in node.inputs().items():
                     node_data['input_defaults'][name] = connector.default_value
 
-                self._copied_nodes.append(node_data)
+            self._copied_nodes.append(node_data)
+
+        # Copy connections between selected nodes
+        connections = []
+        if self._scene.network_model:
+            for source_conn, target_conn in self._scene.network_model._connector_pairs:
+                # Only copy connections where both nodes are in the selection
+                if (source_conn.node.id in copied_node_ids and
+                    target_conn.node.id in copied_node_ids):
+                    connections.append({
+                        'source_node_id': str(source_conn.node.id),
+                        'source_output': source_conn.name,
+                        'target_node_id': str(target_conn.node.id),
+                        'target_input': target_conn.name
+                    })
+
+        # Store connections with the copied data
+        if hasattr(self, '_copied_connections'):
+            self._copied_connections = connections
+        else:
+            self._copied_connections = connections
 
         if self._copied_nodes:
-            print(f"Copied {len(self._copied_nodes)} node(s)")
+            print(f"Copied {len(self._copied_nodes)} node(s) and {len(connections)} connection(s)")
 
     def _paste_nodes(self):
         """Paste copied nodes."""
@@ -523,6 +588,7 @@ class NetworkView(QGraphicsView):
             return
 
         from ...core.registry import NodeRegistry
+        from uuid import UUID
 
         # Get cursor position in scene coords
         cursor_pos = self.mapFromGlobal(self.cursor().pos())
@@ -538,33 +604,66 @@ class NetworkView(QGraphicsView):
             offset_y = scene_pos.y() - min_y
 
             new_nodes = []
+            id_mapping = {}  # Map old IDs to new nodes
+
+            # First pass: Create all nodes
             for node_data in self._copied_nodes:
                 try:
-                    # Create new node
-                    node = NodeRegistry.create_node(node_data['node_type'])
+                    from ...nodes.subnet import SubnetNode
+
+                    # Check if this is a SubnetNode with serialized internal network
+                    if node_data.get('node_type') == 'SubnetNode' and 'internal_network' in node_data:
+                        # Deserialize the subnet with its internal network
+                        node = SubnetNode.deserialize(node_data)
+                    else:
+                        # Create new node normally
+                        node = NodeRegistry.create_node(node_data['node_type'])
+
+                        # Restore parameter values
+                        for name, value in node_data.get('parameters', {}).items():
+                            param = node.parameter(name)
+                            if param:
+                                param.set_value(value)
+
+                        # Restore input default values
+                        for name, value in node_data.get('input_defaults', {}).items():
+                            connector = node.input(name)
+                            if connector:
+                                connector.default_value = value
 
                     # Set position with offset
                     orig_x, orig_y = node_data['position']
                     node.set_position(orig_x + offset_x, orig_y + offset_y)
 
-                    # Restore parameter values
-                    for name, value in node_data.get('parameters', {}).items():
-                        param = node.parameter(name)
-                        if param:
-                            param.set_value(value)
-
-                    # Restore input default values
-                    for name, value in node_data.get('input_defaults', {}).items():
-                        connector = node.input(name)
-                        if connector:
-                            connector.default_value = value
-
                     # Add to network
                     self._scene.network_model.add_node(node)
                     new_nodes.append(node)
 
+                    # Map old ID to new node
+                    id_mapping[node_data['id']] = node
+
                 except Exception as e:
                     print(f"Error pasting node: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+            # Second pass: Restore connections
+            if hasattr(self, '_copied_connections') and self._copied_connections:
+                for conn_data in self._copied_connections:
+                    try:
+                        source_node = id_mapping.get(conn_data['source_node_id'])
+                        target_node = id_mapping.get(conn_data['target_node_id'])
+
+                        if source_node and target_node:
+                            # Create the connection
+                            self._scene.network_model.connect(
+                                source_node.id,
+                                conn_data['source_output'],
+                                target_node.id,
+                                conn_data['target_input']
+                            )
+                    except Exception as e:
+                        print(f"Error restoring connection: {e}")
 
             # Select newly pasted nodes
             if new_nodes:
@@ -574,7 +673,7 @@ class NetworkView(QGraphicsView):
                     if node_item:
                         node_item.setSelected(True)
 
-            print(f"Pasted {len(new_nodes)} node(s)")
+            print(f"Pasted {len(new_nodes)} node(s) and {len(self._copied_connections) if hasattr(self, '_copied_connections') else 0} connection(s)")
 
     def set_navigation_controller(self, controller):
         """Set the navigation controller."""
