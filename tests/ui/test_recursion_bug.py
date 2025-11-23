@@ -36,6 +36,14 @@ def test_recursion_bug_simple(qtbot, show_ui, ui_delay):
     add_1 = AddNode()
     add_2 = AddNode()
 
+    # Set positions for clear visualization
+    # Layout: int_node -> add -> add_1
+    #                      └─> add_2
+    int_node.set_position(100, 200)   # Left
+    add.set_position(350, 200)         # Middle
+    add_1.set_position(600, 150)       # Top right
+    add_2.set_position(600, 250)       # Bottom right
+
     # Add to network
     network.add_node(int_node)
     network.add_node(add)
@@ -86,6 +94,11 @@ def test_recursion_bug_simple(qtbot, show_ui, ui_delay):
         print("  This should disconnect add->add_1 and create int->add_1")
     try:
         network.connect(int_node.id, 'out', add_1.id, 'a')
+        # Extra event processing to ensure all deferred updates complete
+        QApplication.processEvents()
+        QApplication.processEvents()
+        scene.update()  # Force scene refresh
+        view.viewport().update()  # Force viewport refresh
         maybe_wait("Connected int->add_1 (old add->add_1 should be removed)")
         print("✓ SUCCESS: No recursion error!")
     except RecursionError as e:
@@ -127,6 +140,14 @@ def test_recursion_bug_variant(qtbot, show_ui, ui_delay):
     add = AddNode()
     add_1 = AddNode()
     add_2 = AddNode()
+
+    # Set positions for clear visualization
+    # Layout: int_node -> add -> add_1
+    #                      └─> add_2
+    int_node.set_position(100, 200)   # Left
+    add.set_position(350, 200)         # Middle
+    add_1.set_position(600, 150)       # Top right
+    add_2.set_position(600, 250)       # Bottom right
 
     # Add to network
     network.add_node(int_node)
@@ -171,6 +192,11 @@ def test_recursion_bug_variant(qtbot, show_ui, ui_delay):
         print("  This should disconnect add->add_2 and create int->add_2")
     try:
         network.connect(int_node.id, 'out', add_2.id, 'a')
+        # Extra event processing to ensure all deferred updates complete
+        QApplication.processEvents()
+        QApplication.processEvents()
+        scene.update()  # Force scene refresh
+        view.viewport().update()  # Force viewport refresh
         maybe_wait("Connected int->add_2")
         print("✓ SUCCESS: No recursion error!")
     except RecursionError as e:

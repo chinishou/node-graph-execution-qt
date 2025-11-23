@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QGraphicsItem, QGraphicsTextItem, QGraphicsProxyWidget,
     QStyleOptionGraphicsItem, QWidget
 )
-from PySide6.QtCore import Qt, QRectF, QPointF
+from PySide6.QtCore import Qt, QRectF, QPointF, QTimer
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QPainterPath
 
 from typing import TYPE_CHECKING, Dict, Optional
@@ -215,22 +215,18 @@ class NodeGraphicsItem(QGraphicsItem):
 
     def _on_parameter_changed(self):
         """Handle parameter change from model."""
-        # Update the node to reflect new colors
-        self.update()
-        # Update all ports (important for Math/Convert nodes where type changes)
-        for port in self._ports.values():
-            port.update()
-        # Update all connections involving this node
-        scene = self.scene()
-        if scene and hasattr(scene, '_connection_items'):
-            for conn_item in scene._connection_items:
-                if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
-                   (conn_item.target_port and conn_item.target_port.parentItem() == self):
-                    conn_item.update()
+        # Use deferred update to prevent recursion during signal processing
+        QTimer.singleShot(0, self._deferred_update)
 
     def _on_connection_changed(self):
         """Handle connector connection state change."""
-        # Prevent recursion: if we're already updating connections, skip this call
+        # Use deferred update to prevent recursion during signal processing
+        # This ensures all signals are processed before any paint operations occur
+        QTimer.singleShot(0, self._deferred_update)
+
+    def _deferred_update(self):
+        """Deferred update handler for connection and parameter changes."""
+        # Prevent recursion: if we're already updating, skip this call
         if self._is_updating_connections:
             return
 
@@ -243,12 +239,13 @@ class NodeGraphicsItem(QGraphicsItem):
             for port in self._ports.values():
                 port.update()
             # Update all connections involving this node
+            # Use deferred update via scene to prevent recursion
             scene = self.scene()
-            if scene and hasattr(scene, '_connection_items'):
+            if scene and hasattr(scene, '_schedule_connection_update'):
                 for conn_item in scene._connection_items:
                     if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
                        (conn_item.target_port and conn_item.target_port.parentItem() == self):
-                        conn_item.update()
+                        scene._schedule_connection_update(conn_item)
         finally:
             self._is_updating_connections = False
 

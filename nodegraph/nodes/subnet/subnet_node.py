@@ -202,9 +202,9 @@ class SubnetNode(BaseNode):
         for node in self._internal_network.nodes():
             if isinstance(node, SubnetOutputNode):
                 connector_name = node.get_connector_name()
-                # Get the output value from the node's cached outputs
-                if hasattr(node, '_cached_outputs') and connector_name in node._cached_outputs:
-                    outputs[connector_name] = node._cached_outputs[connector_name]
+                # Get the output value from the node's last outputs (stored by cook())
+                if hasattr(node, '_last_outputs') and connector_name in node._last_outputs:
+                    outputs[connector_name] = node._last_outputs[connector_name]
 
         return outputs
 

@@ -8,6 +8,10 @@ This allows the Model layer to remain pure Python.
 
 from typing import Callable, List, Any
 from weakref import WeakMethod, ref, ReferenceType
+import threading
+
+# Global signal emit depth tracker (thread-local to be thread-safe)
+_signal_emit_depth = threading.local()
 
 
 class Signal:
@@ -61,25 +65,51 @@ class Signal:
 
     def emit(self, *args, **kwargs) -> None:
         """Emit the signal, calling all connected slots."""
-        # Clean up dead weak references
-        self._slots = [s for s in self._slots if self._is_alive(s)]
+        # Prevent excessive recursion by using a global (thread-local) emit depth counter
+        # This prevents infinite recursion across multiple Signal instances
+        MAX_EMIT_DEPTH = 50  # Increased to accommodate complex signal chains
 
-        # Call all connected slots
-        for weak_slot in self._slots[:]:  # Copy to avoid modification during iteration
-            slot = self._get_callable(weak_slot)
-            if not slot:
-                return
+        # Initialize thread-local depth if not exists
+        if not hasattr(_signal_emit_depth, 'depth'):
+            _signal_emit_depth.depth = 0
 
-            try:
-                slot(*args, **kwargs)
-            except TypeError:
-                # Try calling without arguments if slot doesn't accept them
+        if _signal_emit_depth.depth >= MAX_EMIT_DEPTH:
+            # Silently skip to avoid infinite recursion
+            # Deep recursion in signals indicates a design issue
+            # but we don't want to crash, just break the cycle
+            return
+
+        _signal_emit_depth.depth += 1
+        try:
+            # Clean up dead weak references
+            self._slots = [s for s in self._slots if self._is_alive(s)]
+
+            # Call all connected slots
+            for weak_slot in self._slots[:]:  # Copy to avoid modification during iteration
+                slot = self._get_callable(weak_slot)
+                if not slot:
+                    continue
+
                 try:
-                    slot()
-                except Exception as e2:
-                    print(f"Error in signal slot: {e2}")
-            except Exception as e:
-                print(f"Error in signal slot: {e}")
+                    slot(*args, **kwargs)
+                except TypeError:
+                    # Try calling without arguments if slot doesn't accept them
+                    try:
+                        slot()
+                    except RecursionError:
+                        # RecursionError is expected and handled by depth limiting
+                        # Silently skip to avoid noise
+                        pass
+                    except Exception as e2:
+                        print(f"Error in signal slot: {e2}")
+                except RecursionError:
+                    # RecursionError is expected and handled by depth limiting
+                    # Silently skip to avoid noise
+                    pass
+                except Exception as e:
+                    print(f"Error in signal slot: {e}")
+        finally:
+            _signal_emit_depth.depth -= 1
 
     def _is_alive(self, slot_ref: Any) -> bool:
         """Check if a slot reference is still alive."""

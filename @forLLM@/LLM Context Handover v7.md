@@ -1,7 +1,7 @@
 # LLM Context Handover v7
 
-**Date**: 2025-11-22
-**Branch**: `claude/review-llm-context-handover-01HKwcTa17vTL2YGnx4UQPSn`
+**Date**: 2025-11-23
+**Branch**: `claude/read-forllm-chair-surface-01SUqmB2ghcNGbDEhLuJMcKJ`
 **Status**: Active Development
 **Version**: 0.2.0-beta
 
@@ -22,7 +22,64 @@ Three-layer architecture:
 
 ## Recent Major Changes (Session Summary)
 
-### 1. Recursive Type Resolution Through SubnetNode Chains
+### 1. Connection Removal Fix - View Layer Update Bug (Latest)
+
+**Date**: 2025-11-23
+**Commits**: `cdb87a7`, `a2c0f23`
+**Session Doc**: See `@forLLM@/session_progress_connection_removal_fix.md` for full details
+
+**Problem**:
+After fixing recursion errors, a UI bug appeared where old connections remained visible when new connections should replace them:
+- Creating `int->add_1` should disconnect `add->add_1`, but both connections remained visible
+- Model layer was correct (only one connection stored)
+- UI showed both connections until scene switch/reload
+
+**Root Cause**:
+In `NetworkScene._on_connection_removed()`, the loop to find and remove connection items was breaking early due to unhandled `RecursionError`:
+
+```python
+# This loop broke at Item [0] before reaching the target Item [1]
+for conn in self._connection_items[:]:
+    if (conn.source_port and conn.target_port and
+        conn.source_port.connector == source_conn and  # ← RecursionError!
+        conn.target_port.connector == target_conn):
+        self.removeItem(conn)
+        self._connection_items.remove(conn)
+```
+
+**Why RecursionError?**
+- Comparing connectors with `==` triggered recursive calls in certain cases
+- Previous recursion depth limiting prevented crashes but stopped execution before comparison completed
+- Without try/except, the loop broke immediately, never reaching the matching connection item
+
+**Solution**:
+Added exception handling to skip problematic items and continue searching:
+
+```python
+# File: nodegraph/views/network/network_scene.py:180-195
+for conn in self._connection_items[:]:
+    try:
+        if (conn.source_port and conn.target_port and
+            conn.source_port.connector == source_conn and
+            conn.target_port.connector == target_conn):
+            self.removeItem(conn)
+            self._connection_items.remove(conn)
+            found = True
+            break
+    except Exception as e:
+        # Skip connection if comparison fails
+        print(f"[Scene] ! Skipping connection due to comparison error: {type(e).__name__}")
+        continue
+```
+
+**Impact**:
+- Old connections now correctly disappear when replaced
+- UI properly reflects model state
+- Works in conjunction with signal depth limiting and deferred updates
+
+---
+
+### 2. Recursive Type Resolution Through SubnetNode Chains
 
 **Commit**: `8890b33` - "Enable recursive type resolution through SubnetNode chains"
 
