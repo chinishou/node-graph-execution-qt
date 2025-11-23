@@ -71,7 +71,7 @@ class PortGraphicsItem(QGraphicsItem):
             color = self.HOVER_COLOR
         else:
             # Get the actual data type to use for coloring (with caching)
-            data_type = self._resolve_data_type()
+            data_type = self.get_resolved_type()
 
             # Get color based on data type
             if data_type in self.TYPE_COLORS:
@@ -88,6 +88,12 @@ class PortGraphicsItem(QGraphicsItem):
         painter.setBrush(QBrush(color))
         painter.setPen(QPen(QColor(30, 30, 30), 1))
         painter.drawEllipse(QPointF(0, 0), self.PORT_RADIUS, self.PORT_RADIUS)
+
+    def get_resolved_type(self) -> str:
+        """Return the cached type if available, otherwise resolve and cache it."""
+        if self._cached_type is None:
+            self._cached_type = self._resolve_data_type(visited=None, depth=0)
+        return self._cached_type
 
     def _resolve_data_type(self, visited=None, depth=0) -> str:
         """
