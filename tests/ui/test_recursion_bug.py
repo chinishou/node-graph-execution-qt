@@ -94,6 +94,11 @@ def test_recursion_bug_simple(qtbot, show_ui, ui_delay):
         print("  This should disconnect add->add_1 and create int->add_1")
     try:
         network.connect(int_node.id, 'out', add_1.id, 'a')
+        # Extra event processing to ensure all deferred updates complete
+        QApplication.processEvents()
+        QApplication.processEvents()
+        scene.update()  # Force scene refresh
+        view.viewport().update()  # Force viewport refresh
         maybe_wait("Connected int->add_1 (old add->add_1 should be removed)")
         print("✓ SUCCESS: No recursion error!")
     except RecursionError as e:
@@ -187,6 +192,11 @@ def test_recursion_bug_variant(qtbot, show_ui, ui_delay):
         print("  This should disconnect add->add_2 and create int->add_2")
     try:
         network.connect(int_node.id, 'out', add_2.id, 'a')
+        # Extra event processing to ensure all deferred updates complete
+        QApplication.processEvents()
+        QApplication.processEvents()
+        scene.update()  # Force scene refresh
+        view.viewport().update()  # Force viewport refresh
         maybe_wait("Connected int->add_2")
         print("✓ SUCCESS: No recursion error!")
     except RecursionError as e:
