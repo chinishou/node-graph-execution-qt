@@ -255,9 +255,10 @@ class NodeGraphicsItem(QGraphicsItem):
 
             # Update the node to reflect new colors
             self.update()
-            # Update all ports
-            for port in self._ports.values():
-                port.update()
+
+            # NOTE: Ports update themselves via _invalidate_type_cache signal handler
+            # No need to update them here again - that would cause double updates
+
             # Update all connections involving this node
             # Use deferred update via scene to prevent recursion
             scene = self.scene()

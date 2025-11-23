@@ -115,6 +115,11 @@ class PortGraphicsItem(QGraphicsItem):
         Returns:
             The resolved data type string
         """
+        # OPTIMIZATION: Use cached result if available and this is a top-level call
+        # Only use cache for top-level calls (depth=0) to avoid stale data in recursive chains
+        if depth == 0 and self._cached_type is not None:
+            return self._cached_type
+
         # Safety: if scene is modifying connections, use cached type or default
         # This prevents recursion during connection add/remove operations
         scene = self.scene()
@@ -136,8 +141,10 @@ class PortGraphicsItem(QGraphicsItem):
 
         data_type = self.connector.data_type
 
-        # If not 'any', return the concrete type immediately
+        # If not 'any', cache and return the concrete type immediately
         if data_type != 'any':
+            if depth == 0:
+                self._cached_type = data_type
             return data_type
 
         # Try node-specific type resolution first (for cross-boundary scenarios)
@@ -148,6 +155,8 @@ class PortGraphicsItem(QGraphicsItem):
                 visited
             )
             if custom_type:
+                if depth == 0:
+                    self._cached_type = custom_type
                 return custom_type
 
         # For 'any' type ports, use different strategies based on port direction
@@ -162,6 +171,8 @@ class PortGraphicsItem(QGraphicsItem):
                     if param:
                         param_value = param.value()
                         if param_value in self.TYPE_COLORS:
+                            if depth == 0:
+                                self._cached_type = param_value
                             return param_value
 
             # Strategy 2: Check connected ports (only if no parameter defines the type)
@@ -171,6 +182,8 @@ class PortGraphicsItem(QGraphicsItem):
                     connected_type = connected_connector.data_type
 
                     if connected_type != 'any':
+                        if depth == 0:
+                            self._cached_type = connected_type
                         return connected_type
 
                     # Recursively resolve
@@ -184,6 +197,8 @@ class PortGraphicsItem(QGraphicsItem):
                                 if port and port != self:
                                     resolved = port._resolve_data_type(visited, depth + 1)
                                     if resolved != 'any':
+                                        if depth == 0:
+                                            self._cached_type = resolved
                                         return resolved
         else:
             # INPUT PORT: Connected type takes priority (what's actually coming in)
@@ -195,6 +210,8 @@ class PortGraphicsItem(QGraphicsItem):
                     connected_type = connected_connector.data_type
 
                     if connected_type != 'any':
+                        if depth == 0:
+                            self._cached_type = connected_type
                         return connected_type
 
                     # Recursively resolve the connected output's type
@@ -208,6 +225,8 @@ class PortGraphicsItem(QGraphicsItem):
                                 if port and port != self:
                                     resolved = port._resolve_data_type(visited, depth + 1)
                                     if resolved != 'any':
+                                        if depth == 0:
+                                            self._cached_type = resolved
                                         return resolved
 
             # Strategy 2: Check node parameters (only if not connected or connection is also 'any')
@@ -217,6 +236,8 @@ class PortGraphicsItem(QGraphicsItem):
                     if param:
                         param_value = param.value()
                         if param_value in self.TYPE_COLORS:
+                            if depth == 0:
+                                self._cached_type = param_value
                             return param_value
 
             # Strategy 3: Check pass-through from output ports (for Display-like nodes)
@@ -230,15 +251,21 @@ class PortGraphicsItem(QGraphicsItem):
                         if node_item:
                             for output_name, output_connector in self.connector.node.outputs().items():
                                 if output_connector.data_type != 'any':
+                                    if depth == 0:
+                                        self._cached_type = output_connector.data_type
                                     return output_connector.data_type
 
                                 output_port = node_item.get_port(output_name, is_output=True)
                                 if output_port and output_port != self:
                                     resolved = output_port._resolve_data_type(visited, depth + 1)
                                     if resolved != 'any':
+                                        if depth == 0:
+                                            self._cached_type = resolved
                                         return resolved
 
-        # Default: return 'any'
+        # Default: cache and return 'any'
+        if depth == 0:
+            self._cached_type = 'any'
         return 'any'
 
     def hoverEnterEvent(self, event):
