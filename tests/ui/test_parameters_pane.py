@@ -428,16 +428,19 @@ class TestParametersPaneRefresh:
 class TestParametersPaneBasicFunctionality:
     """Tests for basic ParametersPane functionality verification."""
 
-    def test_int_variable_output_display(self, params_pane, qtbot, qapp):
-        """Test IntVariable output display before and after execution."""
-        # Create IntVariable with value=1
-        int_node = IntVariable(default_value=1)
-        int_node.parameter("value").set_value(1)
+    def test_add_node_output_display(self, params_pane, qtbot, qapp):
+        """Test AddNode output display before and after execution."""
+        # Create AddNode
+        add_node = AddNode()
 
-        params_pane.set_node(int_node)
+        # Set input defaults: a=5, b=3
+        add_node.input("a").default_value = 5
+        add_node.input("b").default_value = 3
+
+        params_pane.set_node(add_node)
 
         # Check initial output shows "--"
-        output_widget = params_pane._widgets.get("output_out")
+        output_widget = params_pane._widgets.get("output_result")
         assert output_widget is not None
         assert output_widget.text() == "--", f"Expected '--', got '{output_widget.text()}'"
 
@@ -448,18 +451,20 @@ class TestParametersPaneBasicFunctionality:
         qapp.processEvents()
 
         # Re-fetch widget after execution
-        output_widget = params_pane._widgets.get("output_out")
+        output_widget = params_pane._widgets.get("output_result")
 
-        # Output should show "1"
-        assert output_widget.text() == "1", f"Expected '1', got '{output_widget.text()}'"
+        # Output should show "8" or "8.0" (5 + 3)
+        assert "8" in output_widget.text(), f"Expected '8', got '{output_widget.text()}'"
 
-    def test_int_to_print_execution(self, qtbot, qapp):
-        """Test IntVariable connected to PrintNode."""
+    def test_add_to_print_execution(self, qtbot, qapp):
+        """Test AddNode connected to PrintNode."""
         from nodegraph.nodes.utils.output_nodes import print_output_signal
 
         # Create nodes
-        int_node = IntVariable(default_value=42)
-        int_node.parameter("value").set_value(42)
+        add_node = AddNode()
+        add_node.input("a").default_value = 10
+        add_node.input("b").default_value = 5
+
         print_node = PrintNode()
         print_node.name = "TestPrint"
 
@@ -472,17 +477,17 @@ class TestParametersPaneBasicFunctionality:
         print_output_signal.connect(capture_print)
 
         try:
-            # Connect nodes
-            int_node.output("out").connect_to(print_node.input("value"))
+            # Connect nodes: add -> print
+            add_node.output("result").connect_to(print_node.input("value"))
 
             # Execute both nodes
-            int_node.execute()
+            add_node.execute()
             print_node.execute()
 
             # Check print output
             assert len(captured_output) > 0, "No print output captured"
             node_path, output_text = captured_output[-1]
-            assert "42" in output_text, f"Expected '42' in output, got '{output_text}'"
+            assert "15" in output_text, f"Expected '15' in output, got '{output_text}'"
 
         finally:
             print_output_signal.disconnect(capture_print)
