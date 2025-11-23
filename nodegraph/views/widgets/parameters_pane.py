@@ -367,8 +367,8 @@ class ParametersPane(QWidget):
         elif data_type == "bool":
             editor = QCheckBox()
             editor.setChecked(bool(value) if value is not None else False)
-            # Use partial instead of lambda to avoid garbage collection
-            bool_handler = partial(lambda s, cb: cb(s == Qt.Checked), cb=callback)
+            # Use helper method to convert state to bool
+            bool_handler = partial(self._bool_state_to_value, callback=callback)
             editor.stateChanged.connect(bool_handler)
             return (editor, bool_handler)  # Return handler to be saved
 
@@ -387,6 +387,10 @@ class ParametersPane(QWidget):
         """Handle parameter value change."""
         param.set_value(value)
         self.parameter_changed.emit()
+
+    def _bool_state_to_value(self, state: int, callback):
+        """Convert Qt checkbox state to bool and call callback."""
+        callback(state == Qt.Checked)
 
     def _on_connector_connection_changed(self, connector: "ConnectorModel"):
         """Handle connector connection state change."""
