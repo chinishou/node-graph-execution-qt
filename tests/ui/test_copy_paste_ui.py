@@ -17,6 +17,13 @@ from nodegraph.views.network.network_view import NetworkView
 @pytest.fixture
 def network_view(qtbot):
     """Create a NetworkView with scene."""
+    from nodegraph.core.registry import NodeRegistry
+
+    # Register node types for testing
+    NodeRegistry.register("VariableNode", VariableNode)
+    NodeRegistry.register("AddNode", AddNode)
+    NodeRegistry.register("SubnetNode", SubnetNode)
+
     network = NetworkModel("/")
     scene = NetworkScene(network)
     view = NetworkView()
@@ -66,7 +73,7 @@ class TestCopyPasteFunctionality:
         var2.set_position(100, 200)
         network.add_node(var2)
 
-        add = AddNode(name="Add")
+        add = AddNode()  # Don't pass name, AddNode already sets it
         add.set_position(300, 150)
         network.add_node(add)
 
@@ -102,7 +109,7 @@ class TestCopyPasteFunctionality:
         var.set_position(100, 100)
         network.add_node(var)
 
-        add = AddNode(name="Add")
+        add = AddNode()  # Don't pass name, AddNode already sets it
         add.set_position(300, 100)
         network.add_node(add)
 

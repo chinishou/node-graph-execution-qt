@@ -168,6 +168,26 @@ class NodeModel(BaseModel):
 
         return connector
 
+    def remove_input(self, name: str) -> bool:
+        """Remove an input connector from this node."""
+        if name in self._inputs:
+            connector = self._inputs[name]
+            # Disconnect all connections first
+            connector.disconnect_all()
+            del self._inputs[name]
+            return True
+        return False
+
+    def remove_output(self, name: str) -> bool:
+        """Remove an output connector from this node."""
+        if name in self._outputs:
+            connector = self._outputs[name]
+            # Disconnect all connections first
+            connector.disconnect_all()
+            del self._outputs[name]
+            return True
+        return False
+
     def input(self, name: str) -> Optional[ConnectorModel]:
         """Get input connector by name."""
         return self._inputs.get(name)
