@@ -468,6 +468,76 @@ def _process_deferred_update(self):
 
 ---
 
+## Test Measurement Fix: Global Counter Accumulation
+
+### Problem Discovered
+
+When running **all UI tests together** (`pytest tests/ui/`), the debug counters accumulated across tests, showing 155-164 calls instead of the expected 5-8 calls per test. This made it impossible to verify optimization effectiveness.
+
+### Root Cause
+
+**Module-level global variable shared across all tests**:
+
+```python
+# tests/ui/test_debug_signals.py (module level)
+call_stack = []
+call_counts = {}  # This accumulates across ALL tests!
+```
+
+**The Problem**:
+1. `call_counts` is defined at module level, not reset between tests
+2. When running full suite, each test adds to the counter
+3. By test 3 or 4, counter shows 100+ calls even though each individual test only triggers 5-8
+4. Only `test_debug_signals.py` has manual `call_counts.clear()` calls
+
+### Solution
+
+**Add autouse pytest fixture to reset counters before each test**:
+
+```python
+# tests/conftest.py
+@pytest.fixture(autouse=True)
+def reset_debug_counters():
+    """
+    Reset debug call counters before each test.
+
+    This prevents call_counts from accumulating across tests when running
+    the full test suite (pytest tests/ui/), ensuring accurate per-test
+    measurement of optimization effectiveness.
+    """
+    # Import here to avoid circular dependencies
+    try:
+        from tests.ui import test_debug_signals
+        test_debug_signals.call_counts.clear()
+        test_debug_signals.call_stack.clear()
+    except (ImportError, AttributeError):
+        pass  # Module not loaded yet
+
+    yield  # Run the test
+
+    # Clear after test to prevent leaking
+    try:
+        from tests.ui import test_debug_signals
+        test_debug_signals.call_counts.clear()
+        test_debug_signals.call_stack.clear()
+    except (ImportError, AttributeError):
+        pass
+```
+
+**How It Helps**:
+- Automatic reset before every test (no manual `call_counts.clear()` needed)
+- Accurate per-test measurement
+- Works across entire test suite
+- No test interdependencies
+
+**Impact**:
+- ✅ Each test measures its own call count accurately
+- ✅ Can verify 5-8 calls per operation across all tests
+- ✅ No false positives from accumulated counters
+- ✅ Tests can run in any order without affecting results
+
+---
+
 ## Notes for Future LLMs
 
 1. **The 103 calls are NOT necessary** - they are a result of inefficient update patterns
@@ -494,6 +564,12 @@ def _process_deferred_update(self):
    - Added `_cached_label_colors` dict
    - Modified `paint()` to use cached colors for labels
    - Modified `_deferred_update()` to clear cache
+   - Implemented single-timer pattern to prevent reentrancy (critical bug fix)
+
+4. `tests/conftest.py`
+   - Added `reset_debug_counters()` autouse fixture
+   - Automatically resets call_counts before each test
+   - Prevents counter accumulation across test suite
 
 ---
 

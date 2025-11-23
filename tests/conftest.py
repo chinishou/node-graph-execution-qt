@@ -40,6 +40,34 @@ def ui_delay(request):
     return int(request.config.getoption("--ui-delay"))
 
 
+@pytest.fixture(autouse=True)
+def reset_debug_counters():
+    """
+    Reset debug call counters before each test.
+
+    This prevents call_counts from accumulating across tests when running
+    the full test suite (pytest tests/ui/), ensuring accurate per-test
+    measurement of optimization effectiveness.
+    """
+    # Import here to avoid circular dependencies and handle module not loaded yet
+    try:
+        from tests.ui import test_debug_signals
+        test_debug_signals.call_counts.clear()
+        test_debug_signals.call_stack.clear()
+    except (ImportError, AttributeError):
+        pass  # Module not loaded yet or not running UI tests
+
+    yield  # Run the test
+
+    # Clear after test to prevent leaking into next test
+    try:
+        from tests.ui import test_debug_signals
+        test_debug_signals.call_counts.clear()
+        test_debug_signals.call_stack.clear()
+    except (ImportError, AttributeError):
+        pass
+
+
 def pytest_configure(config):
     """Configure pytest based on options."""
     if config.getoption("--show-ui"):
