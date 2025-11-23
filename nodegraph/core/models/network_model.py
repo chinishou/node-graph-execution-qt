@@ -382,26 +382,17 @@ class NetworkModel:
     # Serialization
 
     def serialize(self) -> Dict[str, Any]:
-        """
-        Serialize network to dictionary.
-
-        Note: Uses node indices instead of UUIDs for connections.
-        This makes JSON files more readable and portable.
-        """
-        # Create ordered list of nodes
-        nodes_list = list(self._nodes.values())
-
-        # Create ID to index mapping for connection serialization
-        id_to_index = {node.id: idx for idx, node in enumerate(nodes_list)}
-
+        """Serialize network to dictionary."""
         return {
             "name": self.name,
-            "nodes": [node.serialize() for node in nodes_list],
+            "nodes": [
+                node.serialize() for node in self._nodes.values()
+            ],
             "connections": [
                 {
-                    "source_node": id_to_index.get(src.node.id) if src.node else None,
+                    "source_node": str(src.node.id) if src.node else None,
                     "source_output": src.name,
-                    "target_node": id_to_index.get(tgt.node.id) if tgt.node else None,
+                    "target_node": str(tgt.node.id) if tgt.node else None,
                     "target_input": tgt.name,
                 }
                 for src, tgt in self.connector_pairs()
@@ -410,20 +401,15 @@ class NetworkModel:
 
     @classmethod
     def deserialize(cls, data: Dict[str, Any]) -> "NetworkModel":
-        """
-        Deserialize network from dictionary.
-
-        Note: Nodes get new UUIDs on each load. Connections use node indices
-        to reference nodes, making the JSON more readable and portable.
-        """
+        """Deserialize network from dictionary."""
         from ..registry import NodeRegistry
         from ...nodes.subnet import SubnetNode
 
         network = cls(name=data.get("name", "Network"))
 
-        # First, create all nodes and store them by index
-        nodes_list = []
-        for idx, node_data in enumerate(data.get("nodes", [])):
+        # First, create all nodes
+        node_map = {}
+        for node_data in data.get("nodes", []):
             # Use NodeRegistry to create the correct node type
             node_type = node_data.get("node_type")
 
@@ -455,30 +441,32 @@ class NetworkModel:
                         connector.default_value = default_value
 
             network.add_node(node)
-            nodes_list.append(node)
+            # Map using the saved ID for connection restoration
+            original_id = node_data.get("id")
+            if isinstance(original_id, str):
+                original_id = UUID(original_id)
+            node_map[original_id] = node
 
-        # Then, recreate connections using node indices
+        # Then, recreate connections
         for conn_data in data.get("connections", []):
-            source_idx = conn_data.get("source_node")
-            target_idx = conn_data.get("target_node")
+            # Convert string IDs back to UUID
+            source_id = conn_data["source_node"]
+            target_id = conn_data["target_node"]
+            if isinstance(source_id, str):
+                source_id = UUID(source_id)
+            if isinstance(target_id, str):
+                target_id = UUID(target_id)
 
-            # Skip if indices are invalid
-            if source_idx is None or target_idx is None:
-                continue
-            if source_idx < 0 or source_idx >= len(nodes_list):
-                continue
-            if target_idx < 0 or target_idx >= len(nodes_list):
-                continue
+            source_node = node_map.get(source_id)
+            target_node = node_map.get(target_id)
 
-            source_node = nodes_list[source_idx]
-            target_node = nodes_list[target_idx]
-
-            network.connect(
-                source_node_id=source_node.id,
-                source_output=conn_data["source_output"],
-                target_node_id=target_node.id,
-                target_input=conn_data["target_input"],
-            )
+            if source_node and target_node:
+                network.connect(
+                    source_node_id=source_node.id,
+                    source_output=conn_data["source_output"],
+                    target_node_id=target_node.id,
+                    target_input=conn_data["target_input"],
+                )
 
         return network
 

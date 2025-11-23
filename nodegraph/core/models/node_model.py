@@ -424,14 +424,8 @@ class NodeModel(BaseModel):
     # Serialization
 
     def serialize(self) -> dict:
-        """
-        Serialize node to dictionary.
-
-        Note: UUID is excluded - it will be regenerated on deserialization.
-        This keeps JSON files cleaner and more portable.
-        """
-        # Exclude 'id' from serialization - it will be regenerated
-        data = self.model_dump(mode="json", exclude={"id"})
+        """Serialize node to dictionary."""
+        data = self.model_dump(mode="json")
         data["position"] = self._position
 
         # Serialize parameters
