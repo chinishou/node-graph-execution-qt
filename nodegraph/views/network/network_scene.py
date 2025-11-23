@@ -146,18 +146,28 @@ class NetworkScene(QGraphicsScene):
 
     def _on_connection_removed(self, source_conn: "ConnectorModel", target_conn: "ConnectorModel"):
         """Handle connection removed from model."""
+        # Debug logging
+        if hasattr(source_conn, 'node') and hasattr(target_conn, 'node'):
+            print(f"[Scene] _on_connection_removed called: {source_conn.node.name}.{source_conn.name} -> {target_conn.node.name}.{target_conn.name}")
+
         # Set flag to prevent type resolution during modification
         was_modifying = self._is_modifying_connections
         self._is_modifying_connections = True
         try:
             # Find and remove the connection item
+            found = False
             for conn in self._connection_items[:]:
                 if (conn.source_port and conn.target_port and
                     conn.source_port.connector == source_conn and
                     conn.target_port.connector == target_conn):
+                    print(f"[Scene] Removing connection item from scene")
                     self.removeItem(conn)
                     self._connection_items.remove(conn)
+                    found = True
                     break
+            if not found:
+                print(f"[Scene] WARNING: Connection item not found in _connection_items!")
+                print(f"[Scene] Current items: {len(self._connection_items)}")
         finally:
             # Only reset if we set it
             if not was_modifying:
