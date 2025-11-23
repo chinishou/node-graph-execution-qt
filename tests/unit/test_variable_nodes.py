@@ -67,20 +67,21 @@ def test_variable_node_value_change():
 
     # Initial value
     assert var.parameter("value").value() == 10
+    var.cook()
     assert var.get_output_value("out") == 10
 
     # Change value
     var.parameter("value").set_value(20)
     assert var.parameter("value").value() == 20
 
-    # NOTE: Due to Signal issue, need to manually mark dirty
-    var.mark_dirty()
+    # Cook again to compute new value
+    var.cook()
 
     # Output should reflect new value
     result = var.get_output_value("out")
     assert result == 20
 
-    print("✓ Variable node value change works (with manual mark_dirty)")
+    print("✓ Variable node value change works")
 
 
 def test_variable_node_with_math():
@@ -96,13 +97,19 @@ def test_variable_node_with_math():
     var_a.output("out").connect_to(add.input("a"))
     var_b.output("out").connect_to(add.input("b"))
 
-    # Get result
+    # Cook and get result
+    var_a.cook()
+    var_b.cook()
+    add.cook()
     result = add.get_output_value("result")
     assert result == 15.0
 
     # Change variable A
     var_a.parameter("value").set_value(20.0)
-    var_a.mark_dirty()  # Manual dirty marking due to Signal issue
+
+    # Cook again to recompute
+    var_a.cook()
+    add.cook()
 
     # Result should update
     result = add.get_output_value("result")
@@ -128,7 +135,12 @@ def test_variable_node_chain():
     mul1.output("result").connect_to(add1.input("a"))
     var_z.output("out").connect_to(add1.input("b"))
 
-    # Compute: (2 * 3) + 4 = 10
+    # Compute: (2 * 3) + 4 = 10 - cook in topological order
+    var_x.cook()
+    var_y.cook()
+    var_z.cook()
+    mul1.cook()
+    add1.cook()
     result = add1.get_output_value("result")
     assert result == 10.0
 
@@ -138,21 +150,29 @@ def test_variable_node_chain():
 def test_generic_variable_node():
     """Test generic VariableNode with custom type."""
     from nodegraph.core import DataTypeRegistry
+    import tempfile
+    import os
 
     # Register custom type
     DataTypeRegistry.register("Path", Path)
 
+    # Use a cross-platform temp path
+    temp_dir = tempfile.gettempdir()
+    test_path = Path(temp_dir) / "test.txt"
+
     # Create path variable
     path_var = VariableNode(
         data_type="Path",
-        default_value=Path("/tmp/test.txt"),
+        default_value=test_path,
         name="FilePath"
     )
 
-    # Get value
+    # Cook and get value
+    path_var.cook()
     result = path_var.get_output_value("out")
     assert isinstance(result, Path)
-    assert str(result) == "/tmp/test.txt"
+    # Verify the path matches
+    assert result == test_path
 
     print("✓ Generic VariableNode with custom type works")
 
@@ -173,34 +193,8 @@ def test_variable_node_no_inputs():
     print("✓ Variable nodes have no inputs")
 
 
-def test_variable_node_dirty_state():
-    """Test dirty state propagation from variable nodes (with caching enabled)."""
-    var = FloatVariable(default_value=5.0)
-    add = AddNode()
-
-    # Enable caching to test dirty state behavior
-    var.enable_caching = True
-    add.enable_caching = True
-
-    # Connect
-    var.output("out").connect_to(add.input("a"))
-
-    # Initial state
-    var.cook()
-    add.cook()
-    assert not var.is_dirty()
-    assert not add.is_dirty()
-
-    # Change variable value
-    var.parameter("value").set_value(10.0)
-    var.mark_dirty()  # Manual dirty marking due to Signal issue
-
-    # Variable should be dirty
-    assert var.is_dirty()
-    # Add node should also be dirty (downstream propagation works)
-    assert add.is_dirty()
-
-    print("✓ Dirty state propagation from variable nodes works (with caching enabled)")
+# NOTE: test_variable_node_dirty_state removed - dirty state functionality
+# was removed in favor of always-execute-from-scratch design
 
 
 def run_all_tests():
@@ -216,7 +210,6 @@ def run_all_tests():
     test_variable_node_chain()
     test_generic_variable_node()
     test_variable_node_no_inputs()
-    test_variable_node_dirty_state()
 
     print("=" * 60)
     print("All variable node tests passed!")

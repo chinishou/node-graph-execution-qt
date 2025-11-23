@@ -30,14 +30,12 @@ def test_basic_cooking():
 
     # Cook
     print(f"\nCooking node...")
-    print(f"Is dirty before cook: {node.is_dirty()}")
 
     success = node.cook()
     print(f"Cook success: {success}")
-    print(f"Is dirty after cook: {node.is_dirty()}")
 
-    # Check cached outputs
-    print(f"\nCached outputs: {node._cached_outputs}")
+    # Check last outputs (for display, not caching)
+    print(f"\nLast outputs: {node._last_outputs}")
 
     # Get output
     result = node.get_output_value("result")

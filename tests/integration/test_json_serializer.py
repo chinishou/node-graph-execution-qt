@@ -52,7 +52,7 @@ def test_serializer_save_load_file():
     """Test saving and loading network to/from file."""
     # Setup registry
     NodeRegistry.clear()
-    NodeRegistry.register(FloatVariable, "VariableNode")  # FloatVariable has node_type="VariableNode"
+    NodeRegistry.register(FloatVariable)  # FloatVariable has node_type="FloatVariable"
     NodeRegistry.register(AddNode)
 
     # Create network
@@ -82,7 +82,7 @@ def test_serializer_save_load_file():
         assert Path(temp_path).exists()
 
         # Load
-        loaded_network = JSONSerializer.load(temp_path)
+        loaded_network, sticky_notes = JSONSerializer.load(temp_path)
 
         assert loaded_network is not None
         assert loaded_network.name == "SaveLoadTest"
@@ -129,7 +129,7 @@ def test_serializer_load_invalid_json():
 def test_serializer_version_warning():
     """Test that loading different version shows warning."""
     NodeRegistry.clear()
-    NodeRegistry.register(FloatVariable, "VariableNode")
+    NodeRegistry.register(FloatVariable)
 
     network = NetworkModel(name="VersionTest")
     var = FloatVariable(default_value=1.0)
@@ -146,7 +146,7 @@ def test_serializer_version_warning():
 
     try:
         # Load (should show warning but work)
-        loaded = JSONSerializer.load(temp_path)
+        loaded, sticky_notes = JSONSerializer.load(temp_path)
         assert loaded is not None
 
         print("✓ Version warning works")
@@ -179,7 +179,7 @@ def test_serializer_to_json_string():
 def test_serializer_from_json_string():
     """Test creating network from JSON string."""
     NodeRegistry.clear()
-    NodeRegistry.register(FloatVariable, "VariableNode")
+    NodeRegistry.register(FloatVariable)
     NodeRegistry.register(AddNode)
 
     # Create network
@@ -195,7 +195,7 @@ def test_serializer_from_json_string():
     json_str = JSONSerializer.to_json_string(network)
 
     # Load from string
-    loaded = JSONSerializer.from_json_string(json_str)
+    loaded, sticky_notes = JSONSerializer.from_json_string(json_str)
 
     assert loaded is not None
     assert loaded.name == "FromString"
@@ -224,7 +224,7 @@ def test_serializer_pretty_formatting():
 def test_serializer_unregistered_nodes():
     """Test deserializing network with unregistered nodes."""
     NodeRegistry.clear()
-    NodeRegistry.register(FloatVariable, "VariableNode")
+    NodeRegistry.register(FloatVariable)
     NodeRegistry.register(AddNode)
 
     # Create network
@@ -240,10 +240,10 @@ def test_serializer_unregistered_nodes():
 
     # Clear registry (unregister AddNode)
     NodeRegistry.clear()
-    NodeRegistry.register(FloatVariable, "VariableNode")
+    NodeRegistry.register(FloatVariable)
 
     # Load (should skip unregistered AddNode)
-    loaded = JSONSerializer.from_json_string(json_str)
+    loaded, sticky_notes = JSONSerializer.from_json_string(json_str)
 
     # Only FloatVariable should be loaded
     assert len(loaded.nodes()) == 1
@@ -267,7 +267,7 @@ def test_serializer_empty_network():
 def test_serializer_roundtrip():
     """Test full roundtrip: network -> JSON -> network."""
     NodeRegistry.clear()
-    NodeRegistry.register(FloatVariable, "VariableNode")
+    NodeRegistry.register(FloatVariable)
     NodeRegistry.register(AddNode)
     NodeRegistry.register(MultiplyNode)
 
@@ -292,7 +292,7 @@ def test_serializer_roundtrip():
     json_str = JSONSerializer.to_json_string(network)
 
     # Deserialize
-    loaded = JSONSerializer.from_json_string(json_str)
+    loaded, sticky_notes = JSONSerializer.from_json_string(json_str)
 
     # Verify structure
     assert loaded.name == "RoundtripTest"

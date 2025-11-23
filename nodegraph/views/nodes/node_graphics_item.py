@@ -50,6 +50,7 @@ class NodeGraphicsItem(QGraphicsItem):
 
         self.node_model = node_model
         self._ports: Dict[str, "PortGraphicsItem"] = {}
+        self._is_updating_connections = False  # Prevent recursion in connection updates
 
         # Enable features
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
@@ -160,7 +161,7 @@ class NodeGraphicsItem(QGraphicsItem):
             # Get resolved data type from the port (uses recursive resolution)
             port = self.get_port(name, is_output=False)
             if port:
-                data_type = port._resolve_data_type()
+                data_type = port._resolve_data_type(visited=None, depth=0)
             else:
                 data_type = connector.data_type
 
@@ -181,7 +182,7 @@ class NodeGraphicsItem(QGraphicsItem):
             # Get resolved data type from the port (uses recursive resolution)
             port = self.get_port(name, is_output=True)
             if port:
-                data_type = port._resolve_data_type()
+                data_type = port._resolve_data_type(visited=None, depth=0)
             else:
                 data_type = connector.data_type
 
@@ -229,18 +230,27 @@ class NodeGraphicsItem(QGraphicsItem):
 
     def _on_connection_changed(self):
         """Handle connector connection state change."""
-        # Update the node to reflect new colors
-        self.update()
-        # Update all ports
-        for port in self._ports.values():
-            port.update()
-        # Update all connections involving this node
-        scene = self.scene()
-        if scene and hasattr(scene, '_connection_items'):
-            for conn_item in scene._connection_items:
-                if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
-                   (conn_item.target_port and conn_item.target_port.parentItem() == self):
-                    conn_item.update()
+        # Prevent recursion: if we're already updating connections, skip this call
+        if self._is_updating_connections:
+            return
+
+        try:
+            self._is_updating_connections = True
+
+            # Update the node to reflect new colors
+            self.update()
+            # Update all ports
+            for port in self._ports.values():
+                port.update()
+            # Update all connections involving this node
+            scene = self.scene()
+            if scene and hasattr(scene, '_connection_items'):
+                for conn_item in scene._connection_items:
+                    if (conn_item.source_port and conn_item.source_port.parentItem() == self) or \
+                       (conn_item.target_port and conn_item.target_port.parentItem() == self):
+                        conn_item.update()
+        finally:
+            self._is_updating_connections = False
 
     def mouseDoubleClickEvent(self, event):
         """Handle double-click to execute node."""

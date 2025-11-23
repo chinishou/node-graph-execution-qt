@@ -221,27 +221,8 @@ def test_node_add_connectors():
     print("✓ Node connector management works")
 
 
-def test_node_dirty_state():
-    """Test node dirty state management (with caching enabled)."""
-    node = NodeModel(name="TestNode", enable_caching=True)
-    param = node.add_parameter("value", data_type="float", default_value=1.0)
-
-    # Initial state is dirty
-    assert node.is_dirty()
-
-    # Cook the node
-    node.cook()
-    assert not node.is_dirty()
-
-    # Change parameter
-    param.set_value(2.0)
-
-    # NOTE: Due to Signal weak reference issue, parameter changes don't
-    # automatically mark node as dirty yet. Manually mark it for now.
-    node.mark_dirty()
-    assert node.is_dirty()
-
-    print("✓ Node dirty state management works (manual mark_dirty, with caching enabled)")
+# NOTE: test_node_dirty_state removed - dirty state and caching functionality
+# was removed in favor of always-execute-from-scratch design
 
 
 def run_all_tests():
@@ -259,7 +240,6 @@ def run_all_tests():
     test_node_model_creation()
     test_node_add_parameters()
     test_node_add_connectors()
-    test_node_dirty_state()
 
     print("=" * 60)
     print("All model tests passed!")

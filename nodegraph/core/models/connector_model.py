@@ -49,8 +49,6 @@ class ConnectorModel(BaseModel):
 
     # Private attributes
     _connections: List["ConnectorModel"] = PrivateAttr(default_factory=list)
-    _cached_value: Any = PrivateAttr(default=None)
-    _is_dirty: bool = PrivateAttr(default=True)
     _connected_changed: Signal = PrivateAttr(default=None)
 
     model_config = {
@@ -104,8 +102,6 @@ class ConnectorModel(BaseModel):
             if self not in other._connections:
                 other._connections.append(self)
 
-            self.mark_dirty()
-
             self._connected_changed.emit()
             other._connected_changed.emit()
 
@@ -129,8 +125,6 @@ class ConnectorModel(BaseModel):
             # Also remove reverse connection
             if self in other._connections:
                 other._connections.remove(self)
-
-            self.mark_dirty()
 
             self._connected_changed.emit()
             other._connected_changed.emit()
@@ -181,16 +175,6 @@ class ConnectorModel(BaseModel):
 
         return self.data_type == other.data_type
 
-    def mark_dirty(self) -> None:
-        """Mark this connector (and downstream) as dirty."""
-        self._is_dirty = True
-        self._cached_value = None
-
-        # Propagate dirty state downstream
-        if self.is_output():
-            for conn in self._connections:
-                if conn.node:
-                    conn.node.mark_dirty()
 
     @staticmethod
     def _convert_value(value: Any, data_type: str) -> Any:

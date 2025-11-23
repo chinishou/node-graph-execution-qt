@@ -145,11 +145,12 @@ class ConnectionItem(QGraphicsPathItem):
 
         # Use the recursive type resolution from the source port
         # This handles all cases: concrete types, Math/Convert nodes, pass-through nodes, etc.
-        data_type = self.source_port._resolve_data_type()
+        # Start with depth=0 for a fresh resolution
+        data_type = self.source_port._resolve_data_type(visited=None, depth=0)
 
         # If source is still 'any', try target port
         if data_type == 'any':
-            data_type = self.target_port._resolve_data_type()
+            data_type = self.target_port._resolve_data_type(visited=None, depth=0)
 
         # Get color based on data type
         if data_type in PortGraphicsItem.TYPE_COLORS:

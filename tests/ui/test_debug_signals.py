@@ -1,7 +1,20 @@
 """
 Debug test to trace signal flow and find recursion cause.
+
+Uses pytest-qt for Qt testing.
+
+Run with: pytest tests/ui/test_debug_signals.py -v
+Or standalone: python tests/ui/test_debug_signals.py
 """
 import sys
+from pathlib import Path
+
+# Add project root to path for standalone execution
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+import pytest
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QPointF
 
@@ -114,7 +127,7 @@ def patch_port_graphics_item():
 
     original_resolve_data_type = port_graphics_item.PortGraphicsItem._resolve_data_type
 
-    def debug_resolve_data_type(self, visited=None):
+    def debug_resolve_data_type(self, visited=None, depth=0):
         node_name = self.connector.node.name if self.connector.node else "None"
         port_name = self.connector.name
         direction = "out" if self.is_output else "in"
@@ -122,7 +135,7 @@ def patch_port_graphics_item():
                   f"{node_name}.{port_name}[{direction}]")
         call_stack.append(f"PortGraphicsItem._resolve_data_type[{node_name}.{port_name}]")
         try:
-            result = original_resolve_data_type(self, visited)
+            result = original_resolve_data_type(self, visited, depth)
             return result
         finally:
             call_stack.pop()
@@ -208,99 +221,87 @@ def patch_network_model():
     network_model.NetworkModel.connect = debug_connect
     network_model.NetworkModel.disconnect = debug_disconnect
 
-def main():
-    """Run the debug test."""
-    print("Installing debug patches...")
+def test_signal_flow_with_debug_tracing(qtbot):
+    """
+    Test signal flow and detect potential recursion issues.
+
+    This test creates a network with connections and traces the signal flow
+    to ensure there are no infinite recursion issues.
+    """
+    # Install debug patches
     patch_connector_model()
     patch_connection_item()
     patch_node_graphics_item()
     patch_port_graphics_item()
     patch_network_model()
-    print("Debug patches installed.\n")
 
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
+    # Clear global counters
+    call_stack.clear()
+    call_counts.clear()
 
-    try:
-        print("="*80)
-        print("Creating network and nodes...")
-        print("="*80)
+    # Create network
+    network = NetworkModel()
 
-        # Create network
-        network = NetworkModel()
+    # Create nodes (don't pass name - they have defaults)
+    int_node = IntVariable()
+    int_node.parameter('value').set_value(42)
+    int_node.set_position(0, 0)
 
-        # Create nodes (don't pass name - they have defaults)
-        int_node = IntVariable()
-        int_node.parameter('value').set_value(42)
-        int_node.set_position(0, 0)
+    add_node = AddNode()
+    add_node.set_position(200, 0)
 
-        add_node = AddNode()
-        add_node.set_position(200, 0)
+    print_node = PrintNode()
+    print_node.set_position(400, 100)
 
-        print_node = PrintNode()
-        print_node.set_position(400, 100)
+    display_node = DisplayNode()
+    display_node.set_position(400, -100)
 
-        display_node = DisplayNode()
-        display_node.set_position(400, -100)
+    # Add nodes to network
+    network.add_node(int_node)
+    network.add_node(add_node)
+    network.add_node(print_node)
+    network.add_node(display_node)
 
-        # Add nodes to network
-        network.add_node(int_node)
-        network.add_node(add_node)
-        network.add_node(print_node)
-        network.add_node(display_node)
+    # Create scene and view
+    scene = NetworkScene(network)
+    view = NetworkView()
+    view.set_scene(scene)
+    qtbot.addWidget(view)
+    view.show()
+    qtbot.waitExposed(view)
 
-        # Create scene and view
-        scene = NetworkScene(network)
-        view = NetworkView(scene)
-        view.setGeometry(100, 100, 800, 600)
-        view.show()
+    # STEP 1: int->add->print
+    network.connect(int_node.id, 'out', add_node.id, 'a')
+    qtbot.wait(10)
+    network.connect(add_node.id, 'result', print_node.id, 'value')
+    qtbot.wait(10)
 
-        # Process events to ensure UI is set up
-        app.processEvents()
+    # STEP 2: add->display
+    network.connect(add_node.id, 'result', display_node.id, 'value')
+    qtbot.wait(10)
 
-        print("\n" + "="*80)
-        print("STEP 1: int->add->print")
-        print("="*80)
-        network.connect(int_node.id, 'out', add_node.id, 'a')
-        app.processEvents()
-        network.connect(add_node.id, 'result', print_node.id, 'value')
-        app.processEvents()
+    # STEP 3: int->print (potential recursion trigger)
+    # This should automatically disconnect the old add->print connection
+    network.connect(int_node.id, 'out', print_node.id, 'value')
+    qtbot.wait(10)
 
-        print("\n" + "="*80)
-        print("STEP 2: add->display")
-        print("="*80)
-        network.connect(add_node.id, 'result', display_node.id, 'value')
-        app.processEvents()
+    # Verify print node only has connection from int (old add->print should be disconnected)
+    print_input = print_node.input('value')
+    assert print_input.is_connected(), "Print input should still be connected"
+    connections = print_input._connections
+    assert len(connections) == 1, f"Print should have exactly 1 connection, has {len(connections)}"
+    assert connections[0] == int_node.output('out'), "Print should be connected to int, not add"
 
-        print("\n" + "="*80)
-        print("STEP 3: int->print (THIS SHOULD TRIGGER THE BUG)")
-        print("="*80)
-        network.connect(int_node.id, 'out', print_node.id, 'value')
-        app.processEvents()
+    # Verify add->print is disconnected
+    add_output = add_node.output('result')
+    add_connections = [c for c in add_output._connections]
+    assert print_node.input('value') not in add_connections, "Add should not be connected to print anymore"
 
-        print("\n" + "="*80)
-        print("✅ TEST PASSED - No recursion error!")
-        print("="*80)
+    # Verify add->display is still connected
+    assert display_node.input('value') in add_connections, "Add->display connection should remain"
 
-    except RecursionError as e:
-        print("\n" + "="*80)
-        print(f"❌ RECURSION ERROR CAUGHT: {e}")
-        print("="*80)
-        print("\nFinal call counts:")
-        for func, count in sorted(call_counts.items(), key=lambda x: -x[1]):
-            if count > 5:
-                print(f"  {func}: {count} calls")
-        return 1
-    except Exception as e:
-        print("\n" + "="*80)
-        print(f"❌ ERROR: {e}")
-        print("="*80)
-        import traceback
-        traceback.print_exc()
-        return 1
+    # Verify no excessive recursion occurred
+    for func, count in call_counts.items():
+        assert count < 50, f"Potential recursion: {func} called {count} times"
 
-    return 0
-
-if __name__ == "__main__":
-    sys.exit(main())
+    # Test passes if we reach here without RecursionError
