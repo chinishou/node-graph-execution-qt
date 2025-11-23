@@ -45,7 +45,6 @@ During UI tests, connecting `Int.out -> Print.value` triggered 103 calls to `Por
 
 3. Recursive Type Resolution
    - Each `_resolve_data_type()` may query connected ports
-   - Display node has pass-through logic (checks both input and output)
    - Recursion multiplies the call count
 
 **Total**: 8 ports × ~12 resolution cycles = ~96+ calls
@@ -333,7 +332,7 @@ pytest tests/ui/test_debug_signals.py::test_signal_flow_with_debug_tracing --sho
 ### Manual Verification
 
 1. Open editor: `python run_editor.py`
-2. Create nodes: Int → Add → Print, Add → Display
+2. Create nodes: Int → Add → Print, Add → Print2
 3. Connect: Int.out → Print.value (this replaces Add.result → Print.value)
 4. Observe: UI updates smoothly, no lag
 

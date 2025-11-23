@@ -2,9 +2,8 @@
 Tests for Output Nodes
 =======================
 
-Test output and display node functionality:
+Test output node functionality:
 - PrintNode
-- DisplayNode
 """
 
 import sys
@@ -13,7 +12,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from nodegraph.nodes.utils.output_nodes import PrintNode, DisplayNode, print_output_signal
+from nodegraph.nodes.utils.output_nodes import PrintNode, print_output_signal
 from nodegraph.nodes.base import FloatVariable
 
 
@@ -120,78 +119,6 @@ def test_print_node_with_connection():
     print("✓ PrintNode with connection works")
 
 
-def test_display_node_creation():
-    """Test creating a DisplayNode."""
-    node = DisplayNode()
-
-    assert node is not None
-    assert node.node_type == "DisplayNode"
-    assert node.category == "Utils"
-    assert "value" in node.inputs()
-    assert "value" in node.outputs()
-
-    print("✓ DisplayNode creation works")
-
-
-def test_display_node_passthrough():
-    """Test DisplayNode passes value through."""
-    node = DisplayNode()
-
-    # Set value and cook
-    node.input("value").default_value = 42.0
-    node.cook()
-
-    result = node.get_output_value("value")
-    assert result == 42.0
-
-    print("✓ DisplayNode passthrough works")
-
-
-def test_display_node_with_connection():
-    """Test DisplayNode in a chain."""
-    var = FloatVariable(default_value=10.0)
-    display = DisplayNode()
-
-    # Connect
-    var.output("out").connect_to(display.input("value"))
-
-    # Cook
-    var.cook()
-    display.cook()
-
-    result = display.get_output_value("value")
-    assert result == 10.0
-
-    print("✓ DisplayNode with connection works")
-
-
-def test_display_node_chain():
-    """Test chaining multiple DisplayNodes."""
-    var = FloatVariable(default_value=5.0)
-    display1 = DisplayNode()
-    display1.name = "Display1"
-    display2 = DisplayNode()
-    display2.name = "Display2"
-
-    # Connect in chain
-    var.output("out").connect_to(display1.input("value"))
-    display1.output("value").connect_to(display2.input("value"))
-
-    # Cook
-    var.cook()
-    display1.cook()
-    display2.cook()
-
-    # Check values propagate
-    result1 = display1.get_output_value("value")
-    result2 = display2.get_output_value("value")
-
-    assert result1 == 5.0
-    assert result2 == 5.0
-
-    print("✓ DisplayNode chain works")
-
-
 def test_print_node_with_none():
     """Test PrintNode handles None value."""
     node = PrintNode()
@@ -228,10 +155,6 @@ def run_all_tests():
     test_print_node_simple()
     test_print_node_with_prefix()
     test_print_node_with_connection()
-    test_display_node_creation()
-    test_display_node_passthrough()
-    test_display_node_with_connection()
-    test_display_node_chain()
     test_print_node_with_none()
 
     print("=" * 60)
