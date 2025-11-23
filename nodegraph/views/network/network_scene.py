@@ -5,12 +5,20 @@ Network Scene
 QGraphicsScene for the node network editor.
 """
 
+import os
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
 from PySide6.QtGui import QColor, QPen, QBrush
 
 from typing import TYPE_CHECKING, Dict, Optional, List, Set
 from uuid import UUID
+
+# Debug flag for connection tracking logs
+# Automatically enabled during pytest, or set DEBUG_CONNECTIONS=1 to force enable
+DEBUG_CONNECTIONS = (
+    'PYTEST_CURRENT_TEST' in os.environ or  # Auto-enable in pytest
+    os.environ.get('DEBUG_CONNECTIONS', '0') == '1'  # Manual override
+)
 
 if TYPE_CHECKING:
     from ...core.models import NetworkModel, NodeModel, ConnectorModel
@@ -135,16 +143,18 @@ class NetworkScene(QGraphicsScene):
     def _on_connection_added(self, source_conn: "ConnectorModel", target_conn: "ConnectorModel"):
         """Handle connection added to model."""
         # Debug logging
-        if hasattr(source_conn, 'node') and hasattr(target_conn, 'node'):
+        if DEBUG_CONNECTIONS and hasattr(source_conn, 'node') and hasattr(target_conn, 'node'):
             print(f"[Scene] _on_connection_added called: {source_conn.node.name}.{source_conn.name} -> {target_conn.node.name}.{target_conn.name}")
 
         # Set flag to prevent type resolution during modification
         was_modifying = self._is_modifying_connections
         self._is_modifying_connections = True
         try:
-            print(f"[Scene] Before create: {len(self._connection_items)} items in list")
+            if DEBUG_CONNECTIONS:
+                print(f"[Scene] Before create: {len(self._connection_items)} items in list")
             self._create_connection_item(source_conn, target_conn)
-            print(f"[Scene] After create: {len(self._connection_items)} items in list")
+            if DEBUG_CONNECTIONS:
+                print(f"[Scene] After create: {len(self._connection_items)} items in list")
         finally:
             # Only reset if we set it
             if not was_modifying:
@@ -153,7 +163,7 @@ class NetworkScene(QGraphicsScene):
     def _on_connection_removed(self, source_conn: "ConnectorModel", target_conn: "ConnectorModel"):
         """Handle connection removed from model."""
         # Debug logging
-        if hasattr(source_conn, 'node') and hasattr(target_conn, 'node'):
+        if DEBUG_CONNECTIONS and hasattr(source_conn, 'node') and hasattr(target_conn, 'node'):
             print(f"[Scene] _on_connection_removed called: {source_conn.node.name}.{source_conn.name} -> {target_conn.node.name}.{target_conn.name}")
 
         # Set flag to prevent type resolution during modification
@@ -161,19 +171,20 @@ class NetworkScene(QGraphicsScene):
         self._is_modifying_connections = True
         try:
             # Debug: list all current connections
-            print(f"[Scene] Current connection items ({len(self._connection_items)}):")
-            for i, conn in enumerate(self._connection_items):
-                try:
-                    if conn.source_port and conn.target_port:
-                        src = conn.source_port.connector
-                        tgt = conn.target_port.connector
-                        print(f"  [{i}] {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
-                        print(f"      source_conn match: {src == source_conn} (id: {id(src)} vs {id(source_conn)})")
-                        print(f"      target_conn match: {tgt == target_conn} (id: {id(tgt)} vs {id(target_conn)})")
-                    else:
-                        print(f"  [{i}] <invalid connection: source_port={conn.source_port}, target_port={conn.target_port}>")
-                except Exception as e:
-                    print(f"  [{i}] <ERROR accessing connection: {type(e).__name__}: {e}>")
+            if DEBUG_CONNECTIONS:
+                print(f"[Scene] Current connection items ({len(self._connection_items)}):")
+                for i, conn in enumerate(self._connection_items):
+                    try:
+                        if conn.source_port and conn.target_port:
+                            src = conn.source_port.connector
+                            tgt = conn.target_port.connector
+                            print(f"  [{i}] {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
+                            print(f"      source_conn match: {src == source_conn} (id: {id(src)} vs {id(source_conn)})")
+                            print(f"      target_conn match: {tgt == target_conn} (id: {id(tgt)} vs {id(target_conn)})")
+                        else:
+                            print(f"  [{i}] <invalid connection: source_port={conn.source_port}, target_port={conn.target_port}>")
+                    except Exception as e:
+                        print(f"  [{i}] <ERROR accessing connection: {type(e).__name__}: {e}>")
 
             # Find and remove the connection item
             found = False
@@ -182,16 +193,18 @@ class NetworkScene(QGraphicsScene):
                     if (conn.source_port and conn.target_port and
                         conn.source_port.connector == source_conn and
                         conn.target_port.connector == target_conn):
-                        print(f"[Scene] ✓ Found! Removing connection item from scene")
+                        if DEBUG_CONNECTIONS:
+                            print(f"[Scene] ✓ Found! Removing connection item from scene")
                         self.removeItem(conn)
                         self._connection_items.remove(conn)
                         found = True
                         break
                 except Exception as e:
                     # Skip this connection if comparison fails (e.g., RecursionError during __eq__)
-                    print(f"[Scene] ! Skipping connection due to comparison error: {type(e).__name__}")
+                    if DEBUG_CONNECTIONS:
+                        print(f"[Scene] ! Skipping connection due to comparison error: {type(e).__name__}")
                     continue
-            if not found:
+            if DEBUG_CONNECTIONS and not found:
                 print(f"[Scene] ✗ WARNING: Connection item not found in _connection_items!")
         finally:
             # Only reset if we set it
