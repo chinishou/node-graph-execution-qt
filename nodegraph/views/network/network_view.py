@@ -80,7 +80,15 @@ class NetworkView(QGraphicsView):
 
     def _on_selection_changed(self):
         """Handle selection change in scene."""
-        selected = self._scene.selectedItems()
+        # Check if scene is still valid (may be deleted during cleanup)
+        if not self._scene:
+            return
+
+        try:
+            selected = self._scene.selectedItems()
+        except RuntimeError:
+            # Scene was deleted, ignore this signal
+            return
 
         from ..nodes.node_graphics_item import NodeGraphicsItem
 
