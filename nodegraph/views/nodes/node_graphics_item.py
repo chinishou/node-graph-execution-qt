@@ -51,6 +51,7 @@ class NodeGraphicsItem(QGraphicsItem):
         self.node_model = node_model
         self._ports: Dict[str, "PortGraphicsItem"] = {}
         self._is_updating_connections = False  # Prevent recursion in connection updates
+        self._cached_label_colors: Dict[str, QColor] = {}  # Cache label colors
 
         # Enable features
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
@@ -158,17 +159,25 @@ class NodeGraphicsItem(QGraphicsItem):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
 
-            # Get resolved data type from the port (uses recursive resolution)
-            port = self.get_port(name, is_output=False)
-            if port:
-                data_type = port._resolve_data_type(visited=None, depth=0)
+            # Use cached color if available, otherwise compute
+            cache_key = f"input_{name}"
+            if cache_key in self._cached_label_colors:
+                label_color = self._cached_label_colors[cache_key]
             else:
-                data_type = connector.data_type
+                # Get resolved data type from the port (uses recursive resolution)
+                port = self.get_port(name, is_output=False)
+                if port:
+                    data_type = port._resolve_data_type(visited=None, depth=0)
+                else:
+                    data_type = connector.data_type
 
-            if data_type in PortGraphicsItem.TYPE_COLORS:
-                label_color = PortGraphicsItem.TYPE_COLORS[data_type]
-            else:
-                label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+                if data_type in PortGraphicsItem.TYPE_COLORS:
+                    label_color = PortGraphicsItem.TYPE_COLORS[data_type]
+                else:
+                    label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+
+                # Cache the color
+                self._cached_label_colors[cache_key] = label_color
 
             painter.setPen(QPen(label_color))
             text_rect = QRectF(12, y, self.NODE_WIDTH / 2 - 16, self.PORT_HEIGHT)
@@ -179,17 +188,25 @@ class NodeGraphicsItem(QGraphicsItem):
             y = self.HEADER_HEIGHT + i * self.PORT_HEIGHT
             label = connector.label or name
 
-            # Get resolved data type from the port (uses recursive resolution)
-            port = self.get_port(name, is_output=True)
-            if port:
-                data_type = port._resolve_data_type(visited=None, depth=0)
+            # Use cached color if available, otherwise compute
+            cache_key = f"output_{name}"
+            if cache_key in self._cached_label_colors:
+                label_color = self._cached_label_colors[cache_key]
             else:
-                data_type = connector.data_type
+                # Get resolved data type from the port (uses recursive resolution)
+                port = self.get_port(name, is_output=True)
+                if port:
+                    data_type = port._resolve_data_type(visited=None, depth=0)
+                else:
+                    data_type = connector.data_type
 
-            if data_type in PortGraphicsItem.TYPE_COLORS:
-                label_color = PortGraphicsItem.TYPE_COLORS[data_type]
-            else:
-                label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+                if data_type in PortGraphicsItem.TYPE_COLORS:
+                    label_color = PortGraphicsItem.TYPE_COLORS[data_type]
+                else:
+                    label_color = PortGraphicsItem.CUSTOM_TYPE_COLOR
+
+                # Cache the color
+                self._cached_label_colors[cache_key] = label_color
 
             painter.setPen(QPen(label_color))
             text_rect = QRectF(self.NODE_WIDTH / 2, y, self.NODE_WIDTH / 2 - 12, self.PORT_HEIGHT)
@@ -232,6 +249,9 @@ class NodeGraphicsItem(QGraphicsItem):
 
         try:
             self._is_updating_connections = True
+
+            # Clear cached label colors when connections change
+            self._cached_label_colors.clear()
 
             # Update the node to reflect new colors
             self.update()

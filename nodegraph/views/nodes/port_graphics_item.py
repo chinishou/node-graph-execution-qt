@@ -59,8 +59,13 @@ class PortGraphicsItem(QGraphicsItem):
     def _invalidate_type_cache(self):
         """Invalidate the cached type when connections change."""
         self._cached_type = None
-        # Use deferred update to prevent recursion during signal processing
-        QTimer.singleShot(0, self.update)
+        # Request batch update from scene instead of individual update
+        scene = self.scene()
+        if scene and hasattr(scene, '_schedule_port_update'):
+            scene._schedule_port_update(self)
+        else:
+            # Fallback: Use deferred update to prevent recursion during signal processing
+            QTimer.singleShot(0, self.update)
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None):
         """Paint the port."""

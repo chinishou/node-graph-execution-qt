@@ -61,6 +61,10 @@ class NetworkScene(QGraphicsScene):
         self._pending_updates: Set["ConnectionItem"] = set()
         self._update_timer: Optional[QTimer] = None
 
+        # Port batch update management
+        self._pending_port_updates: Set["PortGraphicsItem"] = set()
+        self._port_update_timer: Optional[QTimer] = None
+
         # Global flag to prevent type resolution during connection modifications
         self._is_modifying_connections = False
 
@@ -282,6 +286,38 @@ class NetworkScene(QGraphicsScene):
             # Check if item still exists in scene
             if conn_item in self._connection_items:
                 conn_item.update()
+
+    def _schedule_port_update(self, port: "PortGraphicsItem"):
+        """
+        Schedule a deferred update for a port item.
+
+        This batches all port updates during a connection change operation
+        and processes them in a single pass, dramatically reducing the number
+        of type resolution calls.
+        """
+        self._pending_port_updates.add(port)
+
+        # Create timer if not exists
+        if self._port_update_timer is None:
+            self._port_update_timer = QTimer()
+            self._port_update_timer.setSingleShot(True)
+            self._port_update_timer.timeout.connect(self._process_pending_port_updates)
+
+        # Schedule for next event loop (0ms delay)
+        if not self._port_update_timer.isActive():
+            self._port_update_timer.start(0)
+
+    def _process_pending_port_updates(self):
+        """Process all pending port updates in a single batch."""
+        # Take a snapshot and clear the pending set
+        ports_to_update = list(self._pending_port_updates)
+        self._pending_port_updates.clear()
+
+        # Update all pending ports
+        for port in ports_to_update:
+            # Check if port still exists in scene
+            if port.scene() == self:
+                port.update()
 
     def get_node_item(self, node_id: UUID) -> Optional["NodeGraphicsItem"]:
         """Get node graphics item by node ID."""
