@@ -246,12 +246,16 @@ class ParametersPane(QWidget):
         label.setMinimumWidth(80)
         layout.addWidget(label)
 
-        # Editor
-        editor = self._create_value_editor(
+        # Editor - use partial to avoid garbage collection
+        handler = partial(self._on_connector_value_changed, connector)
+        editor, extra_handler = self._create_value_editor(
             connector.data_type,
             connector.default_value,
-            lambda v: self._on_connector_value_changed(connector, v)
+            handler
         )
+        self._signal_handlers.append(handler)
+        if extra_handler:
+            self._signal_handlers.append(extra_handler)
         layout.addWidget(editor)
 
         # Store widgets for later updates
@@ -294,17 +298,21 @@ class ParametersPane(QWidget):
             if index >= 0:
                 editor.setCurrentIndex(index)
 
-            # Connect signal
-            editor.currentTextChanged.connect(
-                lambda v: self._on_parameter_value_changed(param, v)
-            )
+            # Connect signal - use partial to avoid garbage collection
+            handler = partial(self._on_parameter_value_changed, param)
+            editor.currentTextChanged.connect(handler)
+            self._signal_handlers.append(handler)
         else:
-            # Use standard value editor
-            editor = self._create_value_editor(
+            # Use standard value editor - use partial to avoid garbage collection
+            handler = partial(self._on_parameter_value_changed, param)
+            editor, extra_handler = self._create_value_editor(
                 param.data_type,
                 param.value(),
-                lambda v: self._on_parameter_value_changed(param, v)
+                handler
             )
+            self._signal_handlers.append(handler)
+            if extra_handler:
+                self._signal_handlers.append(extra_handler)
 
         layout.addWidget(editor)
         self._widgets[f"param_{param.name}"] = editor
@@ -331,14 +339,21 @@ class ParametersPane(QWidget):
 
         return widget
 
-    def _create_value_editor(self, data_type: str, value: Any, callback) -> QWidget:
-        """Create appropriate editor widget for data type."""
+    def _create_value_editor(self, data_type: str, value: Any, callback) -> tuple:
+        """
+        Create appropriate editor widget for data type.
+
+        Returns:
+            tuple: (editor_widget, handler_to_save or None)
+                   handler_to_save should be added to _signal_handlers to prevent garbage collection
+        """
         if data_type == "int":
             editor = QSpinBox()
             editor.setRange(-999999, 999999)
             editor.setValue(int(value) if value is not None else 0)
             editor.valueChanged.connect(callback)
             editor.setButtonSymbols(QSpinBox.NoButtons)  # Remove up/down buttons
+            return (editor, None)  # callback is already saved by caller
 
         elif data_type == "float":
             editor = QDoubleSpinBox()
@@ -347,18 +362,21 @@ class ParametersPane(QWidget):
             editor.setValue(float(value) if value is not None else 0.0)
             editor.valueChanged.connect(callback)
             editor.setButtonSymbols(QDoubleSpinBox.NoButtons)  # Remove up/down buttons
+            return (editor, None)  # callback is already saved by caller
 
         elif data_type == "bool":
             editor = QCheckBox()
             editor.setChecked(bool(value) if value is not None else False)
-            editor.stateChanged.connect(lambda s: callback(s == Qt.Checked))
+            # Use partial instead of lambda to avoid garbage collection
+            bool_handler = partial(lambda s, cb: cb(s == Qt.Checked), cb=callback)
+            editor.stateChanged.connect(bool_handler)
+            return (editor, bool_handler)  # Return handler to be saved
 
         else:  # string or any
             editor = QLineEdit()
             editor.setText(str(value) if value is not None else "")
             editor.textChanged.connect(callback)
-
-        return editor
+            return (editor, None)  # callback is already saved by caller
 
     def _on_connector_value_changed(self, connector: "ConnectorModel", value: Any):
         """Handle connector default value change."""
