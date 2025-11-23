@@ -6,7 +6,7 @@ QGraphicsItem for rendering port (connector) in the network view.
 """
 
 from PySide6.QtWidgets import QGraphicsItem, QStyleOptionGraphicsItem, QWidget
-from PySide6.QtCore import Qt, QRectF, QPointF
+from PySide6.QtCore import Qt, QRectF, QPointF, QTimer
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush
 
 from typing import TYPE_CHECKING
@@ -59,7 +59,8 @@ class PortGraphicsItem(QGraphicsItem):
     def _invalidate_type_cache(self):
         """Invalidate the cached type when connections change."""
         self._cached_type = None
-        self.update()
+        # Use deferred update to prevent recursion during signal processing
+        QTimer.singleShot(0, self.update)
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None):
         """Paint the port."""
@@ -109,6 +110,12 @@ class PortGraphicsItem(QGraphicsItem):
         Returns:
             The resolved data type string
         """
+        # Safety: if scene is modifying connections, use cached type or default
+        # This prevents recursion during connection add/remove operations
+        scene = self.scene()
+        if scene and hasattr(scene, '_is_modifying_connections') and scene._is_modifying_connections:
+            return self._cached_type if self._cached_type else self.connector.data_type
+
         # Safety: prevent excessive recursion
         if depth > 10:
             return 'any'

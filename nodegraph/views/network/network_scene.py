@@ -6,10 +6,10 @@ QGraphicsScene for the node network editor.
 """
 
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
-from PySide6.QtCore import Qt, QPointF, Signal
+from PySide6.QtCore import Qt, QPointF, Signal, QTimer
 from PySide6.QtGui import QColor, QPen, QBrush
 
-from typing import TYPE_CHECKING, Dict, Optional, List
+from typing import TYPE_CHECKING, Dict, Optional, List, Set
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -48,6 +48,13 @@ class NetworkScene(QGraphicsScene):
         self._sticky_notes: Dict[UUID, "StickyNoteItem"] = {}
         self._temp_connection: Optional["ConnectionItem"] = None
         self._dragging_port: Optional["PortGraphicsItem"] = None
+
+        # Deferred update management to prevent recursion
+        self._pending_updates: Set["ConnectionItem"] = set()
+        self._update_timer: Optional[QTimer] = None
+
+        # Global flag to prevent type resolution during connection modifications
+        self._is_modifying_connections = False
 
         # Set background
         self.setBackgroundBrush(QBrush(self.BACKGROUND_COLOR))
@@ -127,18 +134,34 @@ class NetworkScene(QGraphicsScene):
 
     def _on_connection_added(self, source_conn: "ConnectorModel", target_conn: "ConnectorModel"):
         """Handle connection added to model."""
-        self._create_connection_item(source_conn, target_conn)
+        # Set flag to prevent type resolution during modification
+        was_modifying = self._is_modifying_connections
+        self._is_modifying_connections = True
+        try:
+            self._create_connection_item(source_conn, target_conn)
+        finally:
+            # Only reset if we set it
+            if not was_modifying:
+                self._is_modifying_connections = False
 
     def _on_connection_removed(self, source_conn: "ConnectorModel", target_conn: "ConnectorModel"):
         """Handle connection removed from model."""
-        # Find and remove the connection item
-        for conn in self._connection_items[:]:
-            if (conn.source_port and conn.target_port and
-                conn.source_port.connector == source_conn and
-                conn.target_port.connector == target_conn):
-                self.removeItem(conn)
-                self._connection_items.remove(conn)
-                break
+        # Set flag to prevent type resolution during modification
+        was_modifying = self._is_modifying_connections
+        self._is_modifying_connections = True
+        try:
+            # Find and remove the connection item
+            for conn in self._connection_items[:]:
+                if (conn.source_port and conn.target_port and
+                    conn.source_port.connector == source_conn and
+                    conn.target_port.connector == target_conn):
+                    self.removeItem(conn)
+                    self._connection_items.remove(conn)
+                    break
+        finally:
+            # Only reset if we set it
+            if not was_modifying:
+                self._is_modifying_connections = False
 
     def _create_connection_item(self, source_conn: "ConnectorModel", target_conn: "ConnectorModel"):
         """Create a connection item between two connectors."""
@@ -169,8 +192,9 @@ class NetworkScene(QGraphicsScene):
         self._connection_items.append(conn_item)
 
         # Connect to connector signals to update connection color when types change
-        source_conn.connected_changed.connect(lambda: conn_item.update())
-        target_conn.connected_changed.connect(lambda: conn_item.update())
+        # Use deferred update to prevent recursion
+        source_conn.connected_changed.connect(lambda: self._schedule_connection_update(conn_item))
+        target_conn.connected_changed.connect(lambda: self._schedule_connection_update(conn_item))
 
     def update_connections(self, node_item: "NodeGraphicsItem"):
         """Update all connections involving a node."""
@@ -179,6 +203,37 @@ class NetworkScene(QGraphicsScene):
                 conn.update_path()
             elif conn.target_port and conn.target_port.parentItem() == node_item:
                 conn.update_path()
+
+    def _schedule_connection_update(self, conn_item: "ConnectionItem"):
+        """
+        Schedule a deferred update for a connection item.
+
+        This prevents recursion by batching updates and processing them
+        in the next event loop iteration, after all signals have been emitted.
+        """
+        self._pending_updates.add(conn_item)
+
+        # Create timer if not exists, or restart it
+        if self._update_timer is None:
+            self._update_timer = QTimer()
+            self._update_timer.setSingleShot(True)
+            self._update_timer.timeout.connect(self._process_pending_updates)
+
+        # Schedule for next event loop (0ms delay)
+        if not self._update_timer.isActive():
+            self._update_timer.start(0)
+
+    def _process_pending_updates(self):
+        """Process all pending connection updates."""
+        # Take a snapshot and clear the pending set
+        items_to_update = list(self._pending_updates)
+        self._pending_updates.clear()
+
+        # Update all pending items
+        for conn_item in items_to_update:
+            # Check if item still exists in scene
+            if conn_item in self._connection_items:
+                conn_item.update()
 
     def get_node_item(self, node_id: UUID) -> Optional["NodeGraphicsItem"]:
         """Get node graphics item by node ID."""
