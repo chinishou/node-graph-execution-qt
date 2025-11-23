@@ -179,9 +179,14 @@ class JSONSerializer:
 
                     # Special handling for SubnetNode
                     if node_type == "SubnetNode" and "internal_network" in node_data:
+                        print(f"[JSONSerializer] Deserializing SubnetNode '{node.name}' with internal network")
                         # Recursively deserialize internal network
                         internal_data = {"network": node_data["internal_network"]}
+                        print(f"[JSONSerializer]   Internal network has {len(node_data['internal_network'].get('nodes', []))} nodes")
+                        print(f"[JSONSerializer]   Internal network has {len(node_data['internal_network'].get('connections', []))} connections")
                         internal_network, _ = cls.deserialize_network(internal_data)
+                        print(f"[JSONSerializer]   Deserialized internal network has {len(internal_network.nodes())} nodes")
+                        print(f"[JSONSerializer]   Deserialized internal network has {len(internal_network._connector_pairs)} connections")
                         node.set_internal_network(internal_network)
 
                     network.add_node(node)
@@ -193,6 +198,7 @@ class JSONSerializer:
                 print(f"Error deserializing node {node_data.get('name', 'unknown')}: {e}")
 
         # Deserialize connections
+        print(f"[JSONSerializer] Restoring {len(network_data.get('connections', []))} connections for network '{network.name}'")
         for conn_data in network_data.get("connections", []):
             try:
                 # Convert string IDs to UUIDs
@@ -203,14 +209,29 @@ class JSONSerializer:
                 if isinstance(target_id, str):
                     target_id = UUID(target_id)
 
+                # Check if nodes exist
+                source_node = node_map.get(source_id)
+                target_node = node_map.get(target_id)
+                if not source_node:
+                    print(f"[JSONSerializer] WARNING: Source node {source_id} not found in node_map")
+                    print(f"[JSONSerializer]   Available IDs: {list(node_map.keys())}")
+                    continue
+                if not target_node:
+                    print(f"[JSONSerializer] WARNING: Target node {target_id} not found in node_map")
+                    print(f"[JSONSerializer]   Available IDs: {list(node_map.keys())}")
+                    continue
+
                 network.connect(
                     source_node_id=source_id,
                     source_output=conn_data["source_output"],
                     target_node_id=target_id,
                     target_input=conn_data["target_input"],
                 )
+                print(f"[JSONSerializer]   Restored: {source_node.name}.{conn_data['source_output']} -> {target_node.name}.{conn_data['target_input']}")
             except Exception as e:
-                print(f"Error deserializing connection: {e}")
+                print(f"[JSONSerializer] Error deserializing connection: {e}")
+                import traceback
+                traceback.print_exc()
 
         # Get sticky notes data
         sticky_notes_data = data.get("sticky_notes", [])

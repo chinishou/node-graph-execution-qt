@@ -346,3 +346,184 @@ class TestCopyPasteKeyboardShortcuts:
         QApplication.processEvents()
 
         assert len(network.nodes()) == 2
+
+
+class TestSubnetSerialization:
+    """Test subnet serialization and deserialization preserves connections."""
+
+    def test_subnet_internal_connections_persist_after_save_load(self, qtbot, network_view):
+        """Test that connections inside subnet are preserved after serialization."""
+        view, network, scene = network_view
+
+        # Create a subnet
+        subnet = SubnetNode(name="TestSubnet")
+        network.add_node(subnet)
+        QApplication.processEvents()
+
+        # Get internal network
+        internal_network = subnet.get_internal_network()
+
+        # Add nodes inside subnet
+        var1 = VariableNode(data_type="int", name="Var1")
+        var1.parameter("value").set_value(42)
+        var1.set_position(100, 100)
+        internal_network.add_node(var1)
+
+        var2 = VariableNode(data_type="int", name="Var2")
+        var2.parameter("value").set_value(7)
+        var2.set_position(100, 200)
+        internal_network.add_node(var2)
+
+        add_node = AddNode()
+        add_node.set_position(300, 150)
+        internal_network.add_node(add_node)
+
+        # Create connections inside subnet
+        internal_network.connect(var1.id, "out", add_node.id, "a")
+        internal_network.connect(var2.id, "out", add_node.id, "b")
+        QApplication.processEvents()
+
+        # Verify connections exist
+        assert len(internal_network._connector_pairs) == 2
+        assert add_node.input("a").is_connected()
+        assert add_node.input("b").is_connected()
+
+        print("\n=== Before Serialization ===")
+        print(f"Internal network has {len(internal_network.nodes())} nodes")
+        print(f"Internal network has {len(internal_network._connector_pairs)} connections")
+        for src, tgt in internal_network._connector_pairs:
+            print(f"  Connection: {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
+
+        # Serialize the subnet
+        subnet_data = subnet.serialize()
+
+        print("\n=== Serialized Data ===")
+        print(f"Subnet has internal_network: {'internal_network' in subnet_data}")
+        if 'internal_network' in subnet_data:
+            net_data = subnet_data['internal_network']
+            print(f"Internal network nodes: {len(net_data.get('nodes', []))}")
+            print(f"Internal network connections: {len(net_data.get('connections', []))}")
+            for conn in net_data.get('connections', []):
+                print(f"  Saved connection: {conn}")
+
+        # Deserialize into a new subnet
+        print("\n=== Deserializing ===")
+        new_subnet = SubnetNode.deserialize(subnet_data)
+        new_internal = new_subnet.get_internal_network()
+
+        print("\n=== After Deserialization ===")
+        print(f"New internal network has {len(new_internal.nodes())} nodes")
+        print(f"New internal network has {len(new_internal._connector_pairs)} connections")
+        for src, tgt in new_internal._connector_pairs:
+            print(f"  Connection: {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
+
+        # Verify nodes were restored
+        assert len(new_internal.nodes()) == len(internal_network.nodes())
+
+        # Verify connections were restored
+        assert len(new_internal._connector_pairs) == len(internal_network._connector_pairs), \
+            f"Expected {len(internal_network._connector_pairs)} connections, got {len(new_internal._connector_pairs)}"
+
+        # Find the Add node in the new network
+        new_add = None
+        for node in new_internal.nodes():
+            if node.node_type == "AddNode":
+                new_add = node
+                break
+
+        assert new_add is not None, "Add node not found in deserialized network"
+
+        # Verify connections are connected
+        assert new_add.input("a").is_connected(), "Input 'a' should be connected after deserialization"
+        assert new_add.input("b").is_connected(), "Input 'b' should be connected after deserialization"
+
+        print("\n=== Test Passed ===")
+
+    def test_subnet_connections_persist_after_file_save_load(self, qtbot, network_view, tmp_path):
+        """Test subnet connections using actual file save/load (JSONSerializer)."""
+        view, network, scene = network_view
+        from nodegraph.core.serialization import JSONSerializer
+        import tempfile
+        import os
+
+        # Create a subnet
+        subnet = SubnetNode(name="FileTestSubnet")
+        network.add_node(subnet)
+        QApplication.processEvents()
+
+        # Get internal network
+        internal_network = subnet.get_internal_network()
+
+        # Add nodes inside subnet
+        var1 = VariableNode(data_type="int", name="FileVar1")
+        var1.parameter("value").set_value(99)
+        var1.set_position(50, 50)
+        internal_network.add_node(var1)
+
+        var2 = VariableNode(data_type="int", name="FileVar2")
+        var2.parameter("value").set_value(11)
+        var2.set_position(50, 150)
+        internal_network.add_node(var2)
+
+        add_node = AddNode()
+        add_node.set_position(200, 100)
+        internal_network.add_node(add_node)
+
+        # Create connections
+        internal_network.connect(var1.id, "out", add_node.id, "a")
+        internal_network.connect(var2.id, "out", add_node.id, "b")
+        QApplication.processEvents()
+
+        print("\n=== Before File Save ===")
+        print(f"Internal network: {len(internal_network.nodes())} nodes, {len(internal_network._connector_pairs)} connections")
+        for src, tgt in internal_network._connector_pairs:
+            print(f"  {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
+
+        # Save to file using JSONSerializer
+        test_file = tmp_path / "test_subnet.json"
+        print(f"\n=== Saving to {test_file} ===")
+        JSONSerializer.save(network, str(test_file))
+
+        # Load from file using JSONSerializer
+        print(f"\n=== Loading from {test_file} ===")
+        loaded_network, _ = JSONSerializer.load(str(test_file))
+
+        print("\n=== After File Load ===")
+        print(f"Loaded network: {len(loaded_network.nodes())} nodes")
+
+        # Find the subnet in loaded network
+        loaded_subnet = None
+        for node in loaded_network.nodes():
+            if node.node_type == "SubnetNode":
+                loaded_subnet = node
+                break
+
+        assert loaded_subnet is not None, "Subnet not found in loaded network"
+        print(f"Found subnet: {loaded_subnet.name}")
+
+        loaded_internal = loaded_subnet.get_internal_network()
+        print(f"Loaded internal network: {len(loaded_internal.nodes())} nodes, {len(loaded_internal._connector_pairs)} connections")
+
+        for src, tgt in loaded_internal._connector_pairs:
+            print(f"  {src.node.name}.{src.name} -> {tgt.node.name}.{tgt.name}")
+
+        # Verify
+        assert len(loaded_internal.nodes()) == len(internal_network.nodes()), \
+            f"Node count mismatch: expected {len(internal_network.nodes())}, got {len(loaded_internal.nodes())}"
+
+        assert len(loaded_internal._connector_pairs) == len(internal_network._connector_pairs), \
+            f"Connection count mismatch: expected {len(internal_network._connector_pairs)}, got {len(loaded_internal._connector_pairs)}"
+
+        # Find the Add node
+        loaded_add = None
+        for node in loaded_internal.nodes():
+            if node.node_type == "AddNode":
+                loaded_add = node
+                break
+
+        assert loaded_add is not None, "Add node not found"
+        assert loaded_add.input("a").is_connected(), "Input 'a' should be connected"
+        assert loaded_add.input("b").is_connected(), "Input 'b' should be connected"
+
+        print("\n=== File Save/Load Test Passed ===")
+
