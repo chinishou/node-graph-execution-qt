@@ -402,14 +402,50 @@ class NetworkModel:
     @classmethod
     def deserialize(cls, data: Dict[str, Any]) -> "NetworkModel":
         """Deserialize network from dictionary."""
+        from ..registry import NodeRegistry
+        from ...nodes.subnet import SubnetNode
+
         network = cls(name=data.get("name", "Network"))
 
         # First, create all nodes
         node_map = {}
         for node_data in data.get("nodes", []):
-            node = NodeModel.deserialize(node_data, network)
+            # Use NodeRegistry to create the correct node type
+            node_type = node_data.get("node_type")
+
+            # Special handling for SubnetNode
+            if node_type == "SubnetNode" and "internal_network" in node_data:
+                node = SubnetNode.deserialize(node_data)
+            else:
+                # Create node using registry
+                node = NodeRegistry.create_node(node_type)
+
+                # Set basic properties
+                node.name = node_data.get("name", node.name)
+                node._position = node_data.get("position", (0.0, 0.0))
+
+                # Restore parameter values
+                for param_name, param_data in node_data.get("parameters", {}).items():
+                    param = node.parameter(param_name)
+                    if param:
+                        # Handle both dict (full serialization) and direct value
+                        if isinstance(param_data, dict):
+                            param.set_value(param_data.get("value", param_data.get("_value")))
+                        else:
+                            param.set_value(param_data)
+
+                # Restore input default values
+                for input_name, default_value in node_data.get("input_defaults", {}).items():
+                    connector = node.input(input_name)
+                    if connector:
+                        connector.default_value = default_value
+
             network.add_node(node)
-            node_map[node.id] = node
+            # Map using the original ID for connection restoration
+            original_id = node_data.get("id")
+            if isinstance(original_id, str):
+                original_id = UUID(original_id)
+            node_map[original_id] = node
 
         # Then, recreate connections
         for conn_data in data.get("connections", []):

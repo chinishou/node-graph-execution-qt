@@ -163,8 +163,10 @@ class SubnetNode(BaseNode):
 
     def _on_internal_node_added(self, node):
         """Handle when a node is added to the internal network."""
+        print(f"[SubnetNode] Node added to internal network: {node.name} (type: {type(node).__name__})")
         # If it's a subnet I/O node, sync connectors
         if isinstance(node, (SubnetInputNode, SubnetOutputNode)):
+            print(f"[SubnetNode] Detected I/O node, syncing connectors for subnet: {self.name}")
             # Set parent subnet reference
             node._parent_subnet = self
             self._sync_connectors()
