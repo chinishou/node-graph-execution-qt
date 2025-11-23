@@ -281,8 +281,24 @@ def test_signal_flow_with_debug_tracing(qtbot):
     qtbot.wait(10)
 
     # STEP 3: int->print (potential recursion trigger)
+    # This should automatically disconnect the old add->print connection
     network.connect(int_node.id, 'out', print_node.id, 'value')
     qtbot.wait(10)
+
+    # Verify print node only has connection from int (old add->print should be disconnected)
+    print_input = print_node.input('value')
+    assert print_input.is_connected(), "Print input should still be connected"
+    connections = print_input._connections
+    assert len(connections) == 1, f"Print should have exactly 1 connection, has {len(connections)}"
+    assert connections[0] == int_node.output('out'), "Print should be connected to int, not add"
+
+    # Verify add->print is disconnected
+    add_output = add_node.output('result')
+    add_connections = [c for c in add_output._connections]
+    assert print_node.input('value') not in add_connections, "Add should not be connected to print anymore"
+
+    # Verify add->display is still connected
+    assert display_node.input('value') in add_connections, "Add->display connection should remain"
 
     # Verify no excessive recursion occurred
     for func, count in call_counts.items():
