@@ -271,19 +271,56 @@ def test_signal_flow_with_debug_tracing(qtbot):
     qtbot.waitExposed(view)
 
     # STEP 1: int->add->print
+    print("\n" + "="*80)
+    print("STEP 1: Building initial network (Int->Add, Add->Print)")
+    print("="*80)
+    call_counts.clear()  # Reset counter for this step
+
     network.connect(int_node.id, 'out', add_node.id, 'a')
     qtbot.wait(10)
     network.connect(add_node.id, 'result', print_node.id, 'value')
     qtbot.wait(10)
 
+    step1_calls = sum(call_counts.values())
+    print(f"\nSTEP 1 Total calls: {step1_calls}")
+    for func, count in sorted(call_counts.items()):
+        if count > 0:
+            print(f"  {func}: {count}")
+
     # STEP 2: add->print_2 (add now has 2 outputs)
+    print("\n" + "="*80)
+    print("STEP 2: Add second output (Add->Print_1)")
+    print("="*80)
+    call_counts.clear()  # Reset counter for this step
+
     network.connect(add_node.id, 'result', print_node_2.id, 'value')
     qtbot.wait(10)
 
+    step2_calls = sum(call_counts.values())
+    print(f"\nSTEP 2 Total calls: {step2_calls}")
+    for func, count in sorted(call_counts.items()):
+        if count > 0:
+            print(f"  {func}: {count}")
+
     # STEP 3: int->print (potential recursion trigger)
     # This should automatically disconnect the old add->print connection
+    print("\n" + "="*80)
+    print("STEP 3: Replace connection (Int->Print, auto-disconnects Add->Print)")
+    print("="*80)
+    call_counts.clear()  # Reset counter for this step
+
     network.connect(int_node.id, 'out', print_node.id, 'value')
     qtbot.wait(10)
+
+    step3_calls = sum(call_counts.values())
+    print(f"\nSTEP 3 Total calls: {step3_calls}")
+    for func, count in sorted(call_counts.items()):
+        if count > 0:
+            print(f"  {func}: {count}")
+
+    print("\n" + "="*80)
+    print(f"TOTAL across all steps: {step1_calls + step2_calls + step3_calls}")
+    print("="*80)
 
     # Verify print node only has connection from int (old add->print should be disconnected)
     print_input = print_node.input('value')
