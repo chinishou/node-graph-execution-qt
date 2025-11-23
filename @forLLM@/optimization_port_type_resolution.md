@@ -395,13 +395,87 @@ pytest tests/ui/test_debug_signals.py::test_signal_flow_with_debug_tracing --sho
 
 ---
 
+---
+
+## Critical Bug Fix: Reentrancy Prevention
+
+### Problem Discovered
+
+When running **multiple UI tests** (`pytest tests/ui/ --show-ui`), the application would crash with:
+- RecursionError after 50+ calls
+- Windows fatal exception: access violation
+- Infinite `paint()` → `boundingRect()` → `paint()` loop
+
+### Root Cause
+
+**Multiple QTimer instances causing reentrancy**:
+
+```python
+# OLD CODE (BROKEN):
+def _on_connection_changed(self):
+    QTimer.singleShot(0, self._deferred_update)  # Creates NEW timer each time!
+```
+
+**The Problem**:
+1. Multiple connection changes → multiple `QTimer.singleShot()` calls
+2. All timers fire simultaneously in next event loop
+3. `_is_updating_connections` guard doesn't prevent reentrancy from **different timer instances**
+4. `_deferred_update()` calls itself recursively → crash
+
+### Solution
+
+**Single-timer pattern** (same approach as NetworkScene):
+
+```python
+# NEW CODE (FIXED):
+def __init__(self):
+    self._update_timer: Optional[QTimer] = None
+    self._update_pending = False
+
+def _on_connection_changed(self):
+    self._schedule_deferred_update()  # Use single timer
+
+def _schedule_deferred_update(self):
+    # Prevent multiple timers
+    if self._update_pending:
+        return
+
+    self._update_pending = True
+
+    if self._update_timer is None:
+        self._update_timer = QTimer()
+        self._update_timer.setSingleShot(True)
+        self._update_timer.timeout.connect(self._process_deferred_update)
+
+    if not self._update_timer.isActive():
+        self._update_timer.start(0)
+
+def _process_deferred_update(self):
+    self._update_pending = False
+    self._deferred_update()
+```
+
+**How It Helps**:
+- Only ONE timer instance per NodeGraphicsItem
+- `_update_pending` flag prevents redundant timer starts
+- Guarantees `_deferred_update()` never called simultaneously
+- Matches the batch update pattern already used in NetworkScene
+
+**Impact**:
+- ✅ Tests pass when running entire test suite
+- ✅ No more access violations
+- ✅ Predictable, deterministic update behavior
+
+---
+
 ## Notes for Future LLMs
 
 1. **The 103 calls are NOT necessary** - they are a result of inefficient update patterns
 2. **Batch updates are critical** - individual timer callbacks create massive overhead
 3. **Caching must be invalidated carefully** - too aggressive = stale data, too conservative = no benefit
-4. **The protection flag exists but doesn't work** - deferred updates bypass it
-5. **This is a common pattern** - consider applying batch updates to other UI components
+4. **NEVER use QTimer.singleShot() for repeated callbacks** - always use a single QTimer instance with a pending flag
+5. **The protection flag exists but doesn't work** - deferred updates bypass it when using multiple timer instances
+6. **This is a common pattern** - consider applying batch updates and single-timer pattern to other UI components
 
 ---
 
