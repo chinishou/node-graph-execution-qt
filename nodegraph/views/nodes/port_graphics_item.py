@@ -71,9 +71,7 @@ class PortGraphicsItem(QGraphicsItem):
             color = self.HOVER_COLOR
         else:
             # Get the actual data type to use for coloring (with caching)
-            if self._cached_type is None:
-                self._cached_type = self._resolve_data_type()
-            data_type = self._cached_type
+            data_type = self._resolve_data_type()
 
             # Get color based on data type
             if data_type in self.TYPE_COLORS:
@@ -110,6 +108,14 @@ class PortGraphicsItem(QGraphicsItem):
         Returns:
             The resolved data type string
         """
+        is_root_call = visited is None
+        if visited is None:
+            visited = set()
+
+        # Return cached value when available for root calls
+        if is_root_call and self._cached_type is not None:
+            return self._cached_type
+
         # Safety: if scene is modifying connections, use cached type or default
         # This prevents recursion during connection add/remove operations
         scene = self.scene()
@@ -120,121 +126,142 @@ class PortGraphicsItem(QGraphicsItem):
         if depth > 10:
             return 'any'
 
-        if visited is None:
-            visited = set()
+        # Short-circuit if this port is already resolving to avoid re-entrant loops
+        if self._resolution_depth > 0:
+            return self._cached_type if self._cached_type else self.connector.data_type
 
-        # Prevent infinite loops by tracking connectors we've already visited
-        connector_id = id(self.connector)
-        if connector_id in visited:
-            return 'any'
-        visited.add(connector_id)
+        self._resolution_depth += 1
+        try:
+            # Prevent infinite loops by tracking connectors we've already visited
+            connector_id = id(self.connector)
+            if connector_id in visited:
+                resolved = 'any'
+            else:
+                visited.add(connector_id)
 
-        data_type = self.connector.data_type
+                data_type = self.connector.data_type
 
-        # If not 'any', return the concrete type immediately
-        if data_type != 'any':
-            return data_type
+                # If not 'any', return the concrete type immediately
+                if data_type != 'any':
+                    resolved = data_type
+                else:
+                    resolved = None
 
-        # Try node-specific type resolution first (for cross-boundary scenarios)
+                    # Try node-specific type resolution first (for cross-boundary scenarios)
+                    if self.connector.node:
+                        custom_type = self.connector.node.resolve_connector_display_type(
+                            self.connector.name,
+                            self.is_output,
+                            visited
+                        )
+                        if custom_type:
+                            resolved = custom_type
+
+                    # For 'any' type ports, use different strategies based on port direction
+                    if resolved is None:
+                        if self.is_output:
+                            resolved = self._resolve_output_type(visited, depth)
+                        else:
+                            resolved = self._resolve_input_type(visited, depth)
+
+                    if resolved is None:
+                        resolved = 'any'
+        finally:
+            self._resolution_depth -= 1
+
+        if is_root_call:
+            self._cached_type = resolved
+
+        return resolved
+
+    def _resolve_output_type(self, visited, depth):
+        """Resolution strategy for output ports."""
+        # Strategy 1: Check node parameters first for outputs
         if self.connector.node:
-            custom_type = self.connector.node.resolve_connector_display_type(
-                self.connector.name,
-                self.is_output,
-                visited
-            )
-            if custom_type:
-                return custom_type
+            for param_name in ['type', 'output_type', 'data_type', 'value_type']:
+                param = self.connector.node.parameter(param_name)
+                if param:
+                    param_value = param.value()
+                    if param_value in self.TYPE_COLORS:
+                        return param_value
 
-        # For 'any' type ports, use different strategies based on port direction
+        # Strategy 2: Check connected ports (only if no parameter defines the type)
+        if self.connector.is_connected():
+            connections = self.connector.connections()
+            for connected_connector in connections:
+                connected_type = connected_connector.data_type
 
-        if self.is_output:
-            # OUTPUT PORT: Parameters take priority (e.g., Math node type determines output)
+                if connected_type != 'any':
+                    return connected_type
 
-            # Strategy 1: Check node parameters first for outputs
-            if self.connector.node:
-                for param_name in ['type', 'output_type', 'data_type', 'value_type']:
-                    param = self.connector.node.parameter(param_name)
-                    if param:
-                        param_value = param.value()
-                        if param_value in self.TYPE_COLORS:
-                            return param_value
-
-            # Strategy 2: Check connected ports (only if no parameter defines the type)
-            if self.connector.is_connected():
-                connections = self.connector.connections()
-                for connected_connector in connections:
-                    connected_type = connected_connector.data_type
-
-                    if connected_type != 'any':
-                        return connected_type
-
-                    # Recursively resolve
-                    if hasattr(connected_connector, 'node') and connected_connector.node:
-                        scene = self.scene()
-                        if scene and hasattr(scene, '_node_items'):
-                            node_item = scene._node_items.get(connected_connector.node.id)
-                            if node_item:
-                                is_output = connected_connector.is_output()
-                                port = node_item.get_port(connected_connector.name, is_output=is_output)
-                                if port and port != self:
-                                    resolved = port._resolve_data_type(visited, depth + 1)
-                                    if resolved != 'any':
-                                        return resolved
-        else:
-            # INPUT PORT: Connected type takes priority (what's actually coming in)
-
-            # Strategy 1: Check connected ports FIRST for inputs
-            if self.connector.is_connected():
-                connections = self.connector.connections()
-                for connected_connector in connections:
-                    connected_type = connected_connector.data_type
-
-                    if connected_type != 'any':
-                        return connected_type
-
-                    # Recursively resolve the connected output's type
-                    if hasattr(connected_connector, 'node') and connected_connector.node:
-                        scene = self.scene()
-                        if scene and hasattr(scene, '_node_items'):
-                            node_item = scene._node_items.get(connected_connector.node.id)
-                            if node_item:
-                                is_output = connected_connector.is_output()
-                                port = node_item.get_port(connected_connector.name, is_output=is_output)
-                                if port and port != self:
-                                    resolved = port._resolve_data_type(visited, depth + 1)
-                                    if resolved != 'any':
-                                        return resolved
-
-            # Strategy 2: Check node parameters (only if not connected or connection is also 'any')
-            if self.connector.node:
-                for param_name in ['type', 'data_type', 'value_type']:
-                    param = self.connector.node.parameter(param_name)
-                    if param:
-                        param_value = param.value()
-                        if param_value in self.TYPE_COLORS:
-                            return param_value
-
-            # Strategy 3: Check pass-through from output ports (for Display-like nodes)
-            # Skip this for nodes that transform types (use transforms_data_type method)
-            if self.connector.node:
-                # Don't use pass-through for type-converting nodes
-                if not self.connector.node.transforms_data_type():
+                # Recursively resolve
+                if hasattr(connected_connector, 'node') and connected_connector.node:
                     scene = self.scene()
                     if scene and hasattr(scene, '_node_items'):
-                        node_item = scene._node_items.get(self.connector.node.id)
+                        node_item = scene._node_items.get(connected_connector.node.id)
                         if node_item:
-                            for output_name, output_connector in self.connector.node.outputs().items():
-                                if output_connector.data_type != 'any':
-                                    return output_connector.data_type
+                            is_output = connected_connector.is_output()
+                            port = node_item.get_port(connected_connector.name, is_output=is_output)
+                            if port and port != self:
+                                resolved = port._resolve_data_type(visited, depth + 1)
+                                if resolved != 'any':
+                                    return resolved
 
-                                output_port = node_item.get_port(output_name, is_output=True)
-                                if output_port and output_port != self:
-                                    resolved = output_port._resolve_data_type(visited, depth + 1)
-                                    if resolved != 'any':
-                                        return resolved
+        return None
 
-        # Default: return 'any'
-        return 'any'
+    def _resolve_input_type(self, visited, depth):
+        """Resolution strategy for input ports."""
+        # Strategy 1: Check connected ports FIRST for inputs
+        if self.connector.is_connected():
+            connections = self.connector.connections()
+            for connected_connector in connections:
+                connected_type = connected_connector.data_type
+
+                if connected_type != 'any':
+                    return connected_type
+
+                # Recursively resolve the connected output's type
+                if hasattr(connected_connector, 'node') and connected_connector.node:
+                    scene = self.scene()
+                    if scene and hasattr(scene, '_node_items'):
+                        node_item = scene._node_items.get(connected_connector.node.id)
+                        if node_item:
+                            is_output = connected_connector.is_output()
+                            port = node_item.get_port(connected_connector.name, is_output=is_output)
+                            if port and port != self:
+                                resolved = port._resolve_data_type(visited, depth + 1)
+                                if resolved != 'any':
+                                    return resolved
+
+        # Strategy 2: Check node parameters (only if not connected or connection is also 'any')
+        if self.connector.node:
+            for param_name in ['type', 'data_type', 'value_type']:
+                param = self.connector.node.parameter(param_name)
+                if param:
+                    param_value = param.value()
+                    if param_value in self.TYPE_COLORS:
+                        return param_value
+
+        # Strategy 3: Check pass-through from output ports (for Display-like nodes)
+        # Skip this for nodes that transform types (use transforms_data_type method)
+        if self.connector.node:
+            # Don't use pass-through for type-converting nodes
+            if not self.connector.node.transforms_data_type():
+                scene = self.scene()
+                if scene and hasattr(scene, '_node_items'):
+                    node_item = scene._node_items.get(self.connector.node.id)
+                    if node_item:
+                        for output_name, output_connector in self.connector.node.outputs().items():
+                            if output_connector.data_type != 'any':
+                                return output_connector.data_type
+
+                            output_port = node_item.get_port(output_name, is_output=True)
+                            if output_port and output_port != self:
+                                resolved = output_port._resolve_data_type(visited, depth + 1)
+                                if resolved != 'any':
+                                    return resolved
+
+        return None
 
     def hoverEnterEvent(self, event):
         """Handle hover enter."""

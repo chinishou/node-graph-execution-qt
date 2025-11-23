@@ -215,6 +215,9 @@ class NodeGraphicsItem(QGraphicsItem):
 
     def _on_parameter_changed(self):
         """Handle parameter change from model."""
+        # Data type can depend on parameters, so clear any cached values
+        for port in self._ports.values():
+            port._invalidate_type_cache()
         # Use deferred update to prevent recursion during signal processing
         QTimer.singleShot(0, self._deferred_update)
 
