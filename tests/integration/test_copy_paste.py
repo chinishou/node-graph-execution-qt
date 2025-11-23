@@ -10,6 +10,16 @@ from nodegraph.nodes.subnet import SubnetNode
 from nodegraph.core.registry import NodeRegistry
 
 
+@pytest.fixture(autouse=True)
+def register_nodes():
+    """Register node types for testing."""
+    NodeRegistry.register(VariableNode)
+    NodeRegistry.register(AddNode)
+    NodeRegistry.register(SubnetNode)
+    yield
+    # No cleanup needed - registry persists across tests
+
+
 def test_serialize_nodes_with_connections():
     """Test serializing nodes preserves connection information."""
     network = NetworkModel("/")
@@ -17,7 +27,7 @@ def test_serialize_nodes_with_connections():
     # Create nodes
     var1 = VariableNode(data_type="int", name="Var1")
     var2 = VariableNode(data_type="int", name="Var2")
-    add = AddNode(name="Add")
+    add = AddNode()
 
     network.add_node(var1)
     network.add_node(var2)
@@ -42,7 +52,7 @@ def test_restore_connections_after_copy():
     # Create original nodes
     var1 = VariableNode(data_type="int", name="Var1")
     var2 = VariableNode(data_type="int", name="Var2")
-    add = AddNode(name="Add")
+    add = AddNode()
 
     network.add_node(var1)
     network.add_node(var2)
@@ -212,7 +222,7 @@ def test_copy_preserves_input_defaults():
     """Test that input default values are preserved during copy."""
     network = NetworkModel("/")
 
-    add = AddNode(name="Add")
+    add = AddNode()
     add.input("a").default_value = 10
     add.input("b").default_value = 20
     network.add_node(add)

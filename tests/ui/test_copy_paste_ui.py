@@ -20,9 +20,9 @@ def network_view(qtbot):
     from nodegraph.core.registry import NodeRegistry
 
     # Register node types for testing
-    NodeRegistry.register("VariableNode", VariableNode)
-    NodeRegistry.register("AddNode", AddNode)
-    NodeRegistry.register("SubnetNode", SubnetNode)
+    NodeRegistry.register(VariableNode)
+    NodeRegistry.register(AddNode)
+    NodeRegistry.register(SubnetNode)
 
     network = NetworkModel("/")
     scene = NetworkScene(network)
