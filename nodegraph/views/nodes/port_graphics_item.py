@@ -41,7 +41,14 @@ class PortGraphicsItem(QGraphicsItem):
         self.connector = connector
         self.is_output = is_output
         self._is_hovered = False
-        self._cached_type = None  # Cache resolved type to avoid repeated resolution in paint()
+
+        # Cache resolved type to avoid repeated resolution in paint()
+        # For concrete types (not 'any'), set cache immediately
+        if connector and connector.data_type != 'any':
+            self._cached_type = connector.data_type
+        else:
+            self._cached_type = None
+
         self._resolution_depth = 0  # Track recursion depth
 
         self.setAcceptHoverEvents(True)
