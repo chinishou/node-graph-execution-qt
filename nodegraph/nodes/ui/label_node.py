@@ -27,8 +27,6 @@ class LabelNode(BaseNode):
             node_type="LabelNode",
             **kwargs
         )
-        # Cache the widget to avoid recreating on each compute
-        self._cached_widget = None
 
     def setup(self) -> None:
         """Setup parameters and outputs."""
@@ -38,23 +36,22 @@ class LabelNode(BaseNode):
         self.add_output("widget", data_type="widget", label="Widget")
 
     def compute(self, **inputs) -> Dict[str, Any]:
-        """Create or update the label widget."""
-        # Create widget if not cached
-        if self._cached_widget is None:
-            self._cached_widget = QLabel()
+        """Create the label widget."""
+        # Create a fresh widget each time (simple and safe for manual refresh)
+        label = QLabel()
 
-        # Update properties
+        # Set properties
         text = self.parameter("text").value()
         alignment = self.parameter("alignment").value()
 
-        self._cached_widget.setText(text)
+        label.setText(text)
 
         # Set alignment
         if alignment == "left":
-            self._cached_widget.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         elif alignment == "center":
-            self._cached_widget.setAlignment(Qt.AlignCenter)
+            label.setAlignment(Qt.AlignCenter)
         elif alignment == "right":
-            self._cached_widget.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        return {"widget": self._cached_widget}
+        return {"widget": label}

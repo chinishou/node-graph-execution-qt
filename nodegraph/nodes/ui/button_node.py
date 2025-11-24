@@ -26,8 +26,6 @@ class ButtonNode(BaseNode):
             node_type="ButtonNode",
             **kwargs
         )
-        # Cache the widget to avoid recreating on each compute
-        self._cached_widget = None
 
     def setup(self) -> None:
         """Setup parameters and outputs."""
@@ -39,23 +37,23 @@ class ButtonNode(BaseNode):
         self.add_output("widget", data_type="widget", label="Widget")
 
     def compute(self, **inputs) -> Dict[str, Any]:
-        """Create or update the button widget."""
-        # Create widget if not cached
-        if self._cached_widget is None:
-            self._cached_widget = QPushButton()
-            # Connect click signal once
-            self._cached_widget.clicked.connect(self._on_button_clicked)
+        """Create the button widget."""
+        # Create a fresh widget each time (simple and safe for manual refresh)
+        button = QPushButton()
 
-        # Update properties
+        # Set properties
         text = self.parameter("text").value()
         width = self.parameter("width").value()
         height = self.parameter("height").value()
 
-        self._cached_widget.setText(text)
-        self._cached_widget.setMinimumWidth(width)
-        self._cached_widget.setMinimumHeight(height)
+        button.setText(text)
+        button.setMinimumWidth(width)
+        button.setMinimumHeight(height)
 
-        return {"widget": self._cached_widget}
+        # Connect click signal
+        button.clicked.connect(self._on_button_clicked)
+
+        return {"widget": button}
 
     def _on_button_clicked(self):
         """Handle button click in preview."""

@@ -27,9 +27,6 @@ class VBoxLayoutNode(BaseNode):
             node_type="VBoxLayoutNode",
             **kwargs
         )
-        # Cache the widget to avoid recreating on each compute
-        self._cached_widget = None
-        self._cached_layout = None
 
     def setup(self) -> None:
         """Setup inputs, parameters, and outputs."""
@@ -44,35 +41,27 @@ class VBoxLayoutNode(BaseNode):
         self.add_output("widget", data_type="widget", label="Container")
 
     def compute(self, **inputs) -> Dict[str, Any]:
-        """Create or update the layout container."""
-        # Create widget and layout if not cached
-        if self._cached_widget is None:
-            self._cached_widget = QWidget()
-            self._cached_layout = QVBoxLayout(self._cached_widget)
+        """Create the layout container."""
+        # Create a fresh container each time (simple and safe for manual refresh)
+        container = QWidget()
+        layout = QVBoxLayout(container)
 
-        # Clear existing widgets from layout
-        while self._cached_layout.count():
-            item = self._cached_layout.takeAt(0)
-            if item.widget():
-                # Don't delete the widget, just remove from layout
-                item.widget().setParent(None)
-
-        # Update layout parameters
+        # Set layout parameters
         spacing = self.parameter("spacing").value()
         margins = self.parameter("margins").value()
 
-        self._cached_layout.setSpacing(spacing)
-        self._cached_layout.setContentsMargins(margins, margins, margins, margins)
+        layout.setSpacing(spacing)
+        layout.setContentsMargins(margins, margins, margins, margins)
 
         # Add child widgets that are connected
         for i in range(1, 6):
             child = inputs.get(f"child{i}")
             if child and isinstance(child, QWidget):
                 # Set parent to our container
-                child.setParent(self._cached_widget)
-                self._cached_layout.addWidget(child)
+                child.setParent(container)
+                layout.addWidget(child)
 
         # Add stretch at the end to push widgets to top
-        self._cached_layout.addStretch()
+        layout.addStretch()
 
-        return {"widget": self._cached_widget}
+        return {"widget": container}
