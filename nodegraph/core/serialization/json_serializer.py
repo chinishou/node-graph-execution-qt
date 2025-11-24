@@ -8,7 +8,6 @@ Save and load node networks to/from JSON files.
 import json
 from typing import Dict, Any
 from pathlib import Path
-from uuid import UUID
 from ..models import NetworkModel
 from ..registry import NodeRegistry
 
@@ -32,7 +31,7 @@ class JSONSerializer:
     VERSION = "1.0"
 
     @classmethod
-    def save(cls, network: NetworkModel, file_path: str, sticky_notes: list = None, pretty: bool = True) -> bool:
+    def save(cls, network: NetworkModel, file_path: str, sticky_notes: list = None, pretty: bool = False) -> bool:
         """
         Save a network to a JSON file.
 
@@ -40,7 +39,7 @@ class JSONSerializer:
             network: The network to save
             file_path: Path to the JSON file
             sticky_notes: Optional list of sticky note items to save
-            pretty: Whether to format the JSON with indentation
+            pretty: Whether to format the JSON with indentation (default: False for compact output)
 
         Returns:
             True if save was successful
@@ -57,7 +56,8 @@ class JSONSerializer:
                 if pretty:
                     json.dump(data, f, indent=2, ensure_ascii=False)
                 else:
-                    json.dump(data, f, ensure_ascii=False)
+                    # Minified JSON: no indentation, no extra spaces
+                    json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
 
             print(f"Network saved to: {file_path}")
             return True
@@ -157,10 +157,10 @@ class JSONSerializer:
                     node = NodeRegistry.create_node(node_type)
 
                     # Update node properties from serialized data
-                    # Convert string ID to UUID
+                    # Convert string ID to int
                     node_id = node_data.get("id")
                     if isinstance(node_id, str):
-                        node_id = UUID(node_id)
+                        node_id = int(node_id)
                     node.id = node_id
                     node.name = node_data.get("name", "Node")
                     node.set_position(*node_data.get("position", (0, 0)), emit_signal=False)
@@ -201,13 +201,13 @@ class JSONSerializer:
         print(f"[JSONSerializer] Restoring {len(network_data.get('connections', []))} connections for network '{network.name}'")
         for conn_data in network_data.get("connections", []):
             try:
-                # Convert string IDs to UUIDs
+                # Convert string IDs to int
                 source_id = conn_data["source_node"]
                 target_id = conn_data["target_node"]
                 if isinstance(source_id, str):
-                    source_id = UUID(source_id)
+                    source_id = int(source_id)
                 if isinstance(target_id, str):
-                    target_id = UUID(target_id)
+                    target_id = int(target_id)
 
                 # Check if nodes exist
                 source_node = node_map.get(source_id)
@@ -239,13 +239,13 @@ class JSONSerializer:
         return network, sticky_notes_data
 
     @classmethod
-    def to_json_string(cls, network: NetworkModel, pretty: bool = True) -> str:
+    def to_json_string(cls, network: NetworkModel, pretty: bool = False) -> str:
         """
         Convert network to JSON string.
 
         Args:
             network: The network to serialize
-            pretty: Whether to format with indentation
+            pretty: Whether to format with indentation (default: False for compact output)
 
         Returns:
             JSON string
@@ -255,7 +255,8 @@ class JSONSerializer:
         if pretty:
             return json.dumps(data, indent=2, ensure_ascii=False)
         else:
-            return json.dumps(data, ensure_ascii=False)
+            # Minified JSON: no indentation, no extra spaces
+            return json.dumps(data, ensure_ascii=False, separators=(',', ':'))
 
     @classmethod
     def from_json_string(cls, json_string: str) -> tuple:

@@ -47,11 +47,11 @@ class SubnetNode(BaseNode):
 
             # Auto-create default input and output nodes
             input_node = SubnetInputNode(connector_name="input1", data_type="any")
-            input_node.set_position(100, 150)
+            input_node.set_position(-200, 0)
             self._internal_network.add_node(input_node)
 
             output_node = SubnetOutputNode(connector_name="output1", data_type="any")
-            output_node.set_position(400, 150)
+            output_node.set_position(200, 0)
             self._internal_network.add_node(output_node)
 
         # Parameters will be created dynamically based on I/O nodes

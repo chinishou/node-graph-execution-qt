@@ -8,7 +8,6 @@ Nodes are the fundamental building blocks that process data.
 
 from pydantic import BaseModel, Field, PrivateAttr
 from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple, List
-from uuid import uuid4, UUID
 from collections import defaultdict, deque
 
 from .connector_model import ConnectorModel, ConnectorType
@@ -17,6 +16,10 @@ from ..signals import Signal
 
 if TYPE_CHECKING:
     from .network_model import NetworkModel
+
+
+# Module-level ID counter for node ID generation
+_next_node_id = 0
 
 
 class NodeModel(BaseModel):
@@ -31,7 +34,7 @@ class NodeModel(BaseModel):
     should optimize their node implementations.
 
     Attributes:
-        id: Unique node identifier (UUID)
+        id: Unique node identifier (incrementing integer starting from 0)
         name: Node display name
         node_type: Type of node (e.g., "AddNode", "SubnetNode")
         category: Category for organization (e.g., "Math", "Logic")
@@ -44,7 +47,7 @@ class NodeModel(BaseModel):
         parameter_changed: Signal emitted when parameter values change
     """
 
-    id: UUID = Field(default_factory=uuid4)
+    id: int = Field(default=-1)
     name: str = "Node"
     node_type: str = "BaseNode"
     category: str = "General"
@@ -68,8 +71,15 @@ class NodeModel(BaseModel):
 
     def model_post_init(self, __context) -> None:
         """Initialize fields after Pydantic validation."""
+        global _next_node_id
+
         self._position_changed = Signal()
         self._parameter_changed = Signal()
+
+        # Assign ID if not set (default is -1)
+        if self.id == -1:
+            self.id = _next_node_id
+            _next_node_id += 1
 
     @property
     def position_changed(self) -> Signal:
@@ -423,10 +433,53 @@ class NodeModel(BaseModel):
 
     # Serialization
 
+    @staticmethod
+    def _round_position(pos: Tuple[float, float]) -> List[float]:
+        """Round position to 2 decimal places, removing trailing zeros."""
+        x = round(pos[0], 2)
+        y = round(pos[1], 2)
+        # Remove trailing zeros by converting to float (Python automatically removes them)
+        # Then return as list for JSON serialization
+        return [float(f"{x:.2f}".rstrip('0').rstrip('.')),
+                float(f"{y:.2f}".rstrip('0').rstrip('.'))]
+
+    @staticmethod
+    def _clean_empty_values(data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Remove null, empty string, empty array, and empty dict values from dictionary.
+
+        This reduces JSON file size by not storing default/empty values.
+        The loader will use default values when fields are missing.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        cleaned = {}
+        for key, value in data.items():
+            # Skip None, empty strings, empty lists, and empty dicts
+            if value is None or value == "" or value == [] or value == {}:
+                continue
+
+            # Recursively clean nested dicts
+            if isinstance(value, dict):
+                cleaned_value = NodeModel._clean_empty_values(value)
+                if cleaned_value:  # Only add if not empty after cleaning
+                    cleaned[key] = cleaned_value
+            # Clean lists of dicts
+            elif isinstance(value, list) and value and isinstance(value[0], dict):
+                cleaned_list = [NodeModel._clean_empty_values(item) for item in value]
+                cleaned_list = [item for item in cleaned_list if item]  # Remove empty dicts
+                if cleaned_list:
+                    cleaned[key] = cleaned_list
+            else:
+                cleaned[key] = value
+
+        return cleaned
+
     def serialize(self) -> dict:
         """Serialize node to dictionary."""
         data = self.model_dump(mode="json")
-        data["position"] = self._position
+        data["position"] = self._round_position(self._position)
 
         # Serialize parameters
         data["parameters"] = {
@@ -445,14 +498,17 @@ class NodeModel(BaseModel):
             for name, conn in self._outputs.items()
         }
 
+        # Clean empty values to reduce JSON size
+        data = self._clean_empty_values(data)
+
         return data
 
     @classmethod
     def deserialize(cls, data: dict, network: Optional["NetworkModel"] = None) -> "NodeModel":
         """Deserialize node from dictionary."""
-        node_id = data.get("id", uuid4())
+        node_id = data.get("id", -1)
         if isinstance(node_id, str):
-            node_id = UUID(node_id)
+            node_id = int(node_id)
 
         node_data = {
             "name": data.get("name", "Node"),
