@@ -45,23 +45,3 @@ class PrintNode(BaseNode):
         print_output_signal.emit(node_path, output)
 
         return {}
-
-
-class DisplayNode(BaseNode):
-    """Node that displays its input value without printing."""
-
-    category: str = "Utils"
-    description: str = "Display value (for inspection)"
-
-    def __init__(self, **kwargs):
-        super().__init__(name="Display", node_type="DisplayNode", **kwargs)
-
-    def setup(self) -> None:
-        """Setup display node interface."""
-        self.add_input("value", data_type="any", default_value=None, label="Value")
-        self.add_output("value", data_type="any", label="Value")
-
-    def compute(self, **inputs) -> Dict[str, Any]:
-        """Pass through the value."""
-        value = inputs.get("value")
-        return {"value": value}

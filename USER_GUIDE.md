@@ -151,7 +151,7 @@ python run_editor.py
 
 - **Math**: Add, Subtract, Multiply, Divide
 - **Operators**: Convert (type conversion)
-- **Utils**: Print, Display
+- **Utils**: Print
 - **Variables**: Int, Float, String, Bool
 - **Subnet**: SubnetNode, SubnetInputNode, SubnetOutputNode
 
