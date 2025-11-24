@@ -2,7 +2,7 @@
 Button Node
 ===========
 
-Node for creating QPushButton widgets.
+Node for creating QPushButton widgets with signal trigger support.
 """
 
 from typing import Dict, Any
@@ -14,12 +14,12 @@ class ButtonNode(BaseNode):
     """
     Button Node - Creates a QPushButton widget.
 
-    When clicked in preview, prints a message to console.
-    Captures click events and exposes click_count as data output.
+    When clicked in preview, triggers execution of all connected nodes.
+    The 'clicked' output propagates the click event to downstream nodes.
     """
 
     category: str = "UI/Widgets"
-    description: str = "Push button widget"
+    description: str = "Push button widget with click trigger"
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -27,8 +27,6 @@ class ButtonNode(BaseNode):
             node_type="ButtonNode",
             **kwargs
         )
-        # Signal data storage
-        self._click_count = 0
 
     def setup(self) -> None:
         """Setup parameters and outputs."""
@@ -38,8 +36,8 @@ class ButtonNode(BaseNode):
         self.add_parameter("on_click_message", data_type="str",
                           default_value="Button clicked!", label="Click Message")
         self.add_output("widget", data_type="widget", label="Widget")
-        # Signal data outputs
-        self.add_output("click_count", data_type="int", label="Click Count")
+        # Signal trigger output - executes connected nodes when clicked
+        self.add_output("clicked", data_type="any", label="Clicked")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Create the button widget."""
@@ -55,28 +53,59 @@ class ButtonNode(BaseNode):
         button.setMinimumWidth(width)
         button.setMinimumHeight(height)
 
-        # Connect click signal
+        # Connect click signal to trigger downstream nodes
         button.clicked.connect(self._on_button_clicked)
 
-        # Return both widget and signal data
+        # Return both widget and None for clicked (no click yet)
         return {
             "widget": button,
-            "click_count": self._click_count
+            "clicked": None
         }
 
-    def _on_button_clicked(self):
-        """Handle button click in preview."""
-        # Update signal data
-        self._click_count += 1
-
+    def _on_button_clicked(self, checked=False):
+        """Handle button click in preview - triggers connected nodes."""
         message = self.parameter("on_click_message").value()
 
         # Output to console
-        print(f"[Preview] {self.name}: {message} (Total clicks: {self._click_count})")
+        print(f"[Preview] {self.name}: {message}")
 
         # Also output to the OutputPane if available
         try:
             from ...nodes.utils import print_output_signal
-            print_output_signal.emit(self.name, f"{message} (Total clicks: {self._click_count})")
+            print_output_signal.emit(self.name, message)
         except:
             pass  # OutputPane not available
+
+        # Trigger execution of all connected nodes
+        self._trigger_connected_nodes(checked)
+
+    def _trigger_connected_nodes(self, signal_value):
+        """
+        Execute all nodes connected to the 'clicked' output.
+
+        Args:
+            signal_value: Value from the Qt signal (bool for clicked)
+        """
+        # Get the 'clicked' output connector
+        clicked_output = self.output("clicked")
+        if not clicked_output:
+            return
+
+        # Get all connections from this output
+        connections = clicked_output.connections()
+        if not connections:
+            return
+
+        print(f"[Trigger] Button '{self.name}' clicked, executing {len(connections)} connected node(s)...")
+
+        # Store the signal value temporarily for connected nodes to read
+        self._output_values["clicked"] = signal_value
+
+        # Execute each connected node
+        for conn in connections:
+            if conn.node:
+                try:
+                    print(f"[Trigger] Executing {conn.node.name}...")
+                    conn.node.execute()
+                except Exception as e:
+                    print(f"[Trigger] Error executing {conn.node.name}: {e}")

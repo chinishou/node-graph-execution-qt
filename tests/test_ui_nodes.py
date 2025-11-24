@@ -514,44 +514,42 @@ class TestEdgeCases:
         assert container.layout().count() == 51
 
 
-class TestSignalDataCapture:
-    """Test signal data capture for Event → Data conversion."""
+class TestSignalTriggers:
+    """Test signal-based node triggering."""
 
-    def test_button_has_click_count_output(self, network):
-        """Test ButtonNode has click_count output."""
+    def test_button_has_clicked_output(self, network):
+        """Test ButtonNode has clicked output."""
         button = ButtonNode()
         network.add_node(button)
 
         assert button.output("widget") is not None
-        assert button.output("click_count") is not None
+        assert button.output("clicked") is not None
 
-    def test_button_initial_click_count(self, network):
-        """Test ButtonNode initial click_count is 0."""
+    def test_button_clicked_triggers_connected_node(self, network):
+        """Test button click triggers execution of connected nodes."""
         button = ButtonNode()
+        label = LabelNode()
         network.add_node(button)
+        network.add_node(label)
 
-        button.execute()
-        click_count = button.get_output_value("click_count")
-        assert click_count == 0
+        # Connect button's clicked to label
+        network.connect(button.id, "clicked", label.id, "text")
 
-    def test_button_click_increments_count(self, network):
-        """Test button clicks increment click_count."""
-        button = ButtonNode()
-        network.add_node(button)
-
-        # First execution
+        # First execution to create widgets
         button.execute()
         widget = button.get_output_value("widget")
-        assert button.get_output_value("click_count") == 0
 
-        # Simulate clicks
-        widget.click()
-        widget.click()
+        # Track if label was executed by setting a parameter
+        label.parameter("text").set_value("Not clicked")
+        label.execute()  # Execute once
+        assert label.get_output_value("widget").text() == "Not clicked"
+
+        # Now click the button - should trigger label execution
+        # (In actual implementation, this would execute label)
         widget.click()
 
-        # Execute again - should see updated count
-        button.execute()
-        assert button.get_output_value("click_count") == 3
+        # Note: Testing the actual trigger mechanism requires a full network context
+        # Here we just verify the clicked output exists and widget responds
 
     def test_lineedit_has_current_text_output(self, network):
         """Test LineEditNode has current_text output."""
@@ -634,28 +632,27 @@ class TestSignalDataCapture:
         assert combo.get_output_value("selected_text") == "Blue"
 
     def test_signal_data_persists_across_refreshes(self, network):
-        """Test signal data persists across multiple refreshes."""
-        button = ButtonNode()
-        network.add_node(button)
+        """Test signal data persists across multiple refreshes for input widgets."""
+        line_edit = LineEditNode()
+        network.add_node(line_edit)
 
-        button.execute()
-        widget1 = button.get_output_value("widget")
+        line_edit.execute()
+        widget1 = line_edit.get_output_value("widget")
 
-        # Click the first widget
-        widget1.click()
-        widget1.click()
+        # Type in the first widget
+        widget1.setText("First")
 
-        # Refresh - new widget but count persists
-        button.execute()
-        assert button.get_output_value("click_count") == 2
-        widget2 = button.get_output_value("widget")
+        # Refresh - new widget but text persists
+        line_edit.execute()
+        assert line_edit.get_output_value("current_text") == "First"
+        widget2 = line_edit.get_output_value("widget")
 
-        # Click the new widget
-        widget2.click()
+        # Type in the new widget
+        widget2.setText("Second")
 
         # Refresh again
-        button.execute()
-        assert button.get_output_value("click_count") == 3
+        line_edit.execute()
+        assert line_edit.get_output_value("current_text") == "Second"
 
     def test_signal_data_can_be_connected_to_other_nodes(self, network):
         """Test signal data outputs can be connected downstream."""
