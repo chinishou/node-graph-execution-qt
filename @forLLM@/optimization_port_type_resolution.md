@@ -496,21 +496,33 @@ call_counts = {}  # This accumulates across ALL tests!
 
 ```python
 # tests/conftest.py
-@pytest.fixture(autouse=True)
-def reset_debug_counters():
-    """
-    Reset debug call counters before each test.
-
-    This prevents call_counts from accumulating across tests when running
-    the full test suite (pytest tests/ui/), ensuring accurate per-test
-    measurement of optimization effectiveness.
-    """
+@pytest.fixture(autouse=True, scope="function")
+def reset_debug_counters(request):
+    """Reset debug call counters before each test function."""
     import sys
 
-    # Check if test_debug_signals module has been imported
-    # (using sys.modules instead of try-except import to avoid silent failures)
-    if 'tests.ui.test_debug_signals' in sys.modules:
-        module = sys.modules['tests.ui.test_debug_signals']
+    # Only log in verbose mode (-v)
+    verbose = request.config.option.verbose > 0
+
+    # Search for test_debug_signals module in sys.modules
+    # CRITICAL: pytest imports as 'ui.test_debug_signals', NOT 'tests.ui.test_debug_signals'
+    # (because tests/ doesn't have __init__.py, so it's not a package)
+    possible_names = [
+        'ui.test_debug_signals',      # ← Actual name pytest uses
+        'test_debug_signals',
+        'tests.ui.test_debug_signals'
+    ]
+
+    module = None
+    for name in possible_names:
+        if name in sys.modules:
+            if verbose:
+                print(f"[FIXTURE] Found module: {name}")
+            module = sys.modules[name]
+            break
+
+    # Always reset counters (even in non-verbose mode)
+    if module:
         if hasattr(module, 'call_counts'):
             module.call_counts.clear()
         if hasattr(module, 'call_stack'):
@@ -518,9 +530,14 @@ def reset_debug_counters():
 
     yield  # Run the test
 
-    # Clear after test to prevent leaking
-    if 'tests.ui.test_debug_signals' in sys.modules:
-        module = sys.modules['tests.ui.test_debug_signals']
+    # Clear after test (search again as module might be loaded during test)
+    module = None
+    for name in possible_names:
+        if name in sys.modules:
+            module = sys.modules[name]
+            break
+
+    if module:
         if hasattr(module, 'call_counts'):
             module.call_counts.clear()
         if hasattr(module, 'call_stack'):
@@ -528,11 +545,12 @@ def reset_debug_counters():
 ```
 
 **How It Helps**:
-- Uses `sys.modules` instead of try-except import to avoid silent failures
-- Automatic reset before every test (no manual `call_counts.clear()` needed)
-- Accurate per-test measurement
-- Works across entire test suite
-- No test interdependencies
+- Searches multiple possible module names (pytest doesn't use package paths)
+- Automatic reset before AND after every test
+- Accurate per-test measurement (no accumulation)
+- Works regardless of test execution order
+- Silent mode by default, verbose logging with `-v` flag
+- No manual `call_counts.clear()` needed in tests
 
 **Important Note - Global Instrumentation**:
 ⚠️ The `patch_port_graphics_item()` and related patch functions in `test_debug_signals.py` modify **global classes** (PortGraphicsItem, etc.). Once any test calls these patch functions:
