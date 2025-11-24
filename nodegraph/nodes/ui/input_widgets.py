@@ -14,12 +14,12 @@ class LineEditNode(BaseNode):
     """
     LineEdit Node - Creates a QLineEdit widget.
 
-    Single-line text input field.
-    Captures text changes and exposes current_text as data output.
+    Single-line text input field with push-based trigger support.
+    When text changes in preview, triggers execution of all connected nodes.
     """
 
     category: str = "UI/Input"
-    description: str = "Single-line text input"
+    description: str = "Single-line text input with change trigger"
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -39,6 +39,8 @@ class LineEditNode(BaseNode):
         self.add_output("widget", data_type="widget", label="Widget")
         # Signal data outputs
         self.add_output("current_text", data_type="str", label="Current Text")
+        # Signal trigger output - executes connected nodes when text changes
+        self.add_output("text_changed", data_type="any", label="Text Changed")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Create the line edit widget."""
@@ -63,14 +65,15 @@ class LineEditNode(BaseNode):
         # Connect signal to capture text changes
         line_edit.textChanged.connect(lambda t: self._on_text_changed(t))
 
-        # Return both widget and signal data
+        # Return widget, signal data, and trigger output
         return {
             "widget": line_edit,
-            "current_text": self._current_text
+            "current_text": self._current_text,
+            "text_changed": None
         }
 
     def _on_text_changed(self, text: str):
-        """Handle text change in preview."""
+        """Handle text change in preview - triggers connected nodes."""
         # Update signal data
         self._current_text = text
 
@@ -83,17 +86,51 @@ class LineEditNode(BaseNode):
         except:
             pass
 
+        # Trigger execution of all connected nodes
+        self._trigger_connected_nodes(text)
+
+    def _trigger_connected_nodes(self, signal_value):
+        """
+        Execute all nodes connected to the 'text_changed' output.
+
+        Args:
+            signal_value: The new text value
+        """
+        # Get the 'text_changed' output connector
+        text_changed_output = self.output("text_changed")
+        if not text_changed_output:
+            return
+
+        # Get all connections from this output
+        connections = text_changed_output.connections()
+        if not connections:
+            return
+
+        print(f"[Trigger] LineEdit '{self.name}' text changed, executing {len(connections)} connected node(s)...")
+
+        # Store the signal value temporarily for connected nodes to read
+        self._output_values["text_changed"] = signal_value
+
+        # Execute each connected node
+        for conn in connections:
+            if conn.node:
+                try:
+                    print(f"[Trigger] Executing {conn.node.name}...")
+                    conn.node.execute()
+                except Exception as e:
+                    print(f"[Trigger] Error executing {conn.node.name}: {e}")
+
 
 class ComboBoxNode(BaseNode):
     """
     ComboBox Node - Creates a QComboBox widget.
 
-    Dropdown selection widget with customizable items.
-    Captures selection changes and exposes selected_index and selected_text as data outputs.
+    Dropdown selection widget with push-based trigger support.
+    When selection changes in preview, triggers execution of all connected nodes.
     """
 
     category: str = "UI/Input"
-    description: str = "Dropdown selection box"
+    description: str = "Dropdown selection box with change trigger"
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -117,6 +154,8 @@ class ComboBoxNode(BaseNode):
         # Signal data outputs
         self.add_output("selected_index", data_type="int", label="Selected Index")
         self.add_output("selected_text", data_type="str", label="Selected Text")
+        # Signal trigger output - executes connected nodes when selection changes
+        self.add_output("selection_changed", data_type="any", label="Selection Changed")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Create the combo box widget."""
@@ -153,15 +192,16 @@ class ComboBoxNode(BaseNode):
             lambda idx: self._on_selection_changed(idx, combo_box)
         )
 
-        # Return both widget and signal data
+        # Return widget, signal data, and trigger output
         return {
             "widget": combo_box,
             "selected_index": self._selected_index,
-            "selected_text": self._selected_text
+            "selected_text": self._selected_text,
+            "selection_changed": None
         }
 
     def _on_selection_changed(self, index: int, combo_box: QComboBox):
-        """Handle selection change in preview."""
+        """Handle selection change in preview - triggers connected nodes."""
         # Update signal data
         self._selected_index = index
         self._selected_text = combo_box.currentText()
@@ -174,3 +214,37 @@ class ComboBoxNode(BaseNode):
             print_output_signal.emit(self.name, f"Selected: '{self._selected_text}' (index {index})")
         except:
             pass
+
+        # Trigger execution of all connected nodes
+        self._trigger_connected_nodes(index)
+
+    def _trigger_connected_nodes(self, signal_value):
+        """
+        Execute all nodes connected to the 'selection_changed' output.
+
+        Args:
+            signal_value: The new selected index
+        """
+        # Get the 'selection_changed' output connector
+        selection_changed_output = self.output("selection_changed")
+        if not selection_changed_output:
+            return
+
+        # Get all connections from this output
+        connections = selection_changed_output.connections()
+        if not connections:
+            return
+
+        print(f"[Trigger] ComboBox '{self.name}' selection changed, executing {len(connections)} connected node(s)...")
+
+        # Store the signal value temporarily for connected nodes to read
+        self._output_values["selection_changed"] = signal_value
+
+        # Execute each connected node
+        for conn in connections:
+            if conn.node:
+                try:
+                    print(f"[Trigger] Executing {conn.node.name}...")
+                    conn.node.execute()
+                except Exception as e:
+                    print(f"[Trigger] Error executing {conn.node.name}: {e}")
