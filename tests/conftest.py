@@ -40,6 +40,37 @@ def ui_delay(request):
     return int(request.config.getoption("--ui-delay"))
 
 
+@pytest.fixture(autouse=True, scope="function")
+def reset_debug_counters():
+    """Reset debug call counters before each test (silent)."""
+    import sys
+
+    # Search for test_debug_signals module
+    possible_names = ['ui.test_debug_signals', 'test_debug_signals', 'tests.ui.test_debug_signals']
+
+    module = None
+    for name in possible_names:
+        if name in sys.modules:
+            module = sys.modules[name]
+            break
+
+    # Reset counters before test
+    if module:
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
+
+    yield  # Run the test
+
+    # Reset counters after test
+    if module:
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
+
+
 def pytest_configure(config):
     """Configure pytest based on options."""
     if config.getoption("--show-ui"):
