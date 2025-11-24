@@ -41,7 +41,7 @@ def ui_delay(request):
 
 
 @pytest.fixture(autouse=True)
-def reset_debug_counters():
+def reset_debug_counters(request):
     """
     Reset debug call counters before each test.
 
@@ -55,20 +55,30 @@ def reset_debug_counters():
     # Check if test_debug_signals module has been imported
     if 'tests.ui.test_debug_signals' in sys.modules:
         module = sys.modules['tests.ui.test_debug_signals']
+        count_before = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+
         if hasattr(module, 'call_counts'):
             module.call_counts.clear()
         if hasattr(module, 'call_stack'):
             module.call_stack.clear()
+
+        # Debug output to verify fixture is working
+        print(f"\n[DEBUG] Reset counters before {request.node.name} (was: {count_before}, now: 0)")
 
     yield  # Run the test
 
     # Clear after test to prevent leaking into next test
     if 'tests.ui.test_debug_signals' in sys.modules:
         module = sys.modules['tests.ui.test_debug_signals']
+        count_after = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+
         if hasattr(module, 'call_counts'):
             module.call_counts.clear()
         if hasattr(module, 'call_stack'):
             module.call_stack.clear()
+
+        # Debug output to verify counter was used
+        print(f"[DEBUG] Reset counters after {request.node.name} (was: {count_after}, now: 0)")
 
 
 def pytest_configure(config):
