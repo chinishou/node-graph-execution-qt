@@ -49,8 +49,7 @@ def register_ui_nodes(qapp):
     NodeRegistry.register(QWidgetContainerNode)
     NodeRegistry.register(QMainWindowNode)
     yield
-    # Cleanup after tests
-    NodeRegistry.reset()
+    # No cleanup needed - nodes remain registered
 
 
 @pytest.fixture
@@ -68,8 +67,8 @@ class TestBasicUINodes:
         network.add_node(root)
 
         assert root.node_type == "UIRootNode"
-        assert root.has_input("widget")
-        assert root.has_output("widget")
+        assert root.input("widget") is not None
+        assert root.output("widget") is not None
 
     def test_label_node_creation(self, network):
         """Test LabelNode can be created and executed."""
@@ -121,9 +120,9 @@ class TestDynamicInputControl:
 
         # Default should be 5 children
         assert layout.parameter("num_children").value() == 5
-        assert layout.has_input("child1")
-        assert layout.has_input("child5")
-        assert not layout.has_input("child6")
+        assert layout.input("child1") is not None
+        assert layout.input("child5") is not None
+        assert layout.input("child6") is None
 
     def test_vbox_custom_children_count(self, network):
         """Test VBoxLayoutNode with custom num_children."""
@@ -132,10 +131,10 @@ class TestDynamicInputControl:
         network.add_node(layout)
 
         assert layout.parameter("num_children").value() == 3
-        assert layout.has_input("child1")
-        assert layout.has_input("child2")
-        assert layout.has_input("child3")
-        assert not layout.has_input("child4")
+        assert layout.input("child1") is not None
+        assert layout.input("child2") is not None
+        assert layout.input("child3") is not None
+        assert layout.input("child4") is None
 
     def test_vbox_with_10_children(self, network):
         """Test VBoxLayoutNode can handle many children."""
@@ -144,8 +143,8 @@ class TestDynamicInputControl:
 
         assert layout.parameter("num_children").value() == 10
         for i in range(1, 11):
-            assert layout.has_input(f"child{i}")
-        assert not layout.has_input("child11")
+            assert layout.input(f"child{i}") is not None
+        assert layout.input("child11") is None
 
     def test_hbox_dynamic_children(self, network):
         """Test HBoxLayoutNode dynamic children."""
@@ -154,7 +153,7 @@ class TestDynamicInputControl:
 
         assert layout.parameter("num_children").value() == 7
         for i in range(1, 8):
-            assert layout.has_input(f"child{i}")
+            assert layout.input(f"child{i}") is not None
 
 
 class TestConnectionsWithDynamicInputs:
@@ -521,8 +520,8 @@ class TestSignalDataCapture:
         button = ButtonNode()
         network.add_node(button)
 
-        assert button.has_output("widget")
-        assert button.has_output("click_count")
+        assert button.output("widget") is not None
+        assert button.output("click_count") is not None
 
     def test_button_initial_click_count(self, network):
         """Test ButtonNode initial click_count is 0."""
@@ -557,8 +556,8 @@ class TestSignalDataCapture:
         line_edit = LineEditNode()
         network.add_node(line_edit)
 
-        assert line_edit.has_output("widget")
-        assert line_edit.has_output("current_text")
+        assert line_edit.output("widget") is not None
+        assert line_edit.output("current_text") is not None
 
     def test_lineedit_initial_text(self, network):
         """Test LineEditNode initial current_text."""
@@ -593,9 +592,9 @@ class TestSignalDataCapture:
         combo = ComboBoxNode()
         network.add_node(combo)
 
-        assert combo.has_output("widget")
-        assert combo.has_output("selected_index")
-        assert combo.has_output("selected_text")
+        assert combo.output("widget") is not None
+        assert combo.output("selected_index") is not None
+        assert combo.output("selected_text") is not None
 
     def test_combobox_initial_selection(self, network):
         """Test ComboBoxNode initial selection."""

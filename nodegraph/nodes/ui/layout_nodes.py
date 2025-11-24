@@ -22,11 +22,11 @@ class VBoxLayoutNode(BaseNode):
     description: str = "Vertical box layout"
 
     def __init__(self, num_children: int = 5, **kwargs):
-        # Store num_children before calling super().__init__
-        self._setup_num_children = num_children
+        # Pass _setup_ parameters via kwargs to BaseNode
         super().__init__(
             name="VBox Layout",
             node_type="VBoxLayoutNode",
+            _setup_num_children=num_children,
             **kwargs
         )
 
@@ -91,10 +91,11 @@ class HBoxLayoutNode(BaseNode):
     description: str = "Horizontal box layout"
 
     def __init__(self, num_children: int = 5, **kwargs):
-        self._setup_num_children = num_children
+        # Pass _setup_ parameters via kwargs to BaseNode
         super().__init__(
             name="HBox Layout",
             node_type="HBoxLayoutNode",
+            _setup_num_children=num_children,
             **kwargs
         )
 
@@ -157,10 +158,11 @@ class QWidgetContainerNode(BaseNode):
     description: str = "QWidget container"
 
     def __init__(self, num_children: int = 3, **kwargs):
-        self._setup_num_children = num_children
+        # Pass _setup_ parameters via kwargs to BaseNode
         super().__init__(
             name="QWidget Container",
             node_type="QWidgetContainerNode",
+            _setup_num_children=num_children,
             **kwargs
         )
 
