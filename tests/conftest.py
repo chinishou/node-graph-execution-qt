@@ -53,51 +53,70 @@ def reset_debug_counters(request):
     counters exist and are reset, regardless of test execution order.
     """
     import sys
+    import importlib
 
-    # Force import test_debug_signals to ensure counters exist
-    # Use importlib to avoid issues if module is already loaded
-    try:
-        if 'tests.ui.test_debug_signals' in sys.modules:
-            module = sys.modules['tests.ui.test_debug_signals']
-        else:
-            import importlib
-            try:
-                module = importlib.import_module('tests.ui.test_debug_signals')
-            except ImportError:
-                # Module doesn't exist (not running UI tests)
-                module = None
+    print(f"\n{'='*80}")
+    print(f"[FIXTURE] reset_debug_counters BEFORE test: {request.node.name}")
+    print(f"{'='*80}")
 
-        if module:
-            count_before = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+    module = None
 
-            if hasattr(module, 'call_counts'):
-                module.call_counts.clear()
-            if hasattr(module, 'call_stack'):
-                module.call_stack.clear()
+    # Try to get or import the test_debug_signals module
+    if 'tests.ui.test_debug_signals' in sys.modules:
+        print(f"[FIXTURE] Module already in sys.modules")
+        module = sys.modules['tests.ui.test_debug_signals']
+    else:
+        print(f"[FIXTURE] Module not in sys.modules, attempting import...")
+        try:
+            module = importlib.import_module('tests.ui.test_debug_signals')
+            print(f"[FIXTURE] Successfully imported module")
+        except ImportError as e:
+            print(f"[FIXTURE] ImportError (this is OK for non-UI tests): {e}")
+        except Exception as e:
+            print(f"[FIXTURE] Unexpected error importing: {type(e).__name__}: {e}")
 
-            # Debug output to verify fixture is working
-            print(f"\n[DEBUG] Reset counters before {request.node.name} (was: {count_before}, now: 0)")
-    except Exception as e:
-        # Catch any import errors silently for non-UI tests
-        print(f"[DEBUG] Could not reset counters: {e}")
+    if module:
+        count_before = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+        print(f"[FIXTURE] Counter value BEFORE reset: {count_before}")
+        print(f"[FIXTURE] Detailed counts: {dict(module.call_counts) if hasattr(module, 'call_counts') else {}}")
+
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+            print(f"[FIXTURE] call_counts.clear() called")
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
+            print(f"[FIXTURE] call_stack.clear() called")
+
+        count_after_clear = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+        print(f"[FIXTURE] Counter value AFTER reset: {count_after_clear}")
+    else:
+        print(f"[FIXTURE] Module is None, skipping reset")
+
+    print(f"{'='*80}\n")
 
     yield  # Run the test
 
     # Clear after test to prevent leaking into next test
-    try:
-        if 'tests.ui.test_debug_signals' in sys.modules:
-            module = sys.modules['tests.ui.test_debug_signals']
-            count_after = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+    print(f"\n{'='*80}")
+    print(f"[FIXTURE] reset_debug_counters AFTER test: {request.node.name}")
+    print(f"{'='*80}")
 
-            if hasattr(module, 'call_counts'):
-                module.call_counts.clear()
-            if hasattr(module, 'call_stack'):
-                module.call_stack.clear()
+    if 'tests.ui.test_debug_signals' in sys.modules:
+        module = sys.modules['tests.ui.test_debug_signals']
+        count_after = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+        print(f"[FIXTURE] Counter value during test: {count_after}")
+        print(f"[FIXTURE] Detailed counts: {dict(module.call_counts) if hasattr(module, 'call_counts') else {}}")
 
-            # Debug output to verify counter was used
-            print(f"[DEBUG] Reset counters after {request.node.name} (was: {count_after}, now: 0)")
-    except Exception:
-        pass
+        if hasattr(module, 'call_counts'):
+            module.call_counts.clear()
+        if hasattr(module, 'call_stack'):
+            module.call_stack.clear()
+
+        print(f"[FIXTURE] Counters cleared after test")
+    else:
+        print(f"[FIXTURE] Module not in sys.modules")
+
+    print(f"{'='*80}\n")
 
 
 def pytest_configure(config):
