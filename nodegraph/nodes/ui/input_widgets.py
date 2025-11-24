@@ -109,7 +109,7 @@ class LineEditNode(BaseNode):
         print(f"[Trigger] LineEdit '{self.name}' text changed, executing {len(connections)} connected node(s)...")
 
         # Store the signal value temporarily for connected nodes to read
-        self._output_values["text_changed"] = signal_value
+        self._last_outputs["text_changed"] = signal_value
 
         # Execute each connected node
         for conn in connections:
@@ -238,7 +238,7 @@ class ComboBoxNode(BaseNode):
         print(f"[Trigger] ComboBox '{self.name}' selection changed, executing {len(connections)} connected node(s)...")
 
         # Store the signal value temporarily for connected nodes to read
-        self._output_values["selection_changed"] = signal_value
+        self._last_outputs["selection_changed"] = signal_value
 
         # Execute each connected node
         for conn in connections:
