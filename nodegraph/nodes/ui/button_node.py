@@ -15,6 +15,7 @@ class ButtonNode(BaseNode):
     Button Node - Creates a QPushButton widget.
 
     When clicked in preview, prints a message to console.
+    Captures click events and exposes click_count as data output.
     """
 
     category: str = "UI/Widgets"
@@ -26,6 +27,8 @@ class ButtonNode(BaseNode):
             node_type="ButtonNode",
             **kwargs
         )
+        # Signal data storage
+        self._click_count = 0
 
     def setup(self) -> None:
         """Setup parameters and outputs."""
@@ -35,6 +38,8 @@ class ButtonNode(BaseNode):
         self.add_parameter("on_click_message", data_type="str",
                           default_value="Button clicked!", label="Click Message")
         self.add_output("widget", data_type="widget", label="Widget")
+        # Signal data outputs
+        self.add_output("click_count", data_type="int", label="Click Count")
 
     def compute(self, **inputs) -> Dict[str, Any]:
         """Create the button widget."""
@@ -53,18 +58,25 @@ class ButtonNode(BaseNode):
         # Connect click signal
         button.clicked.connect(self._on_button_clicked)
 
-        return {"widget": button}
+        # Return both widget and signal data
+        return {
+            "widget": button,
+            "click_count": self._click_count
+        }
 
     def _on_button_clicked(self):
         """Handle button click in preview."""
+        # Update signal data
+        self._click_count += 1
+
         message = self.parameter("on_click_message").value()
 
         # Output to console
-        print(f"[Preview] {self.name}: {message}")
+        print(f"[Preview] {self.name}: {message} (Total clicks: {self._click_count})")
 
         # Also output to the OutputPane if available
         try:
             from ...nodes.utils import print_output_signal
-            print_output_signal.emit(self.name, message)
+            print_output_signal.emit(self.name, f"{message} (Total clicks: {self._click_count})")
         except:
             pass  # OutputPane not available

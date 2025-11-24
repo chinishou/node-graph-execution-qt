@@ -18,6 +18,8 @@ from nodegraph.nodes.ui import (
     UIRootNode,
     LabelNode,
     ButtonNode,
+    LineEditNode,
+    ComboBoxNode,
     VBoxLayoutNode,
     HBoxLayoutNode,
     QWidgetContainerNode,
@@ -31,6 +33,8 @@ def register_ui_nodes():
     NodeRegistry.register(UIRootNode)
     NodeRegistry.register(LabelNode)
     NodeRegistry.register(ButtonNode)
+    NodeRegistry.register(LineEditNode)
+    NodeRegistry.register(ComboBoxNode)
     NodeRegistry.register(VBoxLayoutNode)
     NodeRegistry.register(HBoxLayoutNode)
     NodeRegistry.register(QWidgetContainerNode)
@@ -498,3 +502,172 @@ class TestEdgeCases:
         container = layout.get_output_value("widget")
         # 50 labels + 1 stretch
         assert container.layout().count() == 51
+
+
+class TestSignalDataCapture:
+    """Test signal data capture for Event → Data conversion."""
+
+    def test_button_has_click_count_output(self, network):
+        """Test ButtonNode has click_count output."""
+        button = ButtonNode()
+        network.add_node(button)
+
+        assert button.has_output("widget")
+        assert button.has_output("click_count")
+
+    def test_button_initial_click_count(self, network):
+        """Test ButtonNode initial click_count is 0."""
+        button = ButtonNode()
+        network.add_node(button)
+
+        button.execute()
+        click_count = button.get_output_value("click_count")
+        assert click_count == 0
+
+    def test_button_click_increments_count(self, network):
+        """Test button clicks increment click_count."""
+        button = ButtonNode()
+        network.add_node(button)
+
+        # First execution
+        button.execute()
+        widget = button.get_output_value("widget")
+        assert button.get_output_value("click_count") == 0
+
+        # Simulate clicks
+        widget.click()
+        widget.click()
+        widget.click()
+
+        # Execute again - should see updated count
+        button.execute()
+        assert button.get_output_value("click_count") == 3
+
+    def test_lineedit_has_current_text_output(self, network):
+        """Test LineEditNode has current_text output."""
+        line_edit = LineEditNode()
+        network.add_node(line_edit)
+
+        assert line_edit.has_output("widget")
+        assert line_edit.has_output("current_text")
+
+    def test_lineedit_initial_text(self, network):
+        """Test LineEditNode initial current_text."""
+        line_edit = LineEditNode()
+        network.add_node(line_edit)
+
+        line_edit.parameter("text").set_value("Hello")
+        line_edit.execute()
+
+        current_text = line_edit.get_output_value("current_text")
+        assert current_text == "Hello"
+
+    def test_lineedit_text_change_captured(self, network):
+        """Test LineEditNode captures text changes."""
+        line_edit = LineEditNode()
+        network.add_node(line_edit)
+
+        # First execution
+        line_edit.execute()
+        widget = line_edit.get_output_value("widget")
+        assert line_edit.get_output_value("current_text") == ""
+
+        # Simulate text change
+        widget.setText("User typed this")
+
+        # Execute again - should see updated text
+        line_edit.execute()
+        assert line_edit.get_output_value("current_text") == "User typed this"
+
+    def test_combobox_has_selection_outputs(self, network):
+        """Test ComboBoxNode has selected_index and selected_text outputs."""
+        combo = ComboBoxNode()
+        network.add_node(combo)
+
+        assert combo.has_output("widget")
+        assert combo.has_output("selected_index")
+        assert combo.has_output("selected_text")
+
+    def test_combobox_initial_selection(self, network):
+        """Test ComboBoxNode initial selection."""
+        combo = ComboBoxNode()
+        network.add_node(combo)
+
+        combo.parameter("items").set_value("Apple,Banana,Cherry")
+        combo.parameter("current_index").set_value(1)
+
+        combo.execute()
+
+        assert combo.get_output_value("selected_index") == 1
+        assert combo.get_output_value("selected_text") == "Banana"
+
+    def test_combobox_selection_change_captured(self, network):
+        """Test ComboBoxNode captures selection changes."""
+        combo = ComboBoxNode()
+        network.add_node(combo)
+
+        combo.parameter("items").set_value("Red,Green,Blue")
+        combo.parameter("current_index").set_value(0)
+
+        # First execution
+        combo.execute()
+        widget = combo.get_output_value("widget")
+        assert combo.get_output_value("selected_index") == 0
+        assert combo.get_output_value("selected_text") == "Red"
+
+        # Simulate selection change
+        widget.setCurrentIndex(2)
+
+        # Execute again - should see updated selection
+        combo.execute()
+        assert combo.get_output_value("selected_index") == 2
+        assert combo.get_output_value("selected_text") == "Blue"
+
+    def test_signal_data_persists_across_refreshes(self, network):
+        """Test signal data persists across multiple refreshes."""
+        button = ButtonNode()
+        network.add_node(button)
+
+        button.execute()
+        widget1 = button.get_output_value("widget")
+
+        # Click the first widget
+        widget1.click()
+        widget1.click()
+
+        # Refresh - new widget but count persists
+        button.execute()
+        assert button.get_output_value("click_count") == 2
+        widget2 = button.get_output_value("widget")
+
+        # Click the new widget
+        widget2.click()
+
+        # Refresh again
+        button.execute()
+        assert button.get_output_value("click_count") == 3
+
+    def test_signal_data_can_be_connected_to_other_nodes(self, network):
+        """Test signal data outputs can be connected downstream."""
+        from nodegraph.nodes.ui.label_node import LabelNode
+
+        line_edit = LineEditNode()
+        label = LabelNode()
+        network.add_node(line_edit)
+        network.add_node(label)
+
+        # Execute line edit
+        line_edit.execute()
+        widget = line_edit.get_output_value("widget")
+
+        # User types something
+        widget.setText("Hello World")
+
+        # Execute again to capture the text
+        line_edit.execute()
+        current_text = line_edit.get_output_value("current_text")
+
+        # This demonstrates the data is accessible (actual connection
+        # to other node's inputs would happen via the graph system)
+        assert current_text == "Hello World"
+        assert isinstance(current_text, str)
