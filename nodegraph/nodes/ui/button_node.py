@@ -99,7 +99,7 @@ class ButtonNode(BaseNode):
         print(f"[Trigger] Button '{self.name}' clicked, executing {len(connections)} connected node(s)...")
 
         # Store the signal value temporarily for connected nodes to read
-        self._output_values["clicked"] = signal_value
+        self._last_outputs["clicked"] = signal_value
 
         # Execute each connected node
         for conn in connections:

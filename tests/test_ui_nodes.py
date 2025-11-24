@@ -654,6 +654,33 @@ class TestSignalTriggers:
         line_edit.execute()
         assert line_edit.get_output_value("current_text") == "Second"
 
+    def test_label_has_clicked_output(self, network):
+        """Test LabelNode has clicked trigger output."""
+        label = LabelNode()
+        network.add_node(label)
+
+        assert label.output("widget") is not None
+        assert label.output("clicked") is not None
+
+    def test_lineedit_has_text_changed_output(self, network):
+        """Test LineEditNode has text_changed trigger output."""
+        line_edit = LineEditNode()
+        network.add_node(line_edit)
+
+        assert line_edit.output("widget") is not None
+        assert line_edit.output("current_text") is not None
+        assert line_edit.output("text_changed") is not None
+
+    def test_combobox_has_selection_changed_output(self, network):
+        """Test ComboBoxNode has selection_changed trigger output."""
+        combo = ComboBoxNode()
+        network.add_node(combo)
+
+        assert combo.output("widget") is not None
+        assert combo.output("selected_index") is not None
+        assert combo.output("selected_text") is not None
+        assert combo.output("selection_changed") is not None
+
     def test_signal_data_can_be_connected_to_other_nodes(self, network):
         """Test signal data outputs can be connected downstream."""
         from nodegraph.nodes.ui.label_node import LabelNode

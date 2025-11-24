@@ -72,19 +72,19 @@ def compute(self):
     return {"widget": label}
 ```
 
-### 3. Signal 處理：數據捕獲 vs Event Trigger
+### 3. Signal 處理：統一採用 Push-based Trigger 模式
 
-**決策：採用混合模式**
+**決策：所有 UI Widgets 統一使用 Push-based Trigger**
 
-- **Input Widgets** (LineEdit, ComboBox): 使用數據捕獲模式
-  - 記錄用戶輸入/選擇
-  - 下次 refresh 時作為 data output 暴露
-  - 適合需要讀取用戶輸入的場景
-
-- **Action Widgets** (Button): 使用 Event Trigger 模式
+- **所有 Widgets** (Label, Button, LineEdit, ComboBox): 使用 Event Trigger 模式
   - 立即執行連接的節點
   - Push-based 響應機制
-  - 適合觸發操作的場景
+  - 適合觸發操作和即時響應的場景
+
+- **保留數據輸出**：Input Widgets 同時保留數據捕獲功能
+  - LineEdit: `current_text` 數據輸出 + `text_changed` trigger 輸出
+  - ComboBox: `selected_index`, `selected_text` 數據輸出 + `selection_changed` trigger 輸出
+  - 兼顧數據讀取和即時響應兩種需求
 
 ---
 
@@ -198,14 +198,34 @@ LivePreviewPane 會尋找 network 中的 UIRootNode 並執行它來獲取完整�
 
 #### 2. LabelNode
 
-**作用：** 創建文字標籤
+**作用：** 創建可點擊的文字標籤
 
 **參數：**
 - `text` (str): 顯示的文字
 - `alignment` (str): 對齊方式 (left/center/right)
+- `on_click_message` (str): 點擊時顯示的訊息
 
 **輸出：**
-- `widget` (widget): QLabel 實例
+- `widget` (widget): ClickableLabel 實例
+- `clicked` (any): Click trigger output
+
+**Signal Trigger 實現：**
+```python
+class ClickableLabel(QLabel):
+    """QLabel subclass that emits a clicked signal when clicked."""
+    clicked = Signal()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+
+def _on_label_clicked(self):
+    # 1. 輸出訊息
+    print(f"[Preview] {self.name}: {message}")
+
+    # 2. 觸發連接的節點
+    self._trigger_connected_nodes(True)
+```
 
 #### 3. ButtonNode
 
@@ -244,7 +264,7 @@ def _trigger_connected_nodes(self, signal_value):
 
 #### 4. LineEditNode
 
-**作用：** 單行文字輸入框
+**作用：** 單行文字輸入框，支援 text change trigger
 
 **參數：**
 - `text` (str): 預設文字
@@ -254,9 +274,10 @@ def _trigger_connected_nodes(self, signal_value):
 
 **輸出：**
 - `widget` (widget): QLineEdit 實例
-- `current_text` (str): 當前文字內容
+- `current_text` (str): 當前文字內容（數據輸出）
+- `text_changed` (any): Text change trigger output
 
-**數據捕獲實現：**
+**Push-based Trigger 實現：**
 ```python
 def __init__(self):
     self._current_text = ""
@@ -268,16 +289,25 @@ def compute(self, **inputs):
 
     return {
         "widget": line_edit,
-        "current_text": self._current_text
+        "current_text": self._current_text,
+        "text_changed": None
     }
 
 def _on_text_changed(self, text: str):
     self._current_text = text  # 記錄當前值
+    self._trigger_connected_nodes(text)  # 觸發連接的節點
+
+def _trigger_connected_nodes(self, signal_value):
+    text_changed_output = self.output("text_changed")
+    connections = text_changed_output.connections()
+    self._output_values["text_changed"] = signal_value
+    for conn in connections:
+        conn.node.execute()
 ```
 
 #### 5. ComboBoxNode
 
-**作用：** 下拉選擇框
+**作用：** 下拉選擇框，支援 selection change trigger
 
 **參數：**
 - `items` (str): 選項列表（逗號分隔）
@@ -286,10 +316,11 @@ def _on_text_changed(self, text: str):
 
 **輸出：**
 - `widget` (widget): QComboBox 實例
-- `selected_index` (int): 當前選擇的索引
-- `selected_text` (str): 當前選擇的文字
+- `selected_index` (int): 當前選擇的索引（數據輸出）
+- `selected_text` (str): 當前選擇的文字（數據輸出）
+- `selection_changed` (any): Selection change trigger output
 
-**狀態保持實現：**
+**Push-based Trigger 實現：**
 ```python
 def __init__(self):
     self._selected_index = -1  # -1 表示未初始化
@@ -313,8 +344,21 @@ def compute(self, **inputs):
     return {
         "widget": combo_box,
         "selected_index": self._selected_index,
-        "selected_text": self._selected_text
+        "selected_text": self._selected_text,
+        "selection_changed": None
     }
+
+def _on_selection_changed(self, index: int, combo_box: QComboBox):
+    self._selected_index = index
+    self._selected_text = combo_box.currentText()
+    self._trigger_connected_nodes(index)  # 觸發連接的節點
+
+def _trigger_connected_nodes(self, signal_value):
+    selection_changed_output = self.output("selection_changed")
+    connections = selection_changed_output.connections()
+    self._output_values["selection_changed"] = signal_value
+    for conn in connections:
+        conn.node.execute()
 ```
 
 ---
@@ -386,18 +430,17 @@ Qt Signals 本質上是 **push-based** 的：
 
 ### 適用場景
 
-**適合使用 Trigger 模式：**
-- Button clicks
-- Menu actions
-- Keyboard shortcuts
-- Timer events
-- 任何需要立即響應的操作
+**所有 UI Widgets 都使用 Trigger 模式：**
+- Label clicks - 點擊標籤觸發操作
+- Button clicks - 按鈕點擊觸發操作
+- LineEdit text changes - 文字輸入即時觸發
+- ComboBox selection - 選擇改變即時觸發
+- 任何需要立即響應的 UI 交互
 
-**適合使用數據捕獲模式：**
-- Text input changes
-- Slider value changes
-- ComboBox selection
-- 任何需要讀取當前值的狀態
+**Input Widgets 同時提供數據輸出：**
+- LineEdit: `current_text` 可供其他節點讀取
+- ComboBox: `selected_index`, `selected_text` 可供其他節點讀取
+- 兼顧即時響應和數據讀取兩種需求
 
 ---
 
@@ -690,7 +733,7 @@ def qapp():
 3. ButtonNode 立即執行 LabelNode
 4. Label 更新為新的文字
 
-### 示例 3：表單輸入
+### 示例 3：LineEdit Trigger 機制
 
 ```
 ┌─────────────────┐
@@ -698,20 +741,40 @@ def qapp():
 │ placeholder:    │
 │ "Enter name"    │
 └────────┬────────┘
-         │ current_text
+         │ text_changed (trigger)
          ▼
 ┌─────────────────┐
 │ [Label Node]    │
-│ text: input     │◄─── 顯示輸入的文字
+│ text: input     │◄─── 連接到 text_changed
 └─────────────────┘
 ```
 
 **行為：**
 1. 用戶在 LineEdit 輸入文字
-2. textChanged signal 觸發，更新 `_current_text`
-3. 用戶點擊 Refresh
-4. Label 執行，pull LineEdit 的 `current_text` output
-5. Label 顯示用戶輸入的文字
+2. textChanged signal 觸發
+3. LineEditNode 立即執行 LabelNode
+4. Label 即時顯示用戶輸入的文字（無需 Refresh）
+
+### 示例 4：ComboBox Trigger 機制
+
+```
+┌─────────────────┐
+│ [ComboBox]      │
+│ items: A,B,C    │
+└────────┬────────┘
+         │ selection_changed (trigger)
+         ▼
+┌─────────────────┐
+│ [Label Node]    │
+│ text: input     │◄─── 連接到 selection_changed
+└─────────────────┘
+```
+
+**行為：**
+1. 用戶在 ComboBox 選擇新選項
+2. currentIndexChanged signal 觸發
+3. ComboBoxNode 立即執行 LabelNode
+4. Label 即時顯示選擇的選項（無需 Refresh）
 
 ---
 
