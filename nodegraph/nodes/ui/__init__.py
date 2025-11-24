@@ -8,6 +8,7 @@ Nodes for building user interfaces.
 from .ui_root_node import UIRootNode
 from .label_node import LabelNode
 from .button_node import ButtonNode
+from .input_widgets import LineEditNode, ComboBoxNode
 from .layout_nodes import (
     VBoxLayoutNode,
     HBoxLayoutNode,
@@ -19,6 +20,8 @@ __all__ = [
     "UIRootNode",
     "LabelNode",
     "ButtonNode",
+    "LineEditNode",
+    "ComboBoxNode",
     "VBoxLayoutNode",
     "HBoxLayoutNode",
     "QWidgetContainerNode",

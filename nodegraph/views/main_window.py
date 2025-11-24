@@ -238,6 +238,7 @@ class MainWindow(QMainWindow):
         from ..nodes.subnet import SubnetNode, SubnetInputNode, SubnetOutputNode
         from ..nodes.ui import (
             UIRootNode, LabelNode, ButtonNode,
+            LineEditNode, ComboBoxNode,
             VBoxLayoutNode, HBoxLayoutNode,
             QWidgetContainerNode, QMainWindowNode
         )
@@ -269,6 +270,8 @@ class MainWindow(QMainWindow):
         NodeRegistry.register(UIRootNode)
         NodeRegistry.register(LabelNode)
         NodeRegistry.register(ButtonNode)
+        NodeRegistry.register(LineEditNode)
+        NodeRegistry.register(ComboBoxNode)
         NodeRegistry.register(VBoxLayoutNode)
         NodeRegistry.register(HBoxLayoutNode)
         NodeRegistry.register(QWidgetContainerNode)
