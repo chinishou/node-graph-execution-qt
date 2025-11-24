@@ -41,14 +41,7 @@ class PortGraphicsItem(QGraphicsItem):
         self.connector = connector
         self.is_output = is_output
         self._is_hovered = False
-
-        # Cache resolved type to avoid repeated resolution in paint()
-        # For concrete types (not 'any'), set cache immediately
-        if connector and connector.data_type != 'any':
-            self._cached_type = connector.data_type
-        else:
-            self._cached_type = None
-
+        self._cached_type = None  # Cache resolved type to avoid repeated resolution in paint()
         self._resolution_depth = 0  # Track recursion depth
 
         self.setAcceptHoverEvents(True)
@@ -65,16 +58,14 @@ class PortGraphicsItem(QGraphicsItem):
 
     def _invalidate_type_cache(self):
         """Invalidate the cached type when connections change."""
-        # OPTIMIZATION: Skip for ports with concrete types (not 'any')
-        # Concrete types won't change regardless of connections, and the cache
-        # is already set during initialization. UI updates are handled by
-        # NodeGraphicsItem._on_connection_changed triggering scene updates.
+        # OPTIMIZATION: Skip invalidation for ports with concrete types
+        # If the connector has a concrete type (not 'any'), the type won't change
+        # regardless of connections, so we can keep the cache
         if self.connector.data_type != 'any':
+            # Type is concrete, no need to invalidate or update
             return
 
-        # Clear cache for 'any' type ports (need to re-resolve from connections)
         self._cached_type = None
-
         # Request batch update from scene instead of individual update
         scene = self.scene()
         if scene and hasattr(scene, '_schedule_port_update'):
