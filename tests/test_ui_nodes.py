@@ -10,7 +10,7 @@ Comprehensive tests for UI preview system nodes including:
 """
 
 import pytest
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QMainWindow
+from PySide6.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMainWindow
 
 from nodegraph.core.models import NetworkModel
 from nodegraph.core.registry import NodeRegistry
@@ -27,8 +27,17 @@ from nodegraph.nodes.ui import (
 )
 
 
+@pytest.fixture(scope="session")
+def qapp():
+    """Create QApplication instance for all tests."""
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    yield app
+
+
 @pytest.fixture(autouse=True)
-def register_ui_nodes():
+def register_ui_nodes(qapp):
     """Register UI nodes for testing."""
     NodeRegistry.register(UIRootNode)
     NodeRegistry.register(LabelNode)
