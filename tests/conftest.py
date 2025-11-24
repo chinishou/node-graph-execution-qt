@@ -48,26 +48,27 @@ def reset_debug_counters(request):
     This prevents call_counts from accumulating across tests when running
     the full test suite (pytest tests/ui/), ensuring accurate per-test
     measurement of optimization effectiveness.
-
-    IMPORTANT: This fixture forcibly imports test_debug_signals to ensure
-    counters exist and are reset, regardless of test execution order.
     """
     import sys
-    import importlib
     import os
 
-    # Write to both stdout AND a log file for debugging
+    # Only log in verbose mode (-v or -vv)
+    verbose = request.config.option.verbose > 0
+
+    # Write to both stdout AND a log file for debugging (only in verbose mode)
     log_file = os.path.join(os.path.dirname(__file__), 'fixture_debug.log')
 
     def log(msg):
-        """Log to both stdout and file."""
-        print(msg, flush=True)  # flush=True ensures immediate output
-        with open(log_file, 'a') as f:
-            f.write(msg + '\n')
+        """Log to both stdout and file (only if verbose)."""
+        if verbose:
+            print(msg, flush=True)  # flush=True ensures immediate output
+            with open(log_file, 'a') as f:
+                f.write(msg + '\n')
 
-    log(f"\n{'='*80}")
-    log(f"[FIXTURE] reset_debug_counters BEFORE test: {request.node.name}")
-    log(f"{'='*80}")
+    if verbose:
+        log(f"\n{'='*80}")
+        log(f"[FIXTURE] reset_debug_counters BEFORE test: {request.node.name}")
+        log(f"{'='*80}")
 
     module = None
 
@@ -81,11 +82,12 @@ def reset_debug_counters(request):
 
     for name in possible_names:
         if name in sys.modules:
-            log(f"[FIXTURE] Found module in sys.modules as: {name}")
+            if verbose:
+                log(f"[FIXTURE] Found module in sys.modules as: {name}")
             module = sys.modules[name]
             break
 
-    if not module:
+    if not module and verbose:
         # Module not found by exact name, search for any module containing 'test_debug_signals'
         log(f"[FIXTURE] Module not found by name, searching sys.modules...")
         for key in sys.modules:
@@ -94,52 +96,68 @@ def reset_debug_counters(request):
                 module = sys.modules[key]
                 break
 
-    if not module:
+    if not module and verbose:
         log(f"[FIXTURE] Module not found in sys.modules (this is OK for non-UI tests)")
-        log(f"[FIXTURE] Available modules with 'test': {[k for k in sys.modules.keys() if 'test' in k][:10]}")
 
     if module:
-        count_before = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
-        log(f"[FIXTURE] Counter value BEFORE reset: {count_before}")
-        log(f"[FIXTURE] Detailed counts: {dict(module.call_counts) if hasattr(module, 'call_counts') else {}}")
+        if verbose:
+            count_before = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+            log(f"[FIXTURE] Counter value BEFORE reset: {count_before}")
+            log(f"[FIXTURE] Detailed counts: {dict(module.call_counts) if hasattr(module, 'call_counts') else {}}")
 
+        # Always clear counters (even in non-verbose mode)
         if hasattr(module, 'call_counts'):
             module.call_counts.clear()
-            log(f"[FIXTURE] call_counts.clear() called")
+            if verbose:
+                log(f"[FIXTURE] call_counts.clear() called")
         if hasattr(module, 'call_stack'):
             module.call_stack.clear()
-            log(f"[FIXTURE] call_stack.clear() called")
+            if verbose:
+                log(f"[FIXTURE] call_stack.clear() called")
 
-        count_after_clear = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
-        log(f"[FIXTURE] Counter value AFTER reset: {count_after_clear}")
-    else:
+        if verbose:
+            count_after_clear = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+            log(f"[FIXTURE] Counter value AFTER reset: {count_after_clear}")
+    elif verbose:
         log(f"[FIXTURE] Module is None, skipping reset")
 
-    log(f"{'='*80}\n")
+    if verbose:
+        log(f"{'='*80}\n")
 
     yield  # Run the test
 
     # Clear after test to prevent leaking into next test
-    log(f"\n{'='*80}")
-    log(f"[FIXTURE] reset_debug_counters AFTER test: {request.node.name}")
-    log(f"{'='*80}")
+    if verbose:
+        log(f"\n{'='*80}")
+        log(f"[FIXTURE] reset_debug_counters AFTER test: {request.node.name}")
+        log(f"{'='*80}")
 
-    if 'tests.ui.test_debug_signals' in sys.modules:
-        module = sys.modules['tests.ui.test_debug_signals']
-        count_after = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
-        log(f"[FIXTURE] Counter value during test: {count_after}")
-        log(f"[FIXTURE] Detailed counts: {dict(module.call_counts) if hasattr(module, 'call_counts') else {}}")
+    # Search again for the module (using same logic as before)
+    module = None
+    for name in possible_names:
+        if name in sys.modules:
+            module = sys.modules[name]
+            break
 
+    if module:
+        if verbose:
+            count_after = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
+            log(f"[FIXTURE] Counter value during test: {count_after}")
+            log(f"[FIXTURE] Detailed counts: {dict(module.call_counts) if hasattr(module, 'call_counts') else {}}")
+
+        # Always clear counters (even in non-verbose mode)
         if hasattr(module, 'call_counts'):
             module.call_counts.clear()
         if hasattr(module, 'call_stack'):
             module.call_stack.clear()
 
-        log(f"[FIXTURE] Counters cleared after test")
-    else:
+        if verbose:
+            log(f"[FIXTURE] Counters cleared after test")
+    elif verbose:
         log(f"[FIXTURE] Module not in sys.modules")
 
-    log(f"{'='*80}\n")
+    if verbose:
+        log(f"{'='*80}\n")
 
 
 def pytest_configure(config):
