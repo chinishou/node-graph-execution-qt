@@ -24,6 +24,7 @@ from .network.network_view import NetworkView
 from .widgets.parameters_pane import ParametersPane
 from .widgets.output_pane import OutputPane
 from .widgets.navigation_bar import NavigationBar
+from .widgets.live_preview_pane import LivePreviewPane
 
 
 class MainWindow(QMainWindow):
@@ -85,8 +86,15 @@ class MainWindow(QMainWindow):
         self._parameters_pane.setMaximumWidth(400)
         self._main_splitter.addWidget(self._parameters_pane)
 
+        # Live preview pane (initially hidden)
+        self._live_preview_pane = LivePreviewPane()
+        self._live_preview_pane.setMinimumWidth(300)
+        self._live_preview_pane.setMaximumWidth(500)
+        self._live_preview_pane.hide()  # Hidden by default
+        self._main_splitter.addWidget(self._live_preview_pane)
+
         # Set splitter sizes
-        self._main_splitter.setSizes([700, 300])
+        self._main_splitter.setSizes([700, 300, 0])  # Third panel starts hidden
 
         # Vertical splitter for main content and output
         self._vertical_splitter = QSplitter(Qt.Vertical)
@@ -197,6 +205,17 @@ class MainWindow(QMainWindow):
         reset_zoom_action.triggered.connect(self._network_view.reset_zoom)
         view_menu.addAction(reset_zoom_action)
 
+        # Toolbar
+        toolbar = self.addToolBar("Tools")
+        toolbar.setMovable(False)
+
+        # Toggle Live Preview action
+        self._toggle_preview_action = QAction("🔍 Toggle Live Preview", self)
+        self._toggle_preview_action.setCheckable(True)
+        self._toggle_preview_action.setChecked(False)
+        self._toggle_preview_action.toggled.connect(self._toggle_live_preview)
+        toolbar.addAction(self._toggle_preview_action)
+
     def _setup_connections(self):
         """Setup signal connections."""
         # Connect network view selection to parameters pane
@@ -217,6 +236,7 @@ class MainWindow(QMainWindow):
             IntVariable, FloatVariable, StringVariable, BoolVariable
         )
         from ..nodes.subnet import SubnetNode, SubnetInputNode, SubnetOutputNode
+        from ..nodes.ui import UIRootNode, LabelNode, ButtonNode, VBoxLayoutNode
 
         # Math nodes
         NodeRegistry.register(AddNode)
@@ -240,6 +260,12 @@ class MainWindow(QMainWindow):
         NodeRegistry.register(SubnetNode)
         NodeRegistry.register(SubnetInputNode)
         NodeRegistry.register(SubnetOutputNode)
+
+        # UI nodes
+        NodeRegistry.register(UIRootNode)
+        NodeRegistry.register(LabelNode)
+        NodeRegistry.register(ButtonNode)
+        NodeRegistry.register(VBoxLayoutNode)
 
     def _on_node_selected(self, node):
         """Handle node selection."""
@@ -388,6 +414,22 @@ class MainWindow(QMainWindow):
         scene = self._network_view.scene()
         if hasattr(scene, 'delete_selected'):
             scene.delete_selected()
+
+    def _toggle_live_preview(self, checked: bool):
+        """Toggle the live preview pane visibility."""
+        if checked:
+            # Show preview pane and set network
+            self._live_preview_pane.show()
+            self._live_preview_pane.set_network(self._network_model)
+            # Adjust splitter sizes to make room for preview
+            self._main_splitter.setSizes([600, 250, 350])
+            self._output_pane.append_info("Live preview panel opened")
+        else:
+            # Hide preview pane
+            self._live_preview_pane.hide()
+            # Reset splitter sizes
+            self._main_splitter.setSizes([700, 300, 0])
+            self._output_pane.append_info("Live preview panel closed")
 
     def _restore_settings(self):
         """Restore window settings."""

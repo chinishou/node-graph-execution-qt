@@ -31,6 +31,7 @@ class PortGraphicsItem(QGraphicsItem):
         'bool': QColor(255, 100, 100),     # Light red
         'str': QColor(255, 200, 100),      # Orange
         'any': QColor(200, 200, 200),      # Gray
+        'widget': QColor(155, 89, 182),    # Purple for UI widgets
     }
     CUSTOM_TYPE_COLOR = QColor(200, 150, 255)  # Purple for custom types
     HOVER_COLOR = QColor(255, 255, 255)

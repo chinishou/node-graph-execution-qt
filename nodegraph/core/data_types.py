@@ -151,6 +151,7 @@ class DataTypeRegistry:
             "str": "",
             "bool": False,
             "any": None,
+            "widget": None,  # QWidget instance
         }
 
         if type_name in defaults:
