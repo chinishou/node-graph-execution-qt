@@ -33,6 +33,9 @@ class VBoxLayoutNode(BaseNode):
     def setup(self) -> None:
         """Setup inputs, parameters, and outputs."""
         # Parameter to control number of children
+        # Safe guard for backwards compatibility
+        if not hasattr(self, '_setup_num_children'):
+            self._setup_num_children = 5
         self.add_parameter("num_children", data_type="int",
                           default_value=self._setup_num_children,
                           label="Num Children")
@@ -98,6 +101,9 @@ class HBoxLayoutNode(BaseNode):
     def setup(self) -> None:
         """Setup inputs, parameters, and outputs."""
         # Parameter to control number of children
+        # Safe guard for backwards compatibility
+        if not hasattr(self, '_setup_num_children'):
+            self._setup_num_children = 5
         self.add_parameter("num_children", data_type="int",
                           default_value=self._setup_num_children,
                           label="Num Children")
@@ -161,6 +167,9 @@ class QWidgetContainerNode(BaseNode):
     def setup(self) -> None:
         """Setup inputs, parameters, and outputs."""
         # Parameter to control number of children
+        # Safe guard for backwards compatibility
+        if not hasattr(self, '_setup_num_children'):
+            self._setup_num_children = 3
         self.add_parameter("num_children", data_type="int",
                           default_value=self._setup_num_children,
                           label="Num Children")
