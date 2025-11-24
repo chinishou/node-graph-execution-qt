@@ -236,7 +236,11 @@ class MainWindow(QMainWindow):
             IntVariable, FloatVariable, StringVariable, BoolVariable
         )
         from ..nodes.subnet import SubnetNode, SubnetInputNode, SubnetOutputNode
-        from ..nodes.ui import UIRootNode, LabelNode, ButtonNode, VBoxLayoutNode
+        from ..nodes.ui import (
+            UIRootNode, LabelNode, ButtonNode,
+            VBoxLayoutNode, HBoxLayoutNode,
+            QWidgetContainerNode, QMainWindowNode
+        )
 
         # Math nodes
         NodeRegistry.register(AddNode)
@@ -266,6 +270,9 @@ class MainWindow(QMainWindow):
         NodeRegistry.register(LabelNode)
         NodeRegistry.register(ButtonNode)
         NodeRegistry.register(VBoxLayoutNode)
+        NodeRegistry.register(HBoxLayoutNode)
+        NodeRegistry.register(QWidgetContainerNode)
+        NodeRegistry.register(QMainWindowNode)
 
     def _on_node_selected(self, node):
         """Handle node selection."""
