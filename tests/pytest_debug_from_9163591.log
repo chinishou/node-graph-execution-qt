@@ -1,0 +1,3887 @@
+PS D:\dev\node-graph-execution-qt> pytest .\tests\ui\ --show-ui -s -v
+================================================= test session starts =================================================
+platform win32 -- Python 3.10.10, pytest-8.3.3, pluggy-1.5.0 -- C:\Users\user\AppData\Local\Programs\Python\Python310\python.exe
+cachedir: .pytest_cache
+PySide6 6.10.0 -- Qt runtime 6.10.0 -- Qt compiled 6.10.0
+rootdir: D:\dev\node-graph-execution-qt
+configfile: pyproject.toml
+plugins: anyio-4.7.0, hydra-core-1.3.2, cov-7.0.0, qt-4.4.0
+collected 115 items
+
+tests/ui/test_cook_debug.py::test_basic_cooking
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_basic_cooking
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Node created: id=UUID('2589413f-93e2-4ae6-a0fe-499a45994bff') name='Add' node_type='AddNode' category='Math' network=None color=None description='Add two numbers'
+Node inputs: ['a', 'b']
+Node outputs: ['result']
+
+Input a value: 10.0
+Input b value: 20.0
+
+Cooking node...
+Cook success: True
+
+Last outputs: {'result': 30.0}
+Result: 30.0
+
+✅ Test passed!
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_basic_cooking
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_cook_debug.py::test_node_connection
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_node_connection
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+
+--- Testing Node Connection ---
+Network: NetworkModel(name='Test Network', nodes=2)
+Connections: 1
+Add result: 8.0
+Multiply result: 16.0
+✅ Connection test passed!
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_node_connection
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_copy_single_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_copy_single_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: VariableNode
+Registered node: AddNode
+Registered node: SubnetNode
+Registered node: SubnetInputNode
+Registered node: SubnetOutputNode
+Copied 1 node(s) and 0 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_copy_single_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_copy_multiple_nodes_with_connections
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_copy_multiple_nodes_with_connections
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 3 node(s) and 2 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_copy_multiple_nodes_with_connections
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_paste_nodes_with_connections
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_paste_nodes_with_connections
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 2 node(s) and 1 connection(s)
+Pasted 2 node(s) and 1 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_paste_nodes_with_connections
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_cut_removes_nodes
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_cut_removes_nodes
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 1 node(s) and 0 connection(s)
+Cut 1 node(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_cut_removes_nodes
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_paste_subnet_preserves_internal_network
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_paste_subnet_preserves_internal_network
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+[SubnetNode] Node added to internal network: Input (input1) (type: SubnetInputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[SubnetNode] Node added to internal network: Output (output1) (type: SubnetOutputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[SubnetNode] Node added to internal network: InternalVar (type: VariableNode)
+Copied 1 node(s) and 0 connection(s)
+[SubnetNode] Node added to internal network: Input (input1) (type: SubnetInputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[SubnetNode] Node added to internal network: Output (output1) (type: SubnetOutputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[NetworkModel] Deserialized node: Input (input1) (type=SubnetInputNode, saved_id=602fc9ee-55f2-483f-80a6-7b0309491521, new_id=31b2f3fc-ca30-4429-8a1c-dcb8864de798)
+[NetworkModel] Deserialized node: Output (output1) (type=SubnetOutputNode, saved_id=8a8276bf-31fe-4435-8d20-7aa56c8e9733, new_id=e86d0c74-e1f3-4f95-8632-c629cbe3f16f)
+[NetworkModel] Deserialized node: InternalVar (type=VariableNode, saved_id=6cadb8d1-f48b-4370-9e4a-d5a42572b929, new_id=de6411d9-3700-4549-a960-1fc7b21d6c3d)
+Pasted 1 node(s) and 0 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_paste_subnet_preserves_internal_network
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_subnet_io_nodes_not_copied
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_subnet_io_nodes_not_copied
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+[SubnetNode] Node added to internal network: Input (input1) (type: SubnetInputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[SubnetNode] Node added to internal network: Output (output1) (type: SubnetOutputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_subnet_io_nodes_not_copied
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_paste_at_cursor_position
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_paste_at_cursor_position
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 1 node(s) and 0 connection(s)
+Pasted 1 node(s) and 0 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_paste_at_cursor_position
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteFunctionality::test_copy_preserves_parameter_values
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_copy_preserves_parameter_values
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 1 node(s) and 0 connection(s)
+Pasted 1 node(s) and 0 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_copy_preserves_parameter_values
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteKeyboardShortcuts::test_ctrl_c_copies_selection
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_ctrl_c_copies_selection
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 1 node(s) and 0 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_ctrl_c_copies_selection
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteKeyboardShortcuts::test_ctrl_x_cuts_selection
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_ctrl_x_cuts_selection
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 1 node(s) and 0 connection(s)
+Cut 1 node(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_ctrl_x_cuts_selection
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestCopyPasteKeyboardShortcuts::test_ctrl_v_pastes_nodes
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_ctrl_v_pastes_nodes
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+Copied 1 node(s) and 0 connection(s)
+Pasted 1 node(s) and 0 connection(s)
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_ctrl_v_pastes_nodes
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestSubnetSerialization::test_subnet_internal_connections_persist_after_save_load
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_subnet_internal_connections_persist_after_save_load
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+[SubnetNode] Node added to internal network: Input (input1) (type: SubnetInputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[SubnetNode] Node added to internal network: Output (output1) (type: SubnetOutputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[SubnetNode] Node added to internal network: Var1 (type: VariableNode)
+[SubnetNode] Node added to internal network: Var2 (type: VariableNode)
+[SubnetNode] Node added to internal network: Add (type: AddNode)
+
+=== Before Serialization ===
+Internal network has 5 nodes
+Internal network has 2 connections
+  Connection: Var1.out -> Add.a
+  Connection: Var2.out -> Add.b
+
+=== Serialized Data ===
+Subnet has internal_network: True
+Internal network nodes: 5
+Internal network connections: 2
+  Saved connection: {'source_node': '8b6b5e47-bac7-4027-96b3-dcb05eb00ed8', 'source_output': 'out', 'target_node': '668b6d57-464b-4353-aee5-04e5881313e5', 'target_input': 'a'}
+  Saved connection: {'source_node': '97ebe4c7-23c0-4e2a-b59d-ad13277b424c', 'source_output': 'out', 'target_node': '668b6d57-464b-4353-aee5-04e5881313e5', 'target_input': 'b'}
+
+=== Deserializing ===
+[SubnetNode] Node added to internal network: Input (input1) (type: SubnetInputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[SubnetNode] Node added to internal network: Output (output1) (type: SubnetOutputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: TestSubnet
+[NetworkModel] Deserialized node: Input (input1) (type=SubnetInputNode, saved_id=4df69a45-953d-4084-8886-08414b9bbae3, new_id=95c277bd-2f60-4d1d-bcfa-572635417ff5)
+[NetworkModel] Deserialized node: Output (output1) (type=SubnetOutputNode, saved_id=02181481-3997-4f8c-8506-afd0fff8ca66, new_id=644728d5-0d98-4a14-a91e-e410655f2465)
+[NetworkModel] Deserialized node: Var1 (type=VariableNode, saved_id=8b6b5e47-bac7-4027-96b3-dcb05eb00ed8, new_id=e02a7e95-d318-47b7-886e-21e59e7923e3)
+[NetworkModel] Deserialized node: Var2 (type=VariableNode, saved_id=97ebe4c7-23c0-4e2a-b59d-ad13277b424c, new_id=687d317b-ae5f-4ee0-b1e0-6fa4a3523065)
+[NetworkModel] Deserialized node: Add (type=AddNode, saved_id=668b6d57-464b-4353-aee5-04e5881313e5, new_id=b062502d-9900-45ed-84da-c8f6191e8cb8)
+[NetworkModel] Restoring connection: Var1.out -> Add.a
+[NetworkModel] Restoring connection: Var2.out -> Add.b
+
+=== After Deserialization ===
+New internal network has 5 nodes
+New internal network has 2 connections
+  Connection: Var1.out -> Add.a
+  Connection: Var2.out -> Add.b
+
+=== Test Passed ===
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_subnet_internal_connections_persist_after_save_load
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_copy_paste_ui.py::TestSubnetSerialization::test_subnet_connections_persist_after_file_save_load
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_subnet_connections_persist_after_file_save_load
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'VariableNode' is already registered. Overwriting.
+Registered node: VariableNode
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+[SubnetNode] Node added to internal network: Input (input1) (type: SubnetInputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: FileTestSubnet
+[SubnetNode] Node added to internal network: Output (output1) (type: SubnetOutputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: FileTestSubnet
+[SubnetNode] Node added to internal network: FileVar1 (type: VariableNode)
+[SubnetNode] Node added to internal network: FileVar2 (type: VariableNode)
+[SubnetNode] Node added to internal network: Add (type: AddNode)
+
+=== Before File Save ===
+Internal network: 5 nodes, 2 connections
+  FileVar1.out -> Add.a
+  FileVar2.out -> Add.b
+
+=== Saving to C:\Users\user\AppData\Local\Temp\pytest-of-user\pytest-56\test_subnet_connections_persis0\test_subnet.json ===
+Network saved to: C:\Users\user\AppData\Local\Temp\pytest-of-user\pytest-56\test_subnet_connections_persis0\test_subnet.json
+
+=== Loading from C:\Users\user\AppData\Local\Temp\pytest-of-user\pytest-56\test_subnet_connections_persis0\test_subnet.json ===
+[SubnetNode] Node added to internal network: Input (input1) (type: SubnetInputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: Subnet
+[SubnetNode] Node added to internal network: Output (output1) (type: SubnetOutputNode)
+[SubnetNode] Detected I/O node, syncing connectors for subnet: Subnet
+[JSONSerializer] Deserializing SubnetNode 'FileTestSubnet' with internal network
+[JSONSerializer]   Internal network has 5 nodes
+[JSONSerializer]   Internal network has 2 connections
+[JSONSerializer] Restoring 2 connections for network 'FileTestSubnet_network'
+[JSONSerializer]   Restored: FileVar1.out -> Add.a
+[JSONSerializer]   Restored: FileVar2.out -> Add.b
+[JSONSerializer]   Deserialized internal network has 5 nodes
+[JSONSerializer]   Deserialized internal network has 2 connections
+[JSONSerializer] Restoring 0 connections for network '/'
+Network loaded from: C:\Users\user\AppData\Local\Temp\pytest-of-user\pytest-56\test_subnet_connections_persis0\test_subnet.json
+
+=== After File Load ===
+Loaded network: 1 nodes
+Found subnet: FileTestSubnet
+Loaded internal network: 5 nodes, 2 connections
+  FileVar1.out -> Add.a
+  FileVar2.out -> Add.b
+
+=== File Save/Load Test Passed ===
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_subnet_connections_persist_after_file_save_load
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_debug_signals.py::test_signal_flow_with_debug_tracing
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_signal_flow_with_debug_tracing
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+
+================================================================================
+STEP 1: Building initial network (Int->Add, Add->Print)
+================================================================================
+
+================================================================================
+🔗 NetworkModel.connect: Int.out -> Add.a
+================================================================================
+  → ConnectorModel.connect_to Int.out -> Add.a
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Int
+Current recursion count: 1
+  ← NodeGraphicsItem._on_connection_changed[Int]
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 2
+  ← NodeGraphicsItem._on_connection_changed[Add]
+← ConnectorModel.connect_to[Int.out]
+  → ConnectionItem.update_path Int -> Add
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Print.value[in]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Print.value]
+→ PortGraphicsItem._resolve_data_type Print_1.value[in]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Print_1.value]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Int.out]
+Windows fatal exception: code 0x8001010d
+
+Current thread 0x00008810 (most recent call first):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pytestqt\qt_compat.py", line 161 in exec
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pytestqt\wait_signal.py", line 51 in wait
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pytestqt\qtbot.py", line 459 in wait
+  File "D:\dev\node-graph-execution-qt\tests\ui\test_debug_signals.py", line 281 in test_signal_flow_with_debug_tracing
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\python.py", line 159 in pytest_pyfunc_call
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_callers.py", line 103 in _multicall
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_hooks.py", line 513 in __call__
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\python.py", line 1627 in runtest
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\runner.py", line 174 in pytest_runtest_call
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_callers.py", line 103 in _multicall
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_hooks.py", line 513 in __call__
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\runner.py", line 242 in <lambda>
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\runner.py", line 341 in from_call
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\runner.py", line 241 in call_and_report
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\runner.py", line 132 in runtestprotocol
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\runner.py", line 113 in pytest_runtest_protocol
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_callers.py", line 103 in _multicall
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_hooks.py", line 513 in __call__
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\main.py", line 362 in pytest_runtestloop
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_callers.py", line 103 in _multicall
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_hooks.py", line 513 in __call__
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\main.py", line 337 in _main
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\main.py", line 283 in wrap_session
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\main.py", line 330 in pytest_cmdline_main
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_callers.py", line 103 in _multicall
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\pluggy\_hooks.py", line 513 in __call__
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\config\__init__.py", line 175 in main
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\_pytest\config\__init__.py", line 201 in console_main
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\Scripts\pytest.exe\__main__.py", line 7 in <module>
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 86 in _run_code
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 196 in _run_module_as_main
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Int.out]
+
+================================================================================
+🔗 NetworkModel.connect: Add.result -> Print.value
+================================================================================
+  → ConnectorModel.connect_to Add.result -> Print.value
+Current recursion count: 2
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 3
+  ← NodeGraphicsItem._on_connection_changed[Add]
+    → NodeGraphicsItem._on_connection_changed node=Print
+Current recursion count: 4
+  ← NodeGraphicsItem._on_connection_changed[Print]
+← ConnectorModel.connect_to[Add.result]
+  → ConnectionItem.update_path Add -> Print
+Current recursion count: 2
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 11
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Print.value[in]
+Current recursion count: 12
+  → PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 13
+← PortGraphicsItem._resolve_data_type[Add.result]
+← PortGraphicsItem._resolve_data_type[Print.value]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 14
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 15
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 16
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 17
+← PortGraphicsItem._resolve_data_type[Add.result]
+
+STEP 1 Total calls: 25
+  ConnectionItem.update_path: 2
+  ConnectorModel.connect_to: 2
+  NodeGraphicsItem._on_connection_changed: 4
+  PortGraphicsItem._resolve_data_type: 17
+
+================================================================================
+STEP 2: Add second output (Add->Print_1)
+================================================================================
+
+================================================================================
+🔗 NetworkModel.connect: Add.result -> Print_1.value
+================================================================================
+  → ConnectorModel.connect_to Add.result -> Print_1.value
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 1
+  ← NodeGraphicsItem._on_connection_changed[Add]
+    → NodeGraphicsItem._on_connection_changed node=Print_1
+Current recursion count: 2
+  ← NodeGraphicsItem._on_connection_changed[Print_1]
+← ConnectorModel.connect_to[Add.result]
+  → ConnectionItem.update_path Add -> Print_1
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Print_1.value[in]
+Current recursion count: 4
+  → PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Add.result]
+← PortGraphicsItem._resolve_data_type[Print_1.value]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 11
+← PortGraphicsItem._resolve_data_type[Add.result]
+
+STEP 2 Total calls: 15
+  ConnectionItem.update_path: 1
+  ConnectorModel.connect_to: 1
+  NodeGraphicsItem._on_connection_changed: 2
+  PortGraphicsItem._resolve_data_type: 11
+
+================================================================================
+STEP 3: Replace connection (Int->Print, auto-disconnects Add->Print)
+================================================================================
+
+================================================================================
+🔗 NetworkModel.connect: Int.out -> Print.value
+================================================================================
+
+================================================================================
+🔌 NetworkModel.disconnect: Add.result -> Print.value
+================================================================================
+    → ConnectorModel.disconnect_from Add.result -> Print.value
+Current recursion count: 1
+      → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 1
+    ← NodeGraphicsItem._on_connection_changed[Add]
+      → NodeGraphicsItem._on_connection_changed node=Print
+Current recursion count: 2
+    ← NodeGraphicsItem._on_connection_changed[Print]
+  ← ConnectorModel.disconnect_from[Add.result]
+================================================================================
+✓ NetworkModel.disconnect completed
+================================================================================
+
+  → ConnectorModel.connect_to Int.out -> Print.value
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Int
+Current recursion count: 3
+  ← NodeGraphicsItem._on_connection_changed[Int]
+    → NodeGraphicsItem._on_connection_changed node=Print
+Current recursion count: 4
+  ← NodeGraphicsItem._on_connection_changed[Print]
+← ConnectorModel.connect_to[Int.out]
+  → ConnectionItem.update_path Int -> Print
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Print.value[in]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Print.value]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 11
+← PortGraphicsItem._resolve_data_type[Int.out]
+
+STEP 3 Total calls: 18
+  ConnectionItem.update_path: 1
+  ConnectorModel.connect_to: 1
+  ConnectorModel.disconnect_from: 1
+  NodeGraphicsItem._on_connection_changed: 4
+  PortGraphicsItem._resolve_data_type: 11
+
+================================================================================
+TOTAL across all steps: 58
+================================================================================
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_signal_flow_with_debug_tracing
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneCreation::test_pane_creation
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_pane_creation
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 18
+[FIXTURE] Detailed counts: {'ConnectorModel.disconnect_from': 1, 'NodeGraphicsItem._on_connection_changed': 4, 'ConnectorModel.connect_to': 1, 'ConnectionItem.update_path': 1, 'PortGraphicsItem._resolve_data_type': 11}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_pane_creation
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneCreation::test_pane_no_node_state
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_pane_no_node_state
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_pane_no_node_state
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneNodeDisplay::test_display_float_variable
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_display_float_variable
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_display_float_variable
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneNodeDisplay::test_display_int_variable
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_display_int_variable
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_display_int_variable
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneNodeDisplay::test_display_bool_variable
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_display_bool_variable
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_display_bool_variable
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneNodeDisplay::test_display_string_variable
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_display_string_variable
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_display_string_variable
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneNodeDisplay::test_display_add_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_display_add_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_display_add_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneNodeDisplay::test_display_convert_node_with_menu
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_display_convert_node_with_menu
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_display_convert_node_with_menu
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneEditing::test_edit_int_parameter
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_edit_int_parameter
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] _on_parameter_value_changed: value = 42
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_edit_int_parameter
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneEditing::test_edit_float_parameter
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_edit_float_parameter
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] _on_parameter_value_changed: value = 3.14
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_edit_float_parameter
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneEditing::test_edit_bool_parameter
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_edit_bool_parameter
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] _bool_state_to_value: state=2, bool_value=True
+[ParametersPane] _on_parameter_value_changed: value = True
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_edit_bool_parameter
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneEditing::test_edit_string_parameter
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_edit_string_parameter
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] _on_parameter_value_changed: value = World
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_edit_string_parameter
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneEditing::test_edit_input_default_value
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_edit_input_default_value
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_edit_input_default_value
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneEditing::test_edit_dropdown_parameter
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_edit_dropdown_parameter
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] _on_parameter_value_changed: output_type = int
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_edit_dropdown_parameter
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneEditing::test_parameter_changed_signal
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_parameter_changed_signal
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] _on_parameter_value_changed: value = 2.0
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_parameter_changed_signal
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneConnections::test_input_disabled_when_connected
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_input_disabled_when_connected
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+→ ConnectorModel.connect_to Float.out -> Add.a
+Current recursion count: 1
+[ParametersPane] Connection changed for connector: a, is_connected: True
+← ConnectorModel.connect_to[Float.out]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_input_disabled_when_connected
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneConnections::test_input_enabled_when_disconnected
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_input_enabled_when_disconnected
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 1
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 1}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+→ ConnectorModel.connect_to Float.out -> Add.a
+Current recursion count: 1
+[ParametersPane] Connection changed for connector: a, is_connected: True
+← ConnectorModel.connect_to[Float.out]
+→ ConnectorModel.disconnect_from Float.out -> Add.a
+Current recursion count: 1
+[ParametersPane] Connection changed for connector: a, is_connected: False
+← ConnectorModel.disconnect_from[Float.out]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_input_enabled_when_disconnected
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneConnections::test_input_styling_when_connected
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_input_styling_when_connected
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 2
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 1, 'ConnectorModel.disconnect_from': 1}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+→ ConnectorModel.connect_to Float.out -> Add.a
+Current recursion count: 1
+[ParametersPane] Connection changed for connector: a, is_connected: True
+← ConnectorModel.connect_to[Float.out]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_input_styling_when_connected
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneExecution::test_execute_button_enabled_with_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_execute_button_enabled_with_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 1
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 1}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_execute_button_enabled_with_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneExecution::test_execute_button_disabled_without_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_execute_button_disabled_without_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_execute_button_disabled_without_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneExecution::test_execute_button_runs_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_execute_button_runs_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] Executing node: Float
+[ParametersPane] Execute result: True
+[ParametersPane] Updating output displays for Float
+[ParametersPane]   Output 'out': widget=True, is_QLabel=True
+[ParametersPane]   Output 'out': value=3.14
+[ParametersPane]   Output 'out': widget.text()=3.14
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_execute_button_runs_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneExecution::test_execute_updates_output_displays
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_execute_updates_output_displays
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] Executing node: Float
+[ParametersPane] Execute result: True
+[ParametersPane] Updating output displays for Float
+[ParametersPane]   Output 'out': widget=True, is_QLabel=True
+[ParametersPane]   Output 'out': value=42.0
+[ParametersPane]   Output 'out': widget.text()=42.0
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_execute_updates_output_displays
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneExecution::test_execute_with_connected_nodes
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_execute_with_connected_nodes
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+→ ConnectorModel.connect_to Float.out -> Add.a
+Current recursion count: 1
+← ConnectorModel.connect_to[Float.out]
+→ ConnectorModel.connect_to Float_1.out -> Add.b
+Current recursion count: 2
+← ConnectorModel.connect_to[Float_1.out]
+[ParametersPane] Executing node: Add
+[ParametersPane] Execute result: True
+[ParametersPane] Updating output displays for Add
+[ParametersPane]   Output 'result': widget=True, is_QLabel=True
+[ParametersPane]   Output 'result': value=15.0
+[ParametersPane]   Output 'result': widget.text()=15.0
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_execute_with_connected_nodes
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneRefresh::test_refresh_with_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_refresh_with_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 2
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 2}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_refresh_with_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneRefresh::test_switching_nodes
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_switching_nodes
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_switching_nodes
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneBasicFunctionality::test_add_node_output_display
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_add_node_output_display
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] Executing node: Add
+[ParametersPane] Execute result: True
+[ParametersPane] Updating output displays for Add
+[ParametersPane]   Output 'result': widget=True, is_QLabel=True
+[ParametersPane]   Output 'result': value=8.0
+[ParametersPane]   Output 'result': widget.text()=8.0
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_add_node_output_display
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneBasicFunctionality::test_add_to_print_execution
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_add_to_print_execution
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+→ ConnectorModel.connect_to Add.result -> TestPrint.value
+Current recursion count: 1
+← ConnectorModel.connect_to[Add.result]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_add_to_print_execution
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_parameters_pane.py::TestParametersPaneBasicFunctionality::test_bool_parameter_persistence
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_bool_parameter_persistence
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 1
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 1}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+[ParametersPane] _bool_state_to_value: state=2, bool_value=True
+[ParametersPane] _on_parameter_value_changed: value = True
+[ParametersPane] Executing node: Bool
+[ParametersPane] Execute result: True
+[ParametersPane] Updating output displays for Bool
+[ParametersPane]   Output 'out': widget=True, is_QLabel=True
+[ParametersPane]   Output 'out': value=True
+[ParametersPane]   Output 'out': widget.text()=True
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_bool_parameter_persistence
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_recursion_bug.py::test_recursion_bug_simple
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_recursion_bug_simple
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+
+STEP 1: int->add
+
+================================================================================
+🔗 NetworkModel.connect: Int.out -> Add.a
+================================================================================
+  → ConnectorModel.connect_to Int.out -> Add.a
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Int
+Current recursion count: 1
+  ← NodeGraphicsItem._on_connection_changed[Int]
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 2
+  ← NodeGraphicsItem._on_connection_changed[Add]
+← ConnectorModel.connect_to[Int.out]
+  → ConnectionItem.update_path Int -> Add
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+  Connected int->add
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_1.a[in]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Add_1.a]
+→ PortGraphicsItem._resolve_data_type Add_1.b[in]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Add_1.b]
+→ PortGraphicsItem._resolve_data_type Add_1.result[out]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Add_1.result]
+→ PortGraphicsItem._resolve_data_type Add_2.a[in]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Add_2.a]
+→ PortGraphicsItem._resolve_data_type Add_2.b[in]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Add_2.b]
+→ PortGraphicsItem._resolve_data_type Add_2.result[out]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Add_2.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 11
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 12
+← PortGraphicsItem._resolve_data_type[Int.out]
+STEP 1: add->add_1
+
+================================================================================
+🔗 NetworkModel.connect: Add.result -> Add_1.a
+================================================================================
+  → ConnectorModel.connect_to Add.result -> Add_1.a
+Current recursion count: 2
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 3
+  ← NodeGraphicsItem._on_connection_changed[Add]
+    → NodeGraphicsItem._on_connection_changed node=Add_1
+Current recursion count: 4
+  ← NodeGraphicsItem._on_connection_changed[Add_1]
+← ConnectorModel.connect_to[Add.result]
+  → ConnectionItem.update_path Add -> Add_1
+Current recursion count: 2
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+  Connected add->add_1
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 13
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 14
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 15
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_1.a[in]
+Current recursion count: 16
+  → PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 17
+← PortGraphicsItem._resolve_data_type[Add.result]
+← PortGraphicsItem._resolve_data_type[Add_1.a]
+→ PortGraphicsItem._resolve_data_type Add_1.b[in]
+Current recursion count: 18
+← PortGraphicsItem._resolve_data_type[Add_1.b]
+→ PortGraphicsItem._resolve_data_type Add_1.result[out]
+Current recursion count: 19
+← PortGraphicsItem._resolve_data_type[Add_1.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 20
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 21
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 22
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 23
+← PortGraphicsItem._resolve_data_type[Add.result]
+
+STEP 2: add->add_2
+
+================================================================================
+🔗 NetworkModel.connect: Add.result -> Add_2.a
+================================================================================
+  → ConnectorModel.connect_to Add.result -> Add_2.a
+Current recursion count: 3
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 5
+  ← NodeGraphicsItem._on_connection_changed[Add]
+    → NodeGraphicsItem._on_connection_changed node=Add_2
+Current recursion count: 6
+  ← NodeGraphicsItem._on_connection_changed[Add_2]
+← ConnectorModel.connect_to[Add.result]
+  → ConnectionItem.update_path Add -> Add_2
+Current recursion count: 3
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+  Connected add->add_2 (add now has 2 outputs)
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 24
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 25
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 26
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_2.a[in]
+Current recursion count: 27
+  → PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 28
+← PortGraphicsItem._resolve_data_type[Add.result]
+← PortGraphicsItem._resolve_data_type[Add_2.a]
+→ PortGraphicsItem._resolve_data_type Add_2.b[in]
+Current recursion count: 29
+← PortGraphicsItem._resolve_data_type[Add_2.b]
+→ PortGraphicsItem._resolve_data_type Add_2.result[out]
+Current recursion count: 30
+← PortGraphicsItem._resolve_data_type[Add_2.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 31
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 32
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 33
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 34
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 35
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 36
+← PortGraphicsItem._resolve_data_type[Add.result]
+  Verified: add has 2 output connections
+
+STEP 3: int->add_1 (potential recursion trigger)
+  This should disconnect add->add_1 and create int->add_1
+
+================================================================================
+🔗 NetworkModel.connect: Int.out -> Add_1.a
+================================================================================
+
+================================================================================
+🔌 NetworkModel.disconnect: Add.result -> Add_1.a
+================================================================================
+    → ConnectorModel.disconnect_from Add.result -> Add_1.a
+Current recursion count: 1
+      → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 7
+    ← NodeGraphicsItem._on_connection_changed[Add]
+      → NodeGraphicsItem._on_connection_changed node=Add_1
+Current recursion count: 8
+    ← NodeGraphicsItem._on_connection_changed[Add_1]
+  ← ConnectorModel.disconnect_from[Add.result]
+================================================================================
+✓ NetworkModel.disconnect completed
+================================================================================
+
+  → ConnectorModel.connect_to Int.out -> Add_1.a
+Current recursion count: 4
+    → NodeGraphicsItem._on_connection_changed node=Int
+Current recursion count: 9
+  ← NodeGraphicsItem._on_connection_changed[Int]
+    → NodeGraphicsItem._on_connection_changed node=Add_1
+Current recursion count: 10
+  ← NodeGraphicsItem._on_connection_changed[Add_1]
+← ConnectorModel.connect_to[Int.out]
+  → ConnectionItem.update_path Int -> Add_1
+Current recursion count: 4
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 37
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 38
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 39
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_1.a[in]
+Current recursion count: 40
+← PortGraphicsItem._resolve_data_type[Add_1.a]
+→ PortGraphicsItem._resolve_data_type Add_1.b[in]
+Current recursion count: 41
+← PortGraphicsItem._resolve_data_type[Add_1.b]
+→ PortGraphicsItem._resolve_data_type Add_1.result[out]
+Current recursion count: 42
+← PortGraphicsItem._resolve_data_type[Add_1.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 43
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 44
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 45
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 46
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 47
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 48
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 49
+← PortGraphicsItem._resolve_data_type[Int.out]
+  Connected int->add_1 (old add->add_1 should be removed)
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 50
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 51
+
+================================================================================
+⚠️  RECURSION DETECTED: PortGraphicsItem._resolve_data_type called 51 times!
+================================================================================
+
+Call stack:
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 52
+
+================================================================================
+⚠️  RECURSION DETECTED: PortGraphicsItem._resolve_data_type called 52 times!
+================================================================================
+
+Call stack:
+← PortGraphicsItem._resolve_data_type[Int.out]
+✓ SUCCESS: No recursion error!
+
+Verifying final state:
+✓ add_1 connected to int only
+✓ add connected to add_2 only
+
+Test completed!
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_recursion_bug_simple
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_recursion_bug.py::test_recursion_bug_variant
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_recursion_bug_variant
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 71
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 4, 'NodeGraphicsItem._on_connection_changed': 10, 'ConnectionItem.update_path': 4, 'PortGraphicsItem._resolve_data_type': 52, 'ConnectorModel.disconnect_from': 1}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+
+STEP 1: int->add->add_1
+
+================================================================================
+🔗 NetworkModel.connect: Int.out -> Add.a
+================================================================================
+  → ConnectorModel.connect_to Int.out -> Add.a
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Int
+Current recursion count: 1
+  ← NodeGraphicsItem._on_connection_changed[Int]
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 2
+  ← NodeGraphicsItem._on_connection_changed[Add]
+← ConnectorModel.connect_to[Int.out]
+  → ConnectionItem.update_path Int -> Add
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+  Connected int->add
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_1.a[in]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Add_1.a]
+→ PortGraphicsItem._resolve_data_type Add_1.b[in]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Add_1.b]
+→ PortGraphicsItem._resolve_data_type Add_1.result[out]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Add_1.result]
+→ PortGraphicsItem._resolve_data_type Add_2.a[in]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Add_2.a]
+→ PortGraphicsItem._resolve_data_type Add_2.b[in]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Add_2.b]
+→ PortGraphicsItem._resolve_data_type Add_2.result[out]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Add_2.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 11
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 12
+← PortGraphicsItem._resolve_data_type[Int.out]
+
+================================================================================
+🔗 NetworkModel.connect: Add.result -> Add_1.a
+================================================================================
+  → ConnectorModel.connect_to Add.result -> Add_1.a
+Current recursion count: 2
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 3
+  ← NodeGraphicsItem._on_connection_changed[Add]
+    → NodeGraphicsItem._on_connection_changed node=Add_1
+Current recursion count: 4
+  ← NodeGraphicsItem._on_connection_changed[Add_1]
+← ConnectorModel.connect_to[Add.result]
+  → ConnectionItem.update_path Add -> Add_1
+Current recursion count: 2
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+  Connected add->add_1
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 13
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 14
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 15
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_1.a[in]
+Current recursion count: 16
+  → PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 17
+← PortGraphicsItem._resolve_data_type[Add.result]
+← PortGraphicsItem._resolve_data_type[Add_1.a]
+→ PortGraphicsItem._resolve_data_type Add_1.b[in]
+Current recursion count: 18
+← PortGraphicsItem._resolve_data_type[Add_1.b]
+→ PortGraphicsItem._resolve_data_type Add_1.result[out]
+Current recursion count: 19
+← PortGraphicsItem._resolve_data_type[Add_1.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 20
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 21
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 22
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 23
+← PortGraphicsItem._resolve_data_type[Add.result]
+
+STEP 2: add->add_2
+
+================================================================================
+🔗 NetworkModel.connect: Add.result -> Add_2.a
+================================================================================
+  → ConnectorModel.connect_to Add.result -> Add_2.a
+Current recursion count: 3
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 5
+  ← NodeGraphicsItem._on_connection_changed[Add]
+    → NodeGraphicsItem._on_connection_changed node=Add_2
+Current recursion count: 6
+  ← NodeGraphicsItem._on_connection_changed[Add_2]
+← ConnectorModel.connect_to[Add.result]
+  → ConnectionItem.update_path Add -> Add_2
+Current recursion count: 3
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+  Connected add->add_2
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 24
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 25
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 26
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_2.a[in]
+Current recursion count: 27
+  → PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 28
+← PortGraphicsItem._resolve_data_type[Add.result]
+← PortGraphicsItem._resolve_data_type[Add_2.a]
+→ PortGraphicsItem._resolve_data_type Add_2.b[in]
+Current recursion count: 29
+← PortGraphicsItem._resolve_data_type[Add_2.b]
+→ PortGraphicsItem._resolve_data_type Add_2.result[out]
+Current recursion count: 30
+← PortGraphicsItem._resolve_data_type[Add_2.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 31
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 32
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 33
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 34
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 35
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 36
+← PortGraphicsItem._resolve_data_type[Add.result]
+
+STEP 3: int->add_2 (should work fine, unlike add_1)
+  This should disconnect add->add_2 and create int->add_2
+
+================================================================================
+🔗 NetworkModel.connect: Int.out -> Add_2.a
+================================================================================
+
+================================================================================
+🔌 NetworkModel.disconnect: Add.result -> Add_2.a
+================================================================================
+    → ConnectorModel.disconnect_from Add.result -> Add_2.a
+Current recursion count: 1
+      → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 7
+    ← NodeGraphicsItem._on_connection_changed[Add]
+      → NodeGraphicsItem._on_connection_changed node=Add_2
+Current recursion count: 8
+    ← NodeGraphicsItem._on_connection_changed[Add_2]
+  ← ConnectorModel.disconnect_from[Add.result]
+================================================================================
+✓ NetworkModel.disconnect completed
+================================================================================
+
+  → ConnectorModel.connect_to Int.out -> Add_2.a
+Current recursion count: 4
+    → NodeGraphicsItem._on_connection_changed node=Int
+Current recursion count: 9
+  ← NodeGraphicsItem._on_connection_changed[Int]
+    → NodeGraphicsItem._on_connection_changed node=Add_2
+Current recursion count: 10
+  ← NodeGraphicsItem._on_connection_changed[Add_2]
+← ConnectorModel.connect_to[Int.out]
+  → ConnectionItem.update_path Int -> Add_2
+Current recursion count: 4
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 37
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 38
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 39
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Add_2.a[in]
+Current recursion count: 40
+← PortGraphicsItem._resolve_data_type[Add_2.a]
+→ PortGraphicsItem._resolve_data_type Add_2.b[in]
+Current recursion count: 41
+← PortGraphicsItem._resolve_data_type[Add_2.b]
+→ PortGraphicsItem._resolve_data_type Add_2.result[out]
+Current recursion count: 42
+← PortGraphicsItem._resolve_data_type[Add_2.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 43
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 44
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 45
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 46
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 47
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 48
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 49
+← PortGraphicsItem._resolve_data_type[Int.out]
+  Connected int->add_2
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 50
+← PortGraphicsItem._resolve_data_type[Int.out]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 51
+
+================================================================================
+⚠️  RECURSION DETECTED: PortGraphicsItem._resolve_data_type called 51 times!
+================================================================================
+
+Call stack:
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Int.out[out]
+Current recursion count: 52
+
+================================================================================
+⚠️  RECURSION DETECTED: PortGraphicsItem._resolve_data_type called 52 times!
+================================================================================
+
+Call stack:
+← PortGraphicsItem._resolve_data_type[Int.out]
+✓ SUCCESS: No recursion error!
+
+Verifying final state:
+✓ add_2 connected to int
+
+Test completed!
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_recursion_bug_variant
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_creation_default
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_creation_default
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 71
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 4, 'NodeGraphicsItem._on_connection_changed': 10, 'ConnectionItem.update_path': 4, 'PortGraphicsItem._resolve_data_type': 52, 'ConnectorModel.disconnect_from': 1}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_creation_default
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_creation_with_position
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_creation_with_position
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_creation_with_position
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_creation_with_text
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_creation_with_text
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_creation_with_text
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_creation_with_color
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_creation_with_color
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_creation_with_color
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_creation_with_size
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_creation_with_size
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_creation_with_size
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_creation_with_id
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_creation_with_id
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_creation_with_id
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_z_value
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_z_value
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_z_value
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteCreation::test_note_flags
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_note_flags
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_note_flags
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteText::test_get_text
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_get_text
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_get_text
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteText::test_set_text
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_set_text
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_set_text
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteText::test_text_item_exists
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_text_item_exists
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_text_item_exists
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteText::test_double_click_enables_editing
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_double_click_enables_editing
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_double_click_enables_editing
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteText::test_focus_out_disables_editing
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_focus_out_disables_editing
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_focus_out_disables_editing
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteColor::test_get_color
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_get_color
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_get_color
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteColor::test_set_color
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_set_color
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_set_color
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteColor::test_set_invalid_color
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_set_invalid_color
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_set_invalid_color
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteColor::test_all_color_presets
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_all_color_presets
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_all_color_presets
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSize::test_get_size
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_get_size
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_get_size
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSize::test_set_size
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_set_size
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_set_size
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSize::test_set_size_respects_minimum
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_set_size_respects_minimum
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_set_size_respects_minimum
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSize::test_bounding_rect
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_bounding_rect
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_bounding_rect
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_resize_handle_rect
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_resize_handle_rect
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_resize_handle_rect
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_mouse_press_on_resize_handle
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_mouse_press_on_resize_handle
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_mouse_press_on_resize_handle
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_mouse_move_while_resizing
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_mouse_move_while_resizing
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_mouse_move_while_resizing
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_mouse_release_stops_resizing
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_mouse_release_stops_resizing
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_mouse_release_stops_resizing
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_resizing_respects_minimum_size
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_resizing_respects_minimum_size
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_resizing_respects_minimum_size
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSelection::test_selection_state
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_selection_state
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_selection_state
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSelection::test_item_change_tracks_selection
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_item_change_tracks_selection
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_item_change_tracks_selection
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSerialization::test_to_dict
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_to_dict
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_to_dict
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSerialization::test_from_dict
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_from_dict
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_from_dict
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSerialization::test_from_dict_with_defaults
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_from_dict_with_defaults
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_from_dict_with_defaults
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNoteSerialization::test_round_trip_serialization
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_round_trip_serialization
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_round_trip_serialization
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNotePainting::test_paint_does_not_crash
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_paint_does_not_crash
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_paint_does_not_crash
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNotePainting::test_paint_selected_state
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_paint_selected_state
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_paint_selected_state
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_sticky_notes.py::TestStickyNotePainting::test_paint_all_colors
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_paint_all_colors
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_paint_all_colors
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestMainWindow::test_main_window_creation
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_main_window_creation
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Registered node: SubtractNode
+Registered node: MultiplyNode
+Registered node: DivideNode
+Registered node: ConvertNode
+Registered node: PrintNode
+Registered node: IntVariable
+Registered node: FloatVariable
+Registered node: StringVariable
+Registered node: BoolVariable
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_main_window_creation
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestMainWindow::test_new_network
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_new_network
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubtractNode' is already registered. Overwriting.
+Registered node: SubtractNode
+Warning: Node type 'MultiplyNode' is already registered. Overwriting.
+Registered node: MultiplyNode
+Warning: Node type 'DivideNode' is already registered. Overwriting.
+Registered node: DivideNode
+Warning: Node type 'ConvertNode' is already registered. Overwriting.
+Registered node: ConvertNode
+Warning: Node type 'PrintNode' is already registered. Overwriting.
+Registered node: PrintNode
+Warning: Node type 'IntVariable' is already registered. Overwriting.
+Registered node: IntVariable
+Warning: Node type 'FloatVariable' is already registered. Overwriting.
+Registered node: FloatVariable
+Warning: Node type 'StringVariable' is already registered. Overwriting.
+Registered node: StringVariable
+Warning: Node type 'BoolVariable' is already registered. Overwriting.
+Registered node: BoolVariable
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_new_network
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestMainWindow::test_registered_nodes
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_registered_nodes
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Warning: Node type 'AddNode' is already registered. Overwriting.
+Registered node: AddNode
+Warning: Node type 'SubtractNode' is already registered. Overwriting.
+Registered node: SubtractNode
+Warning: Node type 'MultiplyNode' is already registered. Overwriting.
+Registered node: MultiplyNode
+Warning: Node type 'DivideNode' is already registered. Overwriting.
+Registered node: DivideNode
+Warning: Node type 'ConvertNode' is already registered. Overwriting.
+Registered node: ConvertNode
+Warning: Node type 'PrintNode' is already registered. Overwriting.
+Registered node: PrintNode
+Warning: Node type 'IntVariable' is already registered. Overwriting.
+Registered node: IntVariable
+Warning: Node type 'FloatVariable' is already registered. Overwriting.
+Registered node: FloatVariable
+Warning: Node type 'StringVariable' is already registered. Overwriting.
+Registered node: StringVariable
+Warning: Node type 'BoolVariable' is already registered. Overwriting.
+Registered node: BoolVariable
+Warning: Node type 'SubnetNode' is already registered. Overwriting.
+Registered node: SubnetNode
+Warning: Node type 'SubnetInputNode' is already registered. Overwriting.
+Registered node: SubnetInputNode
+Warning: Node type 'SubnetOutputNode' is already registered. Overwriting.
+Registered node: SubnetOutputNode
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_registered_nodes
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_view_creation
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_view_creation
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_view_creation
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_zoom_in
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_zoom_in
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_zoom_in
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_zoom_out
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_zoom_out
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_zoom_out
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_reset_zoom
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_reset_zoom
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_reset_zoom
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_context_menu_shows_categories
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_context_menu_shows_categories
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_context_menu_shows_categories
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_node_creation_via_menu
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_node_creation_via_menu
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_node_creation_via_menu
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_delete_selected
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_delete_selected
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 3
+[FIXTURE] Detailed counts: {'PortGraphicsItem._resolve_data_type': 3}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_delete_selected
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkView::test_pan_with_middle_button
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_pan_with_middle_button
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_pan_with_middle_button
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkScene::test_add_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_add_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_add_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkScene::test_remove_node
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_remove_node
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 3
+[FIXTURE] Detailed counts: {'PortGraphicsItem._resolve_data_type': 3}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_remove_node
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNetworkScene::test_create_connection
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_create_connection
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+
+================================================================================
+🔗 NetworkModel.connect: Float.out -> Add.a
+================================================================================
+  → ConnectorModel.connect_to Float.out -> Add.a
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Float
+Current recursion count: 1
+  ← NodeGraphicsItem._on_connection_changed[Float]
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 2
+  ← NodeGraphicsItem._on_connection_changed[Add]
+← ConnectorModel.connect_to[Float.out]
+  → ConnectionItem.update_path Float -> Add
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Float.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Float.out]
+PASSED→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Float.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Float.out]
+
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_create_connection
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodeGraphicsItem::test_node_item_creation
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_node_item_creation
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 14
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 1, 'NodeGraphicsItem._on_connection_changed': 2, 'ConnectionItem.update_path': 1, 'PortGraphicsItem._resolve_data_type': 10}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_node_item_creation
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodeGraphicsItem::test_node_item_selection
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_node_item_selection
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 3
+[FIXTURE] Detailed counts: {'PortGraphicsItem._resolve_data_type': 3}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_node_item_selection
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodeGraphicsItem::test_node_item_move
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_node_item_move
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 3
+[FIXTURE] Detailed counts: {'PortGraphicsItem._resolve_data_type': 3}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_node_item_move
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestContextMenu::test_show_node_menu
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_show_node_menu
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 3
+[FIXTURE] Detailed counts: {'PortGraphicsItem._resolve_data_type': 3}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_show_node_menu
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestContextMenu::test_node_creation_at_position
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_node_creation_at_position
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_node_creation_at_position
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestContextMenu::test_key_delete
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_key_delete
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_key_delete
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestContextMenu::test_key_f_frame_selection
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_key_f_frame_selection
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Print.value[in]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Print.value]
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_key_f_frame_selection
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestConnectionModes::test_click_to_connect_mode
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_click_to_connect_mode
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 4
+[FIXTURE] Detailed counts: {'PortGraphicsItem._resolve_data_type': 4}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+
+================================================================================
+🔗 NetworkModel.connect: Float.out -> Add.a
+================================================================================
+  → ConnectorModel.connect_to Float.out -> Add.a
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Float
+Current recursion count: 1
+  ← NodeGraphicsItem._on_connection_changed[Float]
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 2
+  ← NodeGraphicsItem._on_connection_changed[Add]
+← ConnectorModel.connect_to[Float.out]
+  → ConnectionItem.update_path Float -> Add
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Float.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Float.out]
+PASSED→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Float.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Float.out]
+
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_click_to_connect_mode
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestConnectionModes::test_create_connection_directly
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_create_connection_directly
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 14
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 1, 'NodeGraphicsItem._on_connection_changed': 2, 'ConnectionItem.update_path': 1, 'PortGraphicsItem._resolve_data_type': 10}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+
+================================================================================
+🔗 NetworkModel.connect: Float.out -> Add.a
+================================================================================
+  → ConnectorModel.connect_to Float.out -> Add.a
+Current recursion count: 1
+    → NodeGraphicsItem._on_connection_changed node=Float
+Current recursion count: 1
+  ← NodeGraphicsItem._on_connection_changed[Float]
+    → NodeGraphicsItem._on_connection_changed node=Add
+Current recursion count: 2
+  ← NodeGraphicsItem._on_connection_changed[Add]
+← ConnectorModel.connect_to[Float.out]
+  → ConnectionItem.update_path Float -> Add
+Current recursion count: 1
+← ConnectionItem.update_path
+================================================================================
+✓ NetworkModel.connect completed
+================================================================================
+
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 1
+← PortGraphicsItem._resolve_data_type[Float.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 2
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 3
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 4
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 5
+← PortGraphicsItem._resolve_data_type[Float.out]
+PASSED→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 6
+← PortGraphicsItem._resolve_data_type[Float.out]
+→ PortGraphicsItem._resolve_data_type Add.a[in]
+Current recursion count: 7
+← PortGraphicsItem._resolve_data_type[Add.a]
+→ PortGraphicsItem._resolve_data_type Add.b[in]
+Current recursion count: 8
+← PortGraphicsItem._resolve_data_type[Add.b]
+→ PortGraphicsItem._resolve_data_type Add.result[out]
+Current recursion count: 9
+← PortGraphicsItem._resolve_data_type[Add.result]
+→ PortGraphicsItem._resolve_data_type Float.out[out]
+Current recursion count: 10
+← PortGraphicsItem._resolve_data_type[Float.out]
+
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_create_connection_directly
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_palette_creation
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_palette_creation
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 14
+[FIXTURE] Detailed counts: {'ConnectorModel.connect_to': 1, 'NodeGraphicsItem._on_connection_changed': 2, 'ConnectionItem.update_path': 1, 'PortGraphicsItem._resolve_data_type': 10}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_palette_creation
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_category_hover_shows_nodes
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_category_hover_shows_nodes
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_category_hover_shows_nodes
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_category_switching
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_category_switching
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_category_switching
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_search_mode_switches_to_search_results
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_search_mode_switches_to_search_results
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_search_mode_switches_to_search_results
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_search_box_keeps_focus
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_search_box_keeps_focus
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_search_box_keeps_focus
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_search_prevents_category_hover
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_search_prevents_category_hover
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_search_prevents_category_hover
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_clear_search_hides_right_list
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_clear_search_hides_right_list
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_clear_search_hides_right_list
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_node_selection_emits_signal
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_node_selection_emits_signal
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_node_selection_emits_signal
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_arrow_keys_navigate_right_list_in_category_mode
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_arrow_keys_navigate_right_list_in_category_mode
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_arrow_keys_navigate_right_list_in_category_mode
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_left_arrow_closes_right_list
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_left_arrow_closes_right_list
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_left_arrow_closes_right_list
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+tests/ui/test_ui.py::TestNodePalette::test_right_arrow_opens_and_focuses_right_list
+================================================================================
+[FIXTURE] reset_debug_counters BEFORE test: test_right_arrow_opens_and_focuses_right_list
+================================================================================
+[FIXTURE] Found module in sys.modules as: ui.test_debug_signals
+[FIXTURE] Counter value BEFORE reset: 0
+[FIXTURE] Detailed counts: {}
+[FIXTURE] call_counts.clear() called
+[FIXTURE] call_stack.clear() called
+[FIXTURE] Counter value AFTER reset: 0
+================================================================================
+
+Registered node: AddNode
+Registered node: PrintNode
+Registered node: FloatVariable
+PASSED
+================================================================================
+[FIXTURE] reset_debug_counters AFTER test: test_right_arrow_opens_and_focuses_right_list
+================================================================================
+[FIXTURE] Module not in sys.modules
+================================================================================
+
+
+
+================================================== warnings summary ===================================================
+tests/ui/test_sticky_notes.py::TestStickyNoteText::test_double_click_enables_editing
+  D:\dev\node-graph-execution-qt\tests\ui\test_sticky_notes.py:145: DeprecationWarning: Function: 'QMouseEvent.QMouseEvent(QEvent.Type type, const QPointF &localPos, Qt.MouseButton button, QFlags<Qt.MouseButton> buttons, QFlags<Qt.KeyboardModifier> modifiers, const QPointingDevice *device)' is marked as deprecated, please check the documentation for more information.
+    event = QMouseEvent(
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_mouse_press_on_resize_handle
+  D:\dev\node-graph-execution-qt\tests\ui\test_sticky_notes.py:281: DeprecationWarning: Function: 'QMouseEvent.QMouseEvent(QEvent.Type type, const QPointF &localPos, Qt.MouseButton button, QFlags<Qt.MouseButton> buttons, QFlags<Qt.KeyboardModifier> modifiers, const QPointingDevice *device)' is marked as deprecated, please check the documentation for more information.
+    event = QMouseEvent(
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_mouse_press_on_resize_handle
+  D:\dev\node-graph-execution-qt\nodegraph\views\notes\sticky_note_item.py:147: DeprecationWarning: Function: 'QMouseEvent.pos() const' is marked as deprecated, please check the documentation for more information.
+    if handle_rect.contains(event.pos()):
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_mouse_move_while_resizing
+  D:\dev\node-graph-execution-qt\tests\ui\test_sticky_notes.py:311: DeprecationWarning: Function: 'QMouseEvent.QMouseEvent(QEvent.Type type, const QPointF &localPos, Qt.MouseButton button, QFlags<Qt.MouseButton> buttons, QFlags<Qt.KeyboardModifier> modifiers, const QPointingDevice *device)' is marked as deprecated, please check the documentation for more information.
+    event = QMouseEvent(
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_mouse_release_stops_resizing
+  D:\dev\node-graph-execution-qt\tests\ui\test_sticky_notes.py:336: DeprecationWarning: Function: 'QMouseEvent.QMouseEvent(QEvent.Type type, const QPointF &localPos, Qt.MouseButton button, QFlags<Qt.MouseButton> buttons, QFlags<Qt.KeyboardModifier> modifiers, const QPointingDevice *device)' is marked as deprecated, please check the documentation for more information.
+    event = QMouseEvent(
+
+tests/ui/test_sticky_notes.py::TestStickyNoteResizing::test_resizing_respects_minimum_size
+  D:\dev\node-graph-execution-qt\tests\ui\test_sticky_notes.py:360: DeprecationWarning: Function: 'QMouseEvent.QMouseEvent(QEvent.Type type, const QPointF &localPos, Qt.MouseButton button, QFlags<Qt.MouseButton> buttons, QFlags<Qt.KeyboardModifier> modifiers, const QPointingDevice *device)' is marked as deprecated, please check the documentation for more information.
+    event = QMouseEvent(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================================== 115 passed, 6 warnings in 3.79s ===========================================
+PS D:\dev\node-graph-execution-qt>
