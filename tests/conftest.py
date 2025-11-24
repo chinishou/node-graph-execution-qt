@@ -71,19 +71,32 @@ def reset_debug_counters(request):
 
     module = None
 
-    # Try to get or import the test_debug_signals module
-    if 'tests.ui.test_debug_signals' in sys.modules:
-        log(f"[FIXTURE] Module already in sys.modules")
-        module = sys.modules['tests.ui.test_debug_signals']
-    else:
-        log(f"[FIXTURE] Module not in sys.modules, attempting import...")
-        try:
-            module = importlib.import_module('tests.ui.test_debug_signals')
-            log(f"[FIXTURE] Successfully imported module")
-        except ImportError as e:
-            log(f"[FIXTURE] ImportError (this is OK for non-UI tests): {e}")
-        except Exception as e:
-            log(f"[FIXTURE] Unexpected error importing: {type(e).__name__}: {e}")
+    # Search for test_debug_signals module in sys.modules
+    # It might be imported as 'test_debug_signals' or 'tests.ui.test_debug_signals'
+    possible_names = [
+        'tests.ui.test_debug_signals',
+        'test_debug_signals',
+        'ui.test_debug_signals'
+    ]
+
+    for name in possible_names:
+        if name in sys.modules:
+            log(f"[FIXTURE] Found module in sys.modules as: {name}")
+            module = sys.modules[name]
+            break
+
+    if not module:
+        # Module not found by exact name, search for any module containing 'test_debug_signals'
+        log(f"[FIXTURE] Module not found by name, searching sys.modules...")
+        for key in sys.modules:
+            if 'test_debug_signals' in key:
+                log(f"[FIXTURE] Found module by search: {key}")
+                module = sys.modules[key]
+                break
+
+    if not module:
+        log(f"[FIXTURE] Module not found in sys.modules (this is OK for non-UI tests)")
+        log(f"[FIXTURE] Available modules with 'test': {[k for k in sys.modules.keys() if 'test' in k][:10]}")
 
     if module:
         count_before = sum(module.call_counts.values()) if hasattr(module, 'call_counts') else 0
