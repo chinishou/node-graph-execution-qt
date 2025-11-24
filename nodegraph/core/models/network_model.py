@@ -7,7 +7,6 @@ A network contains nodes and connections between them.
 """
 
 from typing import Dict, List, Optional, Tuple, Any
-from uuid import UUID
 import re
 
 from .connector_model import ConnectorModel
@@ -34,7 +33,7 @@ class NetworkModel:
 
     def __init__(self, name: str = "Network"):
         self.name = name
-        self._nodes: Dict[UUID, NodeModel] = {}
+        self._nodes: Dict[int, NodeModel] = {}
         self._connector_pairs: List[Tuple[ConnectorModel, ConnectorModel]] = []
 
         # Signals
@@ -94,7 +93,7 @@ class NetworkModel:
 
         return f"{base_name}_{counter}"
 
-    def remove_node(self, node_id: UUID) -> bool:
+    def remove_node(self, node_id: int) -> bool:
         """
         Remove a node from the network.
 
@@ -127,7 +126,7 @@ class NetworkModel:
 
         return True
 
-    def get_node(self, node_id: UUID) -> Optional[NodeModel]:
+    def get_node(self, node_id: int) -> Optional[NodeModel]:
         """Get node by ID."""
         return self._nodes.get(node_id)
 
@@ -150,9 +149,9 @@ class NetworkModel:
 
     def connect(
         self,
-        source_node_id: UUID,
+        source_node_id: int,
         source_output: str,
-        target_node_id: UUID,
+        target_node_id: int,
         target_input: str
     ) -> bool:
         """
@@ -209,9 +208,9 @@ class NetworkModel:
 
     def disconnect(
         self,
-        source_node_id: UUID,
+        source_node_id: int,
         source_output: str,
-        target_node_id: UUID,
+        target_node_id: int,
         target_input: str
     ) -> bool:
         """
@@ -390,9 +389,9 @@ class NetworkModel:
             ],
             "connections": [
                 {
-                    "source_node": str(src.node.id) if src.node else None,
+                    "source_node": src.node.id if src.node else None,
                     "source_output": src.name,
-                    "target_node": str(tgt.node.id) if tgt.node else None,
+                    "target_node": tgt.node.id if tgt.node else None,
                     "target_input": tgt.name,
                 }
                 for src, tgt in self.connector_pairs()
@@ -444,8 +443,8 @@ class NetworkModel:
             # Map using the saved ID for connection restoration
             original_id = node_data.get("id")
             if isinstance(original_id, str):
-                original_id = UUID(original_id)
-            if original_id:
+                original_id = int(original_id)
+            if original_id is not None and original_id != -1:
                 node_map[original_id] = node
                 print(f"[NetworkModel] Deserialized node: {node.name} (type={node.node_type}, saved_id={original_id}, new_id={node.id})")
             else:
@@ -453,7 +452,7 @@ class NetworkModel:
 
         # Then, recreate connections
         for conn_data in data.get("connections", []):
-            # Convert string IDs back to UUID
+            # Convert to int if needed
             source_id = conn_data["source_node"]
             target_id = conn_data["target_node"]
 
@@ -462,9 +461,9 @@ class NetworkModel:
                 continue
 
             if isinstance(source_id, str):
-                source_id = UUID(source_id)
+                source_id = int(source_id)
             if isinstance(target_id, str):
-                target_id = UUID(target_id)
+                target_id = int(target_id)
 
             source_node = node_map.get(source_id)
             target_node = node_map.get(target_id)
