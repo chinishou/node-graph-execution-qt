@@ -58,11 +58,18 @@ class PortGraphicsItem(QGraphicsItem):
 
     def _invalidate_type_cache(self):
         """Invalidate the cached type when connections change."""
-        # OPTIMIZATION: Skip invalidation for ports with concrete types
+        # OPTIMIZATION: Skip cache invalidation for ports with concrete types
         # If the connector has a concrete type (not 'any'), the type won't change
-        # regardless of connections, so we can keep the cache
+        # regardless of connections, so we can skip the expensive type resolution.
+        # However, we still need to update the UI.
         if self.connector.data_type != 'any':
-            # Type is concrete, no need to invalidate or update
+            # Type is concrete, no need to invalidate cache
+            # But still schedule UI update for visual feedback
+            scene = self.scene()
+            if scene and hasattr(scene, '_schedule_port_update'):
+                scene._schedule_port_update(self)
+            else:
+                QTimer.singleShot(0, self.update)
             return
 
         self._cached_type = None
