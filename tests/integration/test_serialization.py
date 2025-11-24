@@ -111,7 +111,8 @@ def test_node_serialization():
     assert data["name"] == "TestNode"
     assert data["node_type"] == "TestType"
     assert data["category"] == "Test"
-    assert data["position"] == (100.0, 200.0)
+    # Position is now a list (rounded to 2 decimals)
+    assert data["position"] == [100, 200]
     assert "param1" in data["parameters"]
     assert "input1" in data["inputs"]
     assert "output1" in data["outputs"]
@@ -147,8 +148,9 @@ def test_variable_node_serialization():
     output_data = data["outputs"]["out"]
     assert output_data["data_type"] == "float"
 
-    # No inputs
-    assert len(data["inputs"]) == 0
+    # No inputs (empty inputs dict is removed by _clean_empty_values optimization)
+    # The deserializer will handle missing 'inputs' key by using empty dict as default
+    assert "inputs" not in data or len(data.get("inputs", {})) == 0
 
     # Can convert to JSON
     json_str = json.dumps(data, indent=2, default=str)
