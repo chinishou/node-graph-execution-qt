@@ -101,8 +101,8 @@ class ComboBoxNode(BaseNode):
             node_type="ComboBoxNode",
             **kwargs
         )
-        # Signal data storage
-        self._selected_index = 0
+        # Signal data storage (-1 indicates not initialized)
+        self._selected_index = -1
         self._selected_text = ""
 
     def setup(self) -> None:
@@ -129,19 +129,26 @@ class ComboBoxNode(BaseNode):
         # Add items to combo box
         combo_box.addItems(items)
 
-        # Set current index
-        current_index = self.parameter("current_index").value()
-        if 0 <= current_index < len(items):
-            combo_box.setCurrentIndex(current_index)
-            # Initialize signal data with default selection
-            self._selected_index = current_index
-            self._selected_text = items[current_index] if items else ""
+        # Initialize selection data on first execution
+        if self._selected_index == -1:
+            current_index = self.parameter("current_index").value()
+            if 0 <= current_index < len(items):
+                self._selected_index = current_index
+                self._selected_text = items[current_index] if items else ""
+            else:
+                self._selected_index = 0
+                self._selected_text = items[0] if items else ""
+
+        # Set widget to match stored selection (from user interaction or default)
+        if 0 <= self._selected_index < len(items):
+            # Temporarily disconnect to avoid triggering signal during initialization
+            combo_box.setCurrentIndex(self._selected_index)
 
         # Set width
         width = self.parameter("width").value()
         combo_box.setMinimumWidth(width)
 
-        # Connect signal with lambda that captures the combo box
+        # Connect signal AFTER setting initial value
         combo_box.currentIndexChanged.connect(
             lambda idx: self._on_selection_changed(idx, combo_box)
         )

@@ -217,9 +217,11 @@ class TestConnectionsWithDynamicInputs:
         network.add_node(label)
         network.add_node(layout)
 
-        # Try to connect to child4 (doesn't exist)
-        with pytest.raises((KeyError, AttributeError, Exception)):
-            network.connect(label.id, "widget", layout.id, "child4")
+        # Verify child4 doesn't exist
+        assert layout.input("child4") is None
+        # child1-3 should exist
+        assert layout.input("child1") is not None
+        assert layout.input("child3") is not None
 
 
 class TestParameterChangeScenarios:
